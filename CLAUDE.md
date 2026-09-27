@@ -81,10 +81,19 @@ pnpm --filter @klotilda/api seed:admin
 
 ## Deploy
 
-- API: Railway project `Klotilda`, service `klotilda-api` — `apps/api/Dockerfile`, build context
-  the repository root, `NODE_AUTH_TOKEN` as a build argument (the placeholder in
-  `tooling/user.npmrc`; never name the token in a `RUN` line). Migrations run on start.
-- Web and admin: Vercel, root directories `apps/web` and `apps/admin` (`vercel.json` in each).
+Branches: `main` = production, `dev` = test.
+
+- API: Railway project `Klotilda`, service `klotilda-api`, **environment `test`** (domain
+  `klotilda-api-test.up.railway.app`) — despite its name it is the one API every site uses, test
+  and production alike; it follows `main`. (The Railway `production` environment is an unused
+  leftover.) `apps/api/Dockerfile`, build context the repository root, `NODE_AUTH_TOKEN` as a
+  build argument (the placeholder in `tooling/user.npmrc`; never name the token in a `RUN` line).
+  Migrations run on start.
+- Web: Vercel project `klotilda-frontend`, root `apps/web` — `klotilda.cz` / `www.klotilda.cz`
+  from `main`, `test.klotilda.cz` from `dev`.
+- Admin: Vercel project `klotilda-admin`, root `apps/admin` — `admin.klotilda.cz` from `main`,
+  `admin.test.klotilda.cz` from `dev`. Its `VITE_API_URL` may end in `/api` (the old admin's
+  setting); `src/app/api.ts` drops it.
 
 ## Conventions
 
