@@ -96,3 +96,71 @@ html {
     transform: translateY(0);
   }
 }
+
+/* Hero scroll effects. CSS scroll-driven animations run on the compositor, in step with the
+   scroll itself — the earlier JS-driven (framer-motion) version lagged a frame behind the
+   scroll on phones and the pinned hero judders. `--hero` spans from the hero's top reaching the
+   top of the viewport to its bottom reaching it. Without support (Firefox, older Safari) the hero
+   simply stays still while "O mně" slides over it. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .hero {
+      view-timeline: --hero block;
+    }
+    .hero-image {
+      animation: hero-drift linear both;
+      animation-timeline: --hero;
+      animation-range: exit-crossing 0% exit-crossing 70%;
+    }
+    .hero-content {
+      animation:
+        hero-shrink linear both,
+        hero-fade linear both;
+      animation-timeline: --hero, --hero;
+      animation-range:
+        exit-crossing 0% exit-crossing 40%,
+        exit-crossing 26% exit-crossing 42%;
+    }
+    .hero-scrim {
+      animation: hero-dim linear both;
+      animation-timeline: --hero;
+      animation-range: exit-crossing 6% exit-crossing 42%;
+    }
+  }
+}
+
+@keyframes hero-drift {
+  to {
+    transform: translateY(14%);
+  }
+}
+@keyframes hero-shrink {
+  to {
+    scale: 0.88;
+  }
+}
+@keyframes hero-fade {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes hero-dim {
+  to {
+    opacity: 0.45;
+  }
+}
+
+/* "Reduce motion" in the system settings: CSS animations and transitions finish at once, and
+   anchor links jump instead of scrolling (the hero's scroll effects are already off, above). */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

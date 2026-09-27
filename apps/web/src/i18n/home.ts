@@ -22,6 +22,9 @@ export const getAboutTranslations = (t: T) => ({
 export const getGalleryTranslations = (t: T) => ({
   title: t("gallery.title"),
   subtitle: t("gallery.subtitle"),
+  open: t("gallery.open"),
+  previous: t("gallery.previous"),
+  next: t("gallery.next"),
 });
 
 export const getCtaTranslations = (t: T) => ({

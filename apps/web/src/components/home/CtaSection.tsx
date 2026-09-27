@@ -12,7 +12,7 @@ export default function CtaSection() {
 
   return (
     <section
-      className="relative z-30 py-28 md:py-36"
+      className="relative z-30 pt-20 pb-24 md:py-36"
       style={{
         background:
           "linear-gradient(135deg, #e8dece 0%, #d9c9ae 50%, #ccbb9c 100%)",

@@ -13,9 +13,9 @@ export default function AboutSection() {
   return (
     <section
       id="about"
-      className="relative z-10 scroll-mt-16 bg-[#fafaf8] py-28 md:py-36"
+      className="relative z-10 scroll-mt-16 bg-[#fafaf8] pt-20 pb-24 md:py-36"
       style={{
-        marginTop: "calc(-50vh - 4rem)",
+        marginTop: "calc(-50svh - 4rem)",
         boxShadow: "0 -26px 55px -18px rgba(38, 46, 32, 0.42)",
       }}
     >
@@ -26,10 +26,15 @@ export default function AboutSection() {
               {about.title}
             </h2>
 
-            <p className="mb-5 leading-relaxed text-stone-600">{about.bio1}</p>
-            <p className="mb-10 leading-relaxed text-stone-600">{about.bio2}</p>
+            <p className="leading-relaxed text-stone-600">{about.bio1}</p>
+            {/* The second paragraph is optional (empty in Czech for now). */}
+            {about.bio2 && (
+              <p className="mt-5 leading-relaxed text-stone-600">
+                {about.bio2}
+              </p>
+            )}
 
-            <div className="flex flex-wrap gap-2">
+            <div className="mt-10 flex flex-wrap gap-2">
               {(["ceramics", "embroidery", "linocut"] as const).map((craft) => (
                 <span
                   key={craft}

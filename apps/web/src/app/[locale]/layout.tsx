@@ -5,6 +5,11 @@ import { getMessages, getTranslations } from "next-intl/server";
 import "../globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import MotionProvider from "@/components/layout/MotionProvider";
+
+// Absolute links in the page metadata (the share preview image, opengraph-image.jpg next to this
+// file) point here; klotilda.cz redirects to www.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.klotilda.cz";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -20,6 +25,7 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: "metadata" });
 
   return {
+    metadataBase: new URL(SITE_URL),
     title: {
       default: t("title"),
       template: `%s | Klotilda`,
@@ -36,7 +42,13 @@ export async function generateMetadata({
       title: t("title"),
       description: t("description"),
       locale: locale === "cs" ? "cs_CZ" : "en_US",
+      siteName: "Klotilda",
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t("title"),
+      description: t("description"),
     },
   };
 }
@@ -55,11 +67,13 @@ export default async function LocaleLayout({
     <html lang={locale}>
       <body className={`${geist.variable} font-sans antialiased`}>
         <NextIntlClientProvider messages={messages}>
-          <div className="flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
+          <MotionProvider>
+            <div className="flex min-h-screen flex-col overflow-x-clip">
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
+          </MotionProvider>
         </NextIntlClientProvider>
       </body>
     </html>

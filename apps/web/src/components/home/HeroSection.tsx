@@ -1,43 +1,18 @@
-"use client";
-
-import { useRef } from "react";
 import Image from "next/image";
-import {
-  motion,
-  useScroll,
-  useTransform,
-  useReducedMotion,
-} from "framer-motion";
 import { useTranslations } from "next-intl";
 import { getHeroTranslations } from "@/i18n/home";
 
+// The scroll effects (image drift, content shrinking and fading, the darkening scrim) are CSS
+// scroll-driven animations — see `.hero` in globals.css. The hero pins while "O mně" scrolls up
+// over it, then hands off to the normal flow.
 export default function HeroSection() {
   const t = useTranslations("home");
   const hero = getHeroTranslations(t);
-  const ref = useRef<HTMLElement>(null);
-  const reduce = useReducedMotion();
-
-  // Runs 0 → 1 across the hero's scroll runway. The hero pins while "O mně"
-  // scrolls up over it (roughly progress 0 → 0.4), then it hands off to the
-  // normal flow.
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
-
-  const imageY = useTransform(scrollYProgress, [0, 0.7], ["0%", "14%"]);
-  const contentScale = useTransform(scrollYProgress, [0, 0.4], [1, 0.88]);
-  const contentOpacity = useTransform(scrollYProgress, [0.26, 0.42], [1, 0]);
-  const scrimOpacity = useTransform(scrollYProgress, [0.06, 0.42], [0, 0.45]);
 
   return (
-    <section id="hero" ref={ref} className="relative h-[150vh]">
-      <div className="sticky top-16 z-0 flex h-[calc(100vh-4rem)] flex-col items-center justify-center overflow-hidden px-4 text-center">
-        <motion.div
-          aria-hidden="true"
-          className="absolute inset-[-12%]"
-          style={reduce ? undefined : { y: imageY }}
-        >
+    <section id="hero" className="hero relative h-[150svh]">
+      <div className="sticky top-16 z-0 flex h-[calc(100svh-4rem)] flex-col items-center justify-center overflow-hidden px-4 text-center">
+        <div aria-hidden="true" className="hero-image absolute inset-[-12%]">
           <Image
             src="/images/bg_hero.jpg"
             alt=""
@@ -47,25 +22,19 @@ export default function HeroSection() {
             sizes="100vw"
             priority
           />
-        </motion.div>
+        </div>
 
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{ background: "rgba(80, 100, 70, 0.2)" }}
         />
-        <motion.div
+        <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[#141a10]"
-          style={reduce ? { opacity: 0 } : { opacity: scrimOpacity }}
+          className="hero-scrim pointer-events-none absolute inset-0 bg-[#141a10] opacity-0"
         />
 
-        <motion.div
-          className="relative z-10 flex flex-col items-center"
-          style={
-            reduce ? undefined : { opacity: contentOpacity, scale: contentScale }
-          }
-        >
+        <div className="hero-content relative z-10 flex flex-col items-center">
           <h1
             className="font-serif text-7xl font-light tracking-[0.15em] md:text-[9rem] md:leading-none"
             style={{
@@ -104,7 +73,7 @@ export default function HeroSection() {
               style={{ background: "rgba(255,255,255,0.5)" }}
             />
           </div>
-        </motion.div>
+        </div>
 
         <a
           href="#about"

@@ -12,14 +12,14 @@ export default function ContactSection() {
   return (
     <section
       id="contact"
-      className="relative z-40 scroll-mt-16 bg-[#fafaf8] py-28 md:py-36"
+      className="relative z-40 scroll-mt-16 bg-[#fafaf8] pt-20 pb-24 md:py-36"
       style={{
         marginTop: "-3rem",
         boxShadow: "0 -20px 44px -22px rgba(55, 48, 38, 0.2)",
       }}
     >
       <div className="mx-auto max-w-6xl px-4 md:px-8">
-        <FadeIn className="mb-16 text-center">
+        <FadeIn className="mb-12 text-center md:mb-16">
           <h2 className="font-serif text-4xl font-light tracking-[0.15em] text-stone-800 md:text-5xl">
             {contact.title}
           </h2>

@@ -3,7 +3,8 @@
     "about": "About",
     "gallery": "Gallery",
     "shop": "Shop",
-    "contact": "Contact"
+    "contact": "Contact",
+    "menu": "Menu"
   },
   "footer": {
     "copyright": "© 2026 Klotilda. All rights reserved.",
@@ -100,7 +101,7 @@
     },
     "about": {
       "title": "About",
-      "bio1": "My name is Klotilda and I create in Prague. My work grows from a love of traditional crafts — ceramics, weaving, and embroidery — which I connect with a contemporary sensibility.",
+      "bio1": "My name is Klotilda and I create in Prague. My work grows from a love of traditional crafts — ceramics, embroidery and linocut — which I connect with a contemporary sensibility.",
       "bio2": "Each piece is made by hand in my studio, without rush. I believe the objects around us can be not only beautiful but deeply personal.",
       "crafts": {
         "ceramics": "Ceramics",
@@ -115,7 +116,10 @@
         "keramika": "Ceramics",
         "vysivka": "Embroidery",
         "linoryt": "Linocut"
-      }
+      },
+      "open": "Enlarge",
+      "previous": "Previous work",
+      "next": "Next work"
     },
     "cta": {
       "title": "Originals for Sale",
@@ -130,5 +134,10 @@
       "email": "klotilda@klotilda.cz",
       "instagram": "@klotilda.lisejnikova"
     }
+  },
+  "lightbox": {
+    "close": "Close",
+    "previous": "Previous",
+    "next": "Next"
   }
 }

@@ -3,7 +3,8 @@
     "about": "O mně",
     "gallery": "Galerie",
     "shop": "E-shop",
-    "contact": "Kontakt"
+    "contact": "Kontakt",
+    "menu": "Menu"
   },
   "footer": {
     "copyright": "© 2026 Klotilda. Všechna práva vyhrazena.",
@@ -100,7 +101,7 @@
     },
     "about": {
       "title": "O mně",
-      "bio1": "Ahoj jsem Klotilda a tvořím v Praze drobné radůstky, které si můžeš koupit na těchto stránkách. Tak směle dotoho!",
+      "bio1": "Ahoj, jsem Klotilda a tvořím v Praze drobné radůstky, které si můžeš koupit na těchto stránkách. Tak směle do toho!",
       "bio2": "",
       "crafts": {
         "ceramics": "Keramika",
@@ -115,7 +116,10 @@
         "keramika": "Keramika",
         "vysivka": "Výšivka",
         "linoryt": "Linoryt"
-      }
+      },
+      "open": "Zvětšit",
+      "previous": "Předchozí práce",
+      "next": "Další práce"
     },
     "cta": {
       "title": "Originály k prodeji",
@@ -130,5 +134,10 @@
       "email": "klotilda@klotilda.cz",
       "instagram": "@klotilda.lisejnikova"
     }
+  },
+  "lightbox": {
+    "close": "Zavřít",
+    "previous": "Předchozí",
+    "next": "Další"
   }
 }
