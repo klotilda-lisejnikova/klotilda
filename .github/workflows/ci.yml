@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: klotilda
+          POSTGRES_PASSWORD: klotilda
+          POSTGRES_DB: klotilda
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U klotilda"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Classic PAT with read:packages, able to read the Eleansphere organization's packages.
+      NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+      TEST_DATABASE_URL: postgres://klotilda:klotilda@localhost:5432/klotilda
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+          # pnpm takes the registry token only from the user-level npm config, never from the
+          # project's .npmrc; setup-node writes one that reads NODE_AUTH_TOKEN.
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@eleansphere'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build

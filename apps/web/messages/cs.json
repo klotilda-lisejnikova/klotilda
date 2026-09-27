@@ -1,0 +1,134 @@
+{
+  "nav": {
+    "about": "O mně",
+    "gallery": "Galerie",
+    "shop": "E-shop",
+    "contact": "Kontakt"
+  },
+  "footer": {
+    "copyright": "© 2026 Klotilda. Všechna práva vyhrazena.",
+    "tagline": "Keramika, linoryty a výšivky"
+  },
+  "metadata": {
+    "title": "Klotilda — Originální keramika, výšivky a linoryty",
+    "description": "Ručně vyráběná keramika, výšivky a linoryty od české umělkyně. Každý kus je originál."
+  },
+  "checkoutResult": {
+    "successTitle": "Objednávka přijata",
+    "successBody": "Objednávku jsme přijali a snížili sklad. Dokončete prosím platbu naskenováním QR kódu níže — potvrzení s platebními údaji jsme vám poslali i na e-mail.",
+    "backHome": "Zpět na úvod",
+    "qrAlt": "QR kód pro platbu",
+    "qrHint": "Naskenujte v mobilním bankovnictví",
+    "account": "Číslo účtu",
+    "variableSymbol": "Variabilní symbol",
+    "amount": "Částka"
+  },
+  "checkout": {
+    "steps": {
+      "contact": "Kontakt",
+      "shipping": "Doprava",
+      "payment": "Platba",
+      "summary": "Shrnutí"
+    },
+    "contact": {
+      "firstName": "Jméno",
+      "lastName": "Příjmení",
+      "email": "E-mail",
+      "phone": "Telefon (volitelné)",
+      "street": "Ulice a číslo popisné",
+      "city": "Město",
+      "zip": "PSČ"
+    },
+    "shipping": {
+      "zasilkovna": "Zásilkovna",
+      "ceska_posta": "Česká pošta",
+      "osobni_odber": "Osobní odběr v Praze",
+      "free": "Zdarma"
+    },
+    "payment": {
+      "qr": "Platba QR kódem",
+      "qrDesc": "Po odeslání objednávky naskenujte QR kód v mobilním bankovnictví, nebo zadejte platbu ručně podle zobrazených údajů."
+    },
+    "summary": {
+      "items": "Položky",
+      "shipping": "Doprava",
+      "total": "Celkem",
+      "notes": "Poznámka k objednávce (volitelné)",
+      "confirm": "Potvrdit a zaplatit"
+    },
+    "next": "Pokračovat",
+    "back": "Zpět",
+    "currency": "Kč",
+    "emptyCart": "Váš košík je prázdný.",
+    "goToShop": "Přejít do e-shopu",
+    "loading": "Zpracovávám objednávku…",
+    "error": "Nastala chyba při vytváření objednávky. Zkuste to prosím znovu."
+  },
+  "cart": {
+    "title": "Košík",
+    "empty": "Váš košík je prázdný.",
+    "remove": "Odebrat",
+    "total": "Celkem",
+    "checkout": "Přejít k pokladně",
+    "continueShopping": "Pokračovat v nákupu",
+    "currency": "Kč"
+  },
+  "shop": {
+    "title": "E-shop",
+    "description": "Originální ručně vyráběná díla",
+    "heroSubtitle": "Keramika · Výšivka · Linoryt",
+    "productsCount": "{count} položek",
+    "filters": {
+      "all": "Vše",
+      "keramika": "Keramika",
+      "vysivka": "Výšivka",
+      "linoryt": "Linoryt"
+    },
+    "inStock": "Skladem",
+    "soldOut": "Vyprodáno",
+    "addToCart": "Přidat do košíku",
+    "inCart": "V košíku",
+    "soldOutBtn": "Vyprodáno",
+    "empty": "Žádné produkty v této kategorii.",
+    "currency": "Kč"
+  },
+  "home": {
+    "hero": {
+      "title": "Klotilda",
+      "subtitle": "Keramika · Výšivka · Linoryt",
+      "scroll": "Procházet"
+    },
+    "about": {
+      "title": "O mně",
+      "bio1": "Ahoj jsem Klotilda a tvořím v Praze drobné radůstky, které si můžeš koupit na těchto stránkách. Tak směle dotoho!",
+      "bio2": "",
+      "crafts": {
+        "ceramics": "Keramika",
+        "embroidery": "Výšivka",
+        "linocut": "Linoryt"
+      }
+    },
+    "gallery": {
+      "title": "Galerie",
+      "subtitle": "Výběr z posledních prací",
+      "categories": {
+        "keramika": "Keramika",
+        "vysivka": "Výšivka",
+        "linoryt": "Linoryt"
+      }
+    },
+    "cta": {
+      "title": "Originály k prodeji",
+      "subtitle": "Každý kus je jedinečný a čeká na svého nového majitele.",
+      "button": "Přejít do e-shopu",
+      "soon": "E-shop právě dokončujeme",
+      "soonLink": "Napište mi"
+    },
+    "contact": {
+      "title": "Kontakt",
+      "subtitle": "Ráda si popovídám o spolupráci nebo zakázkách.",
+      "email": "klotilda@klotilda.cz",
+      "instagram": "@klotilda.lisejnikova"
+    }
+  }
+}

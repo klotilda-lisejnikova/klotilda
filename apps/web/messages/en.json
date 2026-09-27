@@ -1,0 +1,134 @@
+{
+  "nav": {
+    "about": "About",
+    "gallery": "Gallery",
+    "shop": "Shop",
+    "contact": "Contact"
+  },
+  "footer": {
+    "copyright": "© 2026 Klotilda. All rights reserved.",
+    "tagline": "Original ceramics, embroidery and linocuts"
+  },
+  "metadata": {
+    "title": "Klotilda — Original Ceramics, Embroidery & Linocuts",
+    "description": "Handmade ceramics, embroidery, and linocut prints by a Czech artist. Each piece is one of a kind."
+  },
+  "checkoutResult": {
+    "successTitle": "Order received",
+    "successBody": "Your order has been received and the stock reserved. Please complete payment by scanning the QR code below — a confirmation with the payment details was also sent to your email.",
+    "backHome": "Back to home",
+    "qrAlt": "Payment QR code",
+    "qrHint": "Scan with your mobile banking app",
+    "account": "Account number",
+    "variableSymbol": "Variable symbol",
+    "amount": "Amount"
+  },
+  "checkout": {
+    "steps": {
+      "contact": "Contact",
+      "shipping": "Shipping",
+      "payment": "Payment",
+      "summary": "Summary"
+    },
+    "contact": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "E-mail",
+      "phone": "Phone (optional)",
+      "street": "Street and house number",
+      "city": "City",
+      "zip": "ZIP code"
+    },
+    "shipping": {
+      "zasilkovna": "Zásilkovna",
+      "ceska_posta": "Czech Post",
+      "osobni_odber": "Personal pickup in Prague",
+      "free": "Free"
+    },
+    "payment": {
+      "qr": "QR code payment",
+      "qrDesc": "After placing your order, scan the QR code in your mobile banking app, or enter the transfer manually using the details shown."
+    },
+    "summary": {
+      "items": "Items",
+      "shipping": "Shipping",
+      "total": "Total",
+      "notes": "Order note (optional)",
+      "confirm": "Confirm & pay"
+    },
+    "next": "Continue",
+    "back": "Back",
+    "currency": "CZK",
+    "emptyCart": "Your cart is empty.",
+    "goToShop": "Go to shop",
+    "loading": "Processing order…",
+    "error": "Something went wrong. Please try again."
+  },
+  "cart": {
+    "title": "Cart",
+    "empty": "Your cart is empty.",
+    "remove": "Remove",
+    "total": "Total",
+    "checkout": "Proceed to checkout",
+    "continueShopping": "Continue shopping",
+    "currency": "CZK"
+  },
+  "shop": {
+    "title": "Shop",
+    "description": "Original handmade works",
+    "heroSubtitle": "Ceramics · Embroidery · Linocut",
+    "productsCount": "{count} items",
+    "filters": {
+      "all": "All",
+      "keramika": "Ceramics",
+      "vysivka": "Embroidery",
+      "linoryt": "Linocut"
+    },
+    "inStock": "In stock",
+    "soldOut": "Sold out",
+    "addToCart": "Add to cart",
+    "inCart": "In cart",
+    "soldOutBtn": "Sold out",
+    "empty": "No products in this category.",
+    "currency": "CZK"
+  },
+  "home": {
+    "hero": {
+      "title": "Klotilda",
+      "subtitle": "Original ceramics · embroidery · linocut",
+      "scroll": "Explore"
+    },
+    "about": {
+      "title": "About",
+      "bio1": "My name is Klotilda and I create in Prague. My work grows from a love of traditional crafts — ceramics, weaving, and embroidery — which I connect with a contemporary sensibility.",
+      "bio2": "Each piece is made by hand in my studio, without rush. I believe the objects around us can be not only beautiful but deeply personal.",
+      "crafts": {
+        "ceramics": "Ceramics",
+        "embroidery": "Embroidery",
+        "linocut": "Linocut"
+      }
+    },
+    "gallery": {
+      "title": "Gallery",
+      "subtitle": "A selection of recent works",
+      "categories": {
+        "keramika": "Ceramics",
+        "vysivka": "Embroidery",
+        "linoryt": "Linocut"
+      }
+    },
+    "cta": {
+      "title": "Originals for Sale",
+      "subtitle": "Each piece is unique and waiting for its new owner.",
+      "button": "Visit the Shop",
+      "soon": "The shop is coming soon",
+      "soonLink": "Get in touch"
+    },
+    "contact": {
+      "title": "Contact",
+      "subtitle": "I'm happy to talk about collaborations, commissions, or just say hello.",
+      "email": "klotilda@klotilda.cz",
+      "instagram": "@klotilda.lisejnikova"
+    }
+  }
+}

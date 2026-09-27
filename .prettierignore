@@ -1,0 +1,7 @@
+dist
+coverage
+playwright-report
+test-results
+pnpm-lock.yaml
+# The Next.js site formats with its own config (prettier-plugin-tailwindcss).
+apps/web

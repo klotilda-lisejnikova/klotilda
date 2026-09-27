@@ -1,0 +1,22 @@
+{
+  "name": "@klotilda/domain",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Klotilda entities, DTOs and domain rules shared by the API, the website and the admin",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@eleansphere/entity-core": "^4.1.0",
+    "@eleansphere/schema": "^1.1.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vitest": "^5.0.1"
+  }
+}

@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fafaf8;
+  --foreground: #1c1917;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  /* Accent — mossy green, sampled from the hero image's green overlay. */
+  --color-moss: #567042;
+  --font-sans: var(--font-geist);
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Tailwind v4 Preflight drops the default pointer cursor on buttons — restore it. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* KLOTILDA wordmark — on hover, a mossy green creeps up the letters (accent
+   sampled from the hero image's moss overlay). */
+.wordmark-moss {
+  --moss: var(--color-moss);
+  background-image: linear-gradient(
+    to top,
+    var(--moss) 0%,
+    var(--moss) 34%,
+    #292524 66%,
+    #292524 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 100% 300%;
+  background-position: 50% 0%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  transition:
+    background-position 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.7s ease;
+}
+.wordmark-moss:hover {
+  background-position: 50% 100%;
+  filter: drop-shadow(
+    0 0 10px color-mix(in srgb, var(--color-moss) 35%, transparent)
+  );
+}
+@media (prefers-reduced-motion: reduce) {
+  .wordmark-moss {
+    transition-duration: 1ms;
+  }
+}
+@supports not (background-clip: text) {
+  .wordmark-moss {
+    color: #292524;
+  }
+  .wordmark-moss:hover {
+    color: var(--moss);
+  }
+}
+
+/* Hero "Procházet" scroll cue — hover lifts it to full white with a moss glow. */
+.hero-scroll {
+  color: rgba(255, 255, 255, 0.7);
+  transition:
+    color 0.4s ease,
+    filter 0.4s ease;
+}
+.hero-scroll:hover {
+  color: #ffffff;
+  filter: drop-shadow(
+    0 0 12px color-mix(in srgb, var(--color-moss) 95%, transparent)
+  );
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
