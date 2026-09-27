@@ -83,17 +83,25 @@ pnpm --filter @klotilda/api seed:admin
 
 Branches: `main` = production, `dev` = test.
 
-- API: Railway project `Klotilda`, service `klotilda-api`, **environment `test`** (domain
-  `klotilda-api-test.up.railway.app`) — despite its name it is the one API every site uses, test
-  and production alike; it follows `main`. (The Railway `production` environment is an unused
-  leftover.) `apps/api/Dockerfile`, build context the repository root, `NODE_AUTH_TOKEN` as a
-  build argument (the placeholder in `tooling/user.npmrc`; never name the token in a `RUN` line).
-  Migrations run on start.
+- API: Railway project `Klotilda`, service `klotilda-api` + `Postgres`, two environments:
+  - `production` — follows `main`, domain `klotilda-api-test.up.railway.app` (the name is left
+    over from when this environment was called `test`), photos in the R2 bucket behind
+    `pub-87a3….r2.dev`.
+  - `test` — follows `dev`, domain `klotilda-api-test-b60e.up.railway.app`, its own database,
+    photos in the R2 bucket `klotilda-media-test` served through the API (no public bucket URL),
+    CORS only for the test sites. Admin accounts are seeded separately there.
+
+  `apps/api/Dockerfile`, build context the repository root, `NODE_AUTH_TOKEN` as a build argument
+  (the placeholder in `tooling/user.npmrc`; never name the token in a `RUN` line). Migrations run
+  on start. In Railway a live source change applies to every environment — stage it per
+  environment.
 - Web: Vercel project `klotilda-frontend`, root `apps/web` — `klotilda.cz` / `www.klotilda.cz`
-  from `main`, `test.klotilda.cz` from `dev`.
+  from `main`, `test.klotilda.cz` from `dev`. Preview variables scoped to the `dev` branch point
+  it at the test API and turn the shop on (`NEXT_PUBLIC_SHOP_ENABLED=true`); production keeps
+  the shop off.
 - Admin: Vercel project `klotilda-admin`, root `apps/admin` — `admin.klotilda.cz` from `main`,
-  `admin.test.klotilda.cz` from `dev`. Its `VITE_API_URL` may end in `/api` (the old admin's
-  setting); `src/app/api.ts` drops it.
+  `admin.test.klotilda.cz` from `dev` (its `VITE_API_URL` for the `dev` branch is the test API).
+  `VITE_API_URL` may end in `/api` (the old admin's setting); `src/app/api.ts` drops it.
 
 ## Conventions
 
