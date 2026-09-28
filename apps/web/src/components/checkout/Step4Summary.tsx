@@ -1,6 +1,10 @@
 import { useTranslations } from "next-intl";
-import { CartItem } from "@/store/cart.store";
+import CartLine from "@/components/shop/CartLine";
+import { cartTotal, isBlocked, type CartItem } from "@/store/cart.store";
 import { CheckoutData } from "./types";
+
+/** `cartChanged`: the shop refused the lines as they were; `failed`: anything else. */
+export type SubmitError = "cartChanged" | "failed";
 
 interface Props {
   data: CheckoutData;
@@ -9,7 +13,7 @@ interface Props {
   onSubmit: () => void;
   onBack: () => void;
   loading: boolean;
-  error: string | null;
+  error: SubmitError | null;
 }
 
 export default function Step4Summary({
@@ -22,28 +26,30 @@ export default function Step4Summary({
   error,
 }: Props) {
   const t = useTranslations("checkout");
-  const itemsTotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const total = itemsTotal + data.shippingPrice;
+  const tCart = useTranslations("cart");
+  const total = cartTotal(items) + data.shippingPrice;
+  const blocked = items.some(isBlocked);
 
   return (
     <div className="flex flex-col gap-6">
       {/* Items */}
       <div>
-        <p className="mb-2 text-xs tracking-widest uppercase text-stone-400">{t("summary.items")}</p>
-        <ul className="flex flex-col gap-2">
+        <p className="mb-3 text-xs tracking-widest text-stone-400 uppercase">
+          {t("summary.items")}
+        </p>
+        <ul className="flex flex-col gap-4">
           {items.map((item) => (
-            <li key={item.productId} className="flex justify-between text-sm text-stone-700">
-              <span>{item.name}</span>
-              <span>{item.price.toLocaleString("cs-CZ")} {t("currency")}</span>
-            </li>
+            <CartLine key={item.productId} item={item} />
           ))}
         </ul>
       </div>
 
       {/* Shipping + total */}
-      <div className="border-t border-stone-100 pt-4 flex flex-col gap-2">
+      <div className="flex flex-col gap-2 border-t border-stone-100 pt-4">
         <div className="flex justify-between text-sm text-stone-500">
-          <span>{t("summary.shipping")} — {t(`shipping.${data.shippingMethod}`)}</span>
+          <span>
+            {t("summary.shipping")} — {t(`shipping.${data.shippingMethod}`)}
+          </span>
           <span>
             {data.shippingPrice === 0
               ? t("shipping.free")
@@ -52,35 +58,55 @@ export default function Step4Summary({
         </div>
         <div className="flex justify-between text-base font-medium text-stone-800">
           <span>{t("summary.total")}</span>
-          <span>{total.toLocaleString("cs-CZ")} {t("currency")}</span>
+          <span className="tabular-nums">
+            {total.toLocaleString("cs-CZ")} {t("currency")}
+          </span>
         </div>
       </div>
 
       {/* Notes */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs tracking-wide text-stone-500">{t("summary.notes")}</label>
+        <label
+          htmlFor="checkout-notes"
+          className="text-xs tracking-wide text-stone-500"
+        >
+          {t("summary.notes")}
+        </label>
         <textarea
+          id="checkout-notes"
           value={data.notes}
           onChange={(e) => onChange({ notes: e.target.value })}
           rows={3}
-          className="border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-500 resize-none"
+          className="resize-none border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-500"
         />
       </div>
 
-      {error && <p className="text-sm text-red-500">{t("error")}</p>}
+      {blocked ? (
+        <p className="text-sm text-rose-600" role="alert">
+          {tCart("blocked")}
+        </p>
+      ) : (
+        error && (
+          <p className="text-sm text-rose-600" role="alert">
+            {error === "cartChanged" ? t("errorChanged") : t("error")}
+          </p>
+        )
+      )}
 
       <div className="flex gap-3">
         <button
+          type="button"
           onClick={onBack}
           disabled={loading}
-          className="flex-1 border border-stone-300 py-3 text-sm tracking-widest uppercase text-stone-600 hover:border-stone-500 transition-colors disabled:opacity-40"
+          className="flex-1 border border-stone-300 py-3 text-sm tracking-widest text-stone-600 uppercase transition-colors hover:border-stone-500 disabled:opacity-40"
         >
           {t("back")}
         </button>
         <button
+          type="button"
           onClick={onSubmit}
-          disabled={loading}
-          className="flex-1 bg-stone-800 py-3 text-sm tracking-widest uppercase text-white hover:bg-stone-700 transition-colors disabled:opacity-40"
+          disabled={loading || blocked}
+          className="flex-1 bg-stone-800 py-3 text-sm tracking-widest text-white uppercase transition-colors hover:bg-stone-700 disabled:opacity-40"
         >
           {loading ? t("loading") : t("summary.confirm")}
         </button>

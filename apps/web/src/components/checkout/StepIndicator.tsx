@@ -27,8 +27,18 @@ export default function StepIndicator({ current }: Props) {
                 }`}
               >
                 {done ? (
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2.5}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 ) : (
                   i + 1
@@ -43,7 +53,9 @@ export default function StepIndicator({ current }: Props) {
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`mx-2 h-px w-8 sm:w-16 ${done ? "bg-stone-800" : "bg-stone-200"}`} />
+              <div
+                className={`mx-2 h-px w-8 sm:w-16 ${done ? "bg-stone-800" : "bg-stone-200"}`}
+              />
             )}
           </li>
         );

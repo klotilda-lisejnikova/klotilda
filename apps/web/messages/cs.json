@@ -63,7 +63,9 @@
     "emptyCart": "Váš košík je prázdný.",
     "goToShop": "Přejít do e-shopu",
     "loading": "Zpracovávám objednávku…",
-    "error": "Nastala chyba při vytváření objednávky. Zkuste to prosím znovu."
+    "error": "Nastala chyba při vytváření objednávky. Zkuste to prosím znovu.",
+    "errorChanged": "Některé položky se mezitím změnily. Zkontroluj prosím košík a potvrď znovu.",
+    "cartChangedTitle": "Od přidání do košíku se něco změnilo:"
   },
   "cart": {
     "title": "Košík",
@@ -72,7 +74,19 @@
     "total": "Celkem",
     "checkout": "Přejít k pokladně",
     "continueShopping": "Pokračovat v nákupu",
-    "currency": "Kč"
+    "currency": "Kč",
+    "close": "Zavřít košík",
+    "quantity": "Počet",
+    "increase": "Přidat kus",
+    "decrease": "Ubrat kus",
+    "blocked": "Nejdřív z košíku odeber položky, které už nejsou k mání.",
+    "checking": "Ověřuji dostupnost…",
+    "issues": {
+      "soldOut": "Mezitím se vyprodalo — odeber to prosím z košíku.",
+      "unavailable": "Už není v nabídce — odeber to prosím z košíku.",
+      "priceChanged": "Cena se změnila, dřív {previous} Kč.",
+      "reduced": "Skladem už jen {count} ks, počet jsme upravili."
+    }
   },
   "shop": {
     "title": "E-shop",
@@ -91,7 +105,12 @@
     "inCart": "V košíku",
     "soldOutBtn": "Vyprodáno",
     "empty": "Žádné produkty v této kategorii.",
-    "currency": "Kč"
+    "currency": "Kč",
+    "addAnother": "Přidat další ({count} v košíku)",
+    "pieces": "{count, plural, one {# kus} few {# kusy} other {# kusů}}",
+    "addShort": "Do košíku",
+    "addAnotherShort": "Přidat další",
+    "piecesShort": "{count} ks"
   },
   "home": {
     "hero": {

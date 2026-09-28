@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { Product } from "@/services";
-import { useCartStore } from "@/store/cart.store";
+import { maxQuantity, useCart, useCartStore } from "@/store/cart.store";
 
 interface Props {
   product: Product;
@@ -15,16 +15,19 @@ interface Props {
 
 export default function ProductCard({ product, locale }: Props) {
   const t = useTranslations("shop");
+  const tPhotos = useTranslations("lightbox");
   const [loaded, setLoaded] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [failed, setFailed] = useState<Set<string>>(new Set());
-  const { items, addItem } = useCartStore();
+  const addItem = useCartStore((state) => state.addItem);
+  const cartLine = useCart().find((i) => i.productId === product.id);
 
   const name =
     locale === "en" && product.name_en ? product.name_en : product.name_cs;
   const inStock = product.stockCount > 0;
-  const inCart = items.some((i) => i.productId === product.id);
+  // "In the cart" once there is no piece left to add.
+  const inCart = !!cartLine && cartLine.quantity >= maxQuantity(product);
   const available = product.images.filter((img) => !failed.has(img.id));
   const activeImage = available[activeIndex] ?? available[0];
 
@@ -33,8 +36,7 @@ export default function ProductCard({ product, locale }: Props) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (inStock && !inCart)
-      addItem({ productId: product.id, name, price: product.price });
+    if (inStock && !inCart) addItem(product);
   };
 
   const handlePrev = (e: React.MouseEvent) => {
@@ -96,10 +98,10 @@ export default function ProductCard({ product, locale }: Props) {
           {available.length > 1 && (
             <>
               <button
-                aria-label="Předchozí"
+                aria-label={tPhotos("previous")}
                 disabled={activeIndex === 0}
                 onClick={handlePrev}
-                className={`absolute top-1/2 left-2 -translate-y-1/2 rounded-full bg-black/25 p-1 text-white backdrop-blur-sm transition-opacity duration-200 disabled:opacity-20 ${
+                className={`absolute top-1/2 left-2 -translate-y-1/2 rounded-full bg-black/25 p-1 text-white backdrop-blur-sm transition-opacity duration-200 disabled:opacity-20 pointer-coarse:hidden ${
                   hovered ? "opacity-100" : "opacity-0"
                 }`}
               >
@@ -118,10 +120,10 @@ export default function ProductCard({ product, locale }: Props) {
                 </svg>
               </button>
               <button
-                aria-label="Další"
+                aria-label={tPhotos("next")}
                 disabled={activeIndex === available.length - 1}
                 onClick={handleNext}
-                className={`absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-black/25 p-1 text-white backdrop-blur-sm transition-opacity duration-200 disabled:opacity-20 ${
+                className={`absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-black/25 p-1 text-white backdrop-blur-sm transition-opacity duration-200 disabled:opacity-20 pointer-coarse:hidden ${
                   hovered ? "opacity-100" : "opacity-0"
                 }`}
               >
@@ -145,7 +147,7 @@ export default function ProductCard({ product, locale }: Props) {
           {/* Image dots — sit just above the add-to-cart strip when in stock */}
           {available.length > 1 && (
             <div
-              className={`absolute left-1/2 flex -translate-x-1/2 gap-1.5 transition-all duration-200 ${
+              className={`absolute left-1/2 flex -translate-x-1/2 gap-1.5 transition-all duration-200 pointer-coarse:opacity-100 ${
                 hovered ? "opacity-100" : "opacity-0"
               }`}
               style={{ bottom: inStock ? "3rem" : "0.75rem" }}
@@ -164,7 +166,7 @@ export default function ProductCard({ product, locale }: Props) {
           {/* Quick add-to-cart — slides up from bottom on hover */}
           {inStock && (
             <div
-              className={`absolute inset-x-0 bottom-0 transition-all duration-200 ease-out ${
+              className={`absolute inset-x-0 bottom-0 transition-all duration-200 ease-out pointer-coarse:translate-y-0 pointer-coarse:opacity-100 ${
                 hovered
                   ? "translate-y-0 opacity-100"
                   : "translate-y-full opacity-0"
@@ -211,7 +213,7 @@ export default function ProductCard({ product, locale }: Props) {
                         d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                       />
                     </svg>
-                    {t("addToCart")}
+                    {cartLine ? t("addAnotherShort") : t("addShort")}
                   </>
                 )}
               </button>
@@ -246,11 +248,11 @@ export default function ProductCard({ product, locale }: Props) {
             {/* Stock status */}
             <div className="mt-1">
               {inStock ? (
-                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600">
+                <span className="inline-flex items-center gap-1.5 text-xs whitespace-nowrap text-emerald-600">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                   {t("inStock")}
                   <span className="text-emerald-500/70">
-                    ({product.stockCount}&nbsp;ks)
+                    · {t("piecesShort", { count: product.stockCount })}
                   </span>
                 </span>
               ) : (

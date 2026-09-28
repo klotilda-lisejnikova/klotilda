@@ -17,8 +17,7 @@ export default function CategoryFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const active = (searchParams.get("category") ?? "all") as
-    | ProductCategory
-    | "all";
+    ProductCategory | "all";
 
   const setCategory = useCallback(
     (cat: ProductCategory | "all") => {

@@ -11,11 +11,19 @@ interface Props {
 
 const METHODS: ShippingMethod[] = ["zasilkovna", "ceska_posta", "osobni_odber"];
 
-export default function Step2Shipping({ data, onChange, onNext, onBack }: Props) {
+export default function Step2Shipping({
+  data,
+  onChange,
+  onNext,
+  onBack,
+}: Props) {
   const t = useTranslations("checkout");
 
   const select = (method: ShippingMethod) =>
-    onChange({ shippingMethod: method, shippingPrice: SHIPPING_PRICES[method] });
+    onChange({
+      shippingMethod: method,
+      shippingPrice: SHIPPING_PRICES[method],
+    });
 
   return (
     <div className="flex flex-col gap-6">
@@ -29,16 +37,22 @@ export default function Step2Shipping({ data, onChange, onNext, onBack }: Props)
               type="button"
               onClick={() => select(method)}
               className={`flex items-center justify-between border px-4 py-3 text-left transition-colors ${
-                active ? "border-stone-800 bg-stone-50" : "border-stone-200 hover:border-stone-400"
+                active
+                  ? "border-stone-800 bg-stone-50"
+                  : "border-stone-200 hover:border-stone-400"
               }`}
             >
               <div className="flex items-center gap-3">
                 <div
                   className={`h-4 w-4 shrink-0 rounded-full border-2 ${
-                    active ? "border-stone-800 bg-stone-800" : "border-stone-300"
+                    active
+                      ? "border-stone-800 bg-stone-800"
+                      : "border-stone-300"
                   }`}
                 />
-                <span className="text-sm text-stone-800">{t(`shipping.${method}`)}</span>
+                <span className="text-sm text-stone-800">
+                  {t(`shipping.${method}`)}
+                </span>
               </div>
               <span className="text-sm text-stone-600">
                 {price === 0 ? t("shipping.free") : `${price} ${t("currency")}`}
@@ -51,13 +65,13 @@ export default function Step2Shipping({ data, onChange, onNext, onBack }: Props)
       <div className="flex gap-3">
         <button
           onClick={onBack}
-          className="flex-1 border border-stone-300 py-3 text-sm tracking-widest uppercase text-stone-600 hover:border-stone-500 transition-colors"
+          className="flex-1 border border-stone-300 py-3 text-sm tracking-widest text-stone-600 uppercase transition-colors hover:border-stone-500"
         >
           {t("back")}
         </button>
         <button
           onClick={onNext}
-          className="flex-1 bg-stone-800 py-3 text-sm tracking-widest uppercase text-white hover:bg-stone-700 transition-colors"
+          className="flex-1 bg-stone-800 py-3 text-sm tracking-widest text-white uppercase transition-colors hover:bg-stone-700"
         >
           {t("next")}
         </button>

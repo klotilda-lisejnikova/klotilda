@@ -1,11 +1,24 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { getProduct } from "@/services";
+import { getProduct, type Product } from "@/services";
 import AddToCartButton from "@/components/shop/AddToCartButton";
 import ProductGallery from "@/components/shop/ProductGallery";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * One API call per request for the metadata and the page. A missing product 404s here, in the
+ * metadata, so the status is still 404 before the page streams.
+ */
+const loadProduct = cache(async (id: string): Promise<Product> => {
+  try {
+    return await getProduct(id);
+  } catch {
+    notFound();
+  }
+});
 
 interface Props {
   params: Promise<{ locale: string; id: string }>;
@@ -13,26 +26,17 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { locale, id } = await params;
-  try {
-    const product = await getProduct(id);
-    const name =
-      locale === "en" && product.name_en ? product.name_en : product.name_cs;
-    return { title: name };
-  } catch {
-    return {};
-  }
+  const product = await loadProduct(id);
+  const name =
+    locale === "en" && product.name_en ? product.name_en : product.name_cs;
+  return { title: name };
 }
 
 export default async function ProductDetailPage({ params }: Props) {
   const { locale, id } = await params;
   const t = await getTranslations({ locale, namespace: "shop" });
 
-  let product;
-  try {
-    product = await getProduct(id);
-  } catch {
-    notFound();
-  }
+  const product = await loadProduct(id);
 
   const name =
     locale === "en" && product.name_en ? product.name_en : product.name_cs;
@@ -99,12 +103,7 @@ export default async function ProductDetailPage({ params }: Props) {
                 <span className="text-sm text-emerald-700">
                   {t("inStock")}
                   <span className="ml-1.5 text-emerald-500/80">
-                    · {product.stockCount}&nbsp;
-                    {product.stockCount === 1
-                      ? "kus"
-                      : product.stockCount < 5
-                        ? "kusy"
-                        : "kusů"}
+                    · {t("pieces", { count: product.stockCount })}
                   </span>
                 </span>
               </div>
@@ -124,12 +123,7 @@ export default async function ProductDetailPage({ params }: Props) {
           )}
 
           <div className="mt-auto">
-            <AddToCartButton
-              productId={product.id}
-              name={name}
-              price={product.price}
-              inStock={inStock}
-            />
+            <AddToCartButton product={product} />
           </div>
         </div>
       </div>

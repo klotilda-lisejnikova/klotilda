@@ -63,7 +63,9 @@
     "emptyCart": "Your cart is empty.",
     "goToShop": "Go to shop",
     "loading": "Processing order…",
-    "error": "Something went wrong. Please try again."
+    "error": "Something went wrong. Please try again.",
+    "errorChanged": "Some items changed in the meantime. Please check your cart and confirm again.",
+    "cartChangedTitle": "Something changed since these went into your cart:"
   },
   "cart": {
     "title": "Cart",
@@ -72,7 +74,19 @@
     "total": "Total",
     "checkout": "Proceed to checkout",
     "continueShopping": "Continue shopping",
-    "currency": "CZK"
+    "currency": "CZK",
+    "close": "Close the cart",
+    "quantity": "Quantity",
+    "increase": "Add one",
+    "decrease": "Remove one",
+    "blocked": "Please remove the items that are no longer available first.",
+    "checking": "Checking availability…",
+    "issues": {
+      "soldOut": "Sold out in the meantime — please remove it from the cart.",
+      "unavailable": "No longer available — please remove it from the cart.",
+      "priceChanged": "The price changed, it was {previous} CZK.",
+      "reduced": "Only {count} left in stock, so we adjusted the quantity."
+    }
   },
   "shop": {
     "title": "Shop",
@@ -91,7 +105,12 @@
     "inCart": "In cart",
     "soldOutBtn": "Sold out",
     "empty": "No products in this category.",
-    "currency": "CZK"
+    "currency": "CZK",
+    "addAnother": "Add another ({count} in cart)",
+    "pieces": "{count, plural, one {# piece} other {# pieces}}",
+    "addShort": "Add to cart",
+    "addAnotherShort": "Add another",
+    "piecesShort": "{count} pcs"
   },
   "home": {
     "hero": {
