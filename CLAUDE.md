@@ -125,6 +125,7 @@ Branches: `main` = production, `dev` = test.
 
 ## Conventions
 
-- Never self-commit; the user commits.
+- Finished, verified work may be committed and pushed to `dev` (the test sites) without asking;
+  `main` (production) only when the user asks.
 - `@eleansphere/*` installs from GitHub Packages; pnpm reads the token only from the user-level
   `~/.npmrc` (`//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}`).
