@@ -1,18 +1,39 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useQueryClient } from '@tanstack/vue-query';
+import type { RouteLocationRaw } from 'vue-router';
 import { useSession } from '@/app/session';
 
-const NAV_ITEMS = [
-  { to: { name: 'overview' }, label: 'Přehled', icon: 'i-lucide-layout-dashboard' },
+interface NavItem {
+  to: RouteLocationRaw;
+  label: string;
+  icon: string;
+  exact?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  {
+    to: { name: 'overview' },
+    label: 'Přehled',
+    icon: 'i-lucide-layout-dashboard',
+    // Every page sits under "/": only the overview itself counts as being there.
+    exact: true,
+  },
   { to: { name: 'orders' }, label: 'Objednávky', icon: 'i-lucide-receipt' },
   { to: { name: 'products' }, label: 'Produkty', icon: 'i-lucide-package' },
   { to: { name: 'categories' }, label: 'Kategorie', icon: 'i-lucide-tags' },
   { to: { name: 'gallery' }, label: 'Galerie', icon: 'i-lucide-images' },
-] as const;
+];
 
 const session = useSession();
 const router = useRouter();
+const route = useRoute();
+
+/** A section is lit on its list and on everything under it: `/orders` and `/orders/ord…`. */
+function isCurrent(item: NavItem): boolean {
+  const path = router.resolve(item.to).path;
+  return item.exact ? route.path === path : route.path.startsWith(path);
+}
 const queryClient = useQueryClient();
 
 async function signOut() {
@@ -24,16 +45,14 @@ async function signOut() {
 
 <template>
   <div class="min-h-dvh bg-muted md:flex">
-    <!-- Phone: the name and sign-out on top, the sections along the bottom edge. -->
+    <!-- Phone: the name, light/dark and sign-out on top, the sections along the bottom edge. -->
     <header
       class="sticky top-0 z-10 flex items-center border-b border-default bg-default px-4 py-2 md:hidden"
     >
-      <RouterLink
-        :to="{ name: 'overview' }"
-        class="mr-auto font-serif tracking-[0.3em] text-highlighted"
-      >
-        KLOTILDA
+      <RouterLink :to="{ name: 'overview' }" class="mr-auto font-semibold text-highlighted">
+        Klotilda <span class="text-xs font-normal text-muted">admin</span>
       </RouterLink>
+      <UColorModeButton />
       <UButton
         icon="i-lucide-log-out"
         color="neutral"
@@ -48,14 +67,14 @@ async function signOut() {
       class="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-default bg-default px-3 py-5 md:flex"
     >
       <RouterLink :to="{ name: 'overview' }" class="mb-6 px-3">
-        <span class="font-serif text-lg tracking-[0.3em] text-highlighted">KLOTILDA</span>
-        <span class="mt-0.5 block text-xs text-muted">administrace</span>
+        <span class="text-lg font-semibold text-highlighted">Klotilda</span>
+        <span class="ml-1 text-xs text-muted">admin</span>
       </RouterLink>
       <nav class="flex flex-1 flex-col gap-1" aria-label="Hlavní">
         <RouterLink
           v-for="item in NAV_ITEMS"
           :key="item.label"
-          v-slot="{ href, navigate, isActive }"
+          v-slot="{ href, navigate }"
           :to="item.to"
           custom
         >
@@ -63,14 +82,15 @@ async function signOut() {
             :href="href"
             :icon="item.icon"
             :label="item.label"
-            :color="isActive ? 'primary' : 'neutral'"
-            :variant="isActive ? 'soft' : 'ghost'"
+            :color="isCurrent(item) ? 'primary' : 'neutral'"
+            :variant="isCurrent(item) ? 'soft' : 'ghost'"
             class="w-full"
             @click="navigate"
           />
         </RouterLink>
       </nav>
       <div class="border-t border-default pt-4">
+        <UColorModeSelect class="mb-3 w-full" aria-label="Vzhled" />
         <p class="truncate px-3 pb-2 text-xs text-muted">{{ session.admin.value?.email }}</p>
         <UButton
           icon="i-lucide-log-out"
@@ -94,15 +114,15 @@ async function signOut() {
       <RouterLink
         v-for="item in NAV_ITEMS"
         :key="item.label"
-        v-slot="{ href, navigate, isActive }"
+        v-slot="{ href, navigate }"
         :to="item.to"
         custom
       >
         <a
           :href="href"
           class="flex flex-col items-center gap-0.5 py-2 text-[0.65rem]"
-          :class="isActive ? 'text-primary' : 'text-muted'"
-          :aria-current="isActive ? 'page' : undefined"
+          :class="isCurrent(item) ? 'text-primary' : 'text-muted'"
+          :aria-current="isCurrent(item) ? 'page' : undefined"
           @click="navigate"
         >
           <UIcon :name="item.icon" class="size-5" />

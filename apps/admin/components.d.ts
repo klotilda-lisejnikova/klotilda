@@ -22,6 +22,8 @@ declare module 'vue' {
     UButton: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.11.2_200ff2e7add60b03263e4bf11d041b63/node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
     UCard: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.11.2_200ff2e7add60b03263e4bf11d041b63/node_modules/@nuxt/ui/dist/runtime/components/Card.vue')['default']
     UCollapsible: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.11.2_200ff2e7add60b03263e4bf11d041b63/node_modules/@nuxt/ui/dist/runtime/components/Collapsible.vue')['default']
+    UColorModeButton: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.11.2_200ff2e7add60b03263e4bf11d041b63/node_modules/@nuxt/ui/dist/runtime/components/color-mode/ColorModeButton.vue')['default']
+    UColorModeSelect: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.11.2_200ff2e7add60b03263e4bf11d041b63/node_modules/@nuxt/ui/dist/runtime/vue/components/color-mode/ColorModeSelect.vue')['default']
     UForm: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.11.2_200ff2e7add60b03263e4bf11d041b63/node_modules/@nuxt/ui/dist/runtime/components/Form.vue')['default']
     UFormField: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.11.2_200ff2e7add60b03263e4bf11d041b63/node_modules/@nuxt/ui/dist/runtime/components/FormField.vue')['default']
     UCheckbox: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.11.2_200ff2e7add60b03263e4bf11d041b63/node_modules/@nuxt/ui/dist/runtime/components/Checkbox.vue')['default']
