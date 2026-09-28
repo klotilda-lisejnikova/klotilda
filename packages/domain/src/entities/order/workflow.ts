@@ -68,7 +68,10 @@ export function applyAction(
   const { paymentStatus, orderStatus } = order;
   switch (action) {
     case 'mark-paid':
-      return { paymentStatus: 'paid', orderStatus: orderStatus === 'new' ? 'processing' : orderStatus };
+      return {
+        paymentStatus: 'paid',
+        orderStatus: orderStatus === 'new' ? 'processing' : orderStatus,
+      };
     case 'ship':
       return { paymentStatus, orderStatus: 'shipped' };
     case 'ready-for-pickup':

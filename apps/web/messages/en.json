@@ -8,7 +8,9 @@
   },
   "footer": {
     "copyright": "© 2026 Klotilda. All rights reserved.",
-    "tagline": "Original ceramics, embroidery and linocuts"
+    "tagline": "Original ceramics, embroidery and linocuts",
+    "legal": "Legal information",
+    "seller": "Seller"
   },
   "metadata": {
     "title": "Klotilda — Original Ceramics, Embroidery & Linocuts",
@@ -55,7 +57,10 @@
       "shipping": "Shipping",
       "total": "Total",
       "notes": "Order note (optional)",
-      "confirm": "Confirm & pay"
+      "confirm": "Order with obligation to pay",
+      "terms": "I have read and agree to the <terms>terms and conditions</terms>, including the <complaints>complaints procedure</complaints>.",
+      "termsRequired": "Please confirm the terms to send the order.",
+      "privacy": "We process your personal data to handle the order, see the <privacy>privacy policy</privacy>."
     },
     "next": "Continue",
     "back": "Back",
@@ -144,5 +149,21 @@
     "close": "Close",
     "previous": "Previous",
     "next": "Next"
+  },
+  "legal": {
+    "terms": {
+      "title": "Terms and conditions"
+    },
+    "privacy": {
+      "title": "Privacy policy"
+    },
+    "withdrawal": {
+      "title": "Withdrawal from the contract",
+      "short": "Withdrawal form"
+    },
+    "complaints": "Complaints",
+    "effectiveFrom": "In force from {date}",
+    "draft": "Draft: the seller's details are placeholders and the texts await review. The page goes live on klotilda.cz once everything is filled in.",
+    "print": "Print the form"
   }
 }

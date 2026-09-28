@@ -47,7 +47,7 @@ export default function CheckoutPage() {
     setData((prev) => ({ ...prev, ...patch }));
 
   const handleSubmit = async () => {
-    if (items.some(isBlocked)) return;
+    if (items.some(isBlocked) || !data.termsAccepted) return;
     setLoading(true);
     setError(null);
     try {
@@ -66,6 +66,7 @@ export default function CheckoutPage() {
           quantity: i.quantity,
         })),
         notes: data.notes || undefined,
+        termsAccepted: true,
       });
       clearCart();
       setResult(placed);

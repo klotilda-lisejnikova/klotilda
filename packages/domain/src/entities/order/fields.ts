@@ -16,6 +16,7 @@ const ZIP_MAX_LENGTH = 10;
 const NOTES_MAX_LENGTH = 2000;
 const TRACKING_NUMBER_MAX_LENGTH = 60;
 const ACTION_MESSAGE_MAX_LENGTH = 1000;
+const TERMS_VERSION_MAX_LENGTH = 20;
 
 /** What the customer fills in at checkout. */
 export const customerFields = {
@@ -62,6 +63,9 @@ export const orderFields = {
   trackingNumber: { type: 'STRING', maxLength: TRACKING_NUMBER_MAX_LENGTH, readOnly: true },
   /** What happened to the order, as `OrderEvent[]` JSON, oldest first. Empty on older orders. */
   history: { type: 'TEXT', readOnly: true },
+  /** The terms (`TERMS_VERSION`) the customer agreed to at checkout, and when. */
+  termsVersion: { type: 'STRING', maxLength: TERMS_VERSION_MAX_LENGTH, readOnly: true },
+  termsAcceptedAt: { type: 'DATE', readOnly: true },
 } as const satisfies Fields;
 
 /** What the admin may send with an order action (`POST /api/orders/:id/actions/:action`). */

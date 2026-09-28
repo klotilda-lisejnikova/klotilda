@@ -260,6 +260,15 @@ async function copy(text: string, what: string) {
           </template>
           <dt class="text-muted">Přijato</dt>
           <dd>{{ formatDateTime(order.createdAt) }}</dd>
+          <template v-if="order.termsVersion">
+            <dt class="text-muted">Obchodní podmínky</dt>
+            <dd>
+              verze {{ order.termsVersion }}
+              <span v-if="order.termsAcceptedAt" class="text-muted">
+                · souhlas {{ formatDateTime(order.termsAcceptedAt) }}
+              </span>
+            </dd>
+          </template>
         </dl>
       </UCard>
     </div>

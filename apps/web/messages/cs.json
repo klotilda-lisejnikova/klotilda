@@ -8,7 +8,9 @@
   },
   "footer": {
     "copyright": "© 2026 Klotilda. Všechna práva vyhrazena.",
-    "tagline": "Keramika, linoryty a výšivky"
+    "tagline": "Keramika, linoryty a výšivky",
+    "legal": "Právní informace",
+    "seller": "Prodávající"
   },
   "metadata": {
     "title": "Klotilda — Originální keramika, výšivky a linoryty",
@@ -55,7 +57,10 @@
       "shipping": "Doprava",
       "total": "Celkem",
       "notes": "Poznámka k objednávce (volitelné)",
-      "confirm": "Potvrdit a zaplatit"
+      "confirm": "Objednat s povinností platby",
+      "terms": "Seznámil/a jsem se s <terms>obchodními podmínkami</terms> včetně <complaints>reklamačního řádu</complaints> a souhlasím s nimi.",
+      "termsRequired": "Pro odeslání objednávky prosím potvrďte obchodní podmínky.",
+      "privacy": "Osobní údaje zpracujeme k vyřízení objednávky, viz <privacy>zásady ochrany osobních údajů</privacy>."
     },
     "next": "Pokračovat",
     "back": "Zpět",
@@ -144,5 +149,21 @@
     "close": "Zavřít",
     "previous": "Předchozí",
     "next": "Další"
+  },
+  "legal": {
+    "terms": {
+      "title": "Obchodní podmínky"
+    },
+    "privacy": {
+      "title": "Ochrana osobních údajů"
+    },
+    "withdrawal": {
+      "title": "Odstoupení od smlouvy",
+      "short": "Formulář pro odstoupení"
+    },
+    "complaints": "Reklamace",
+    "effectiveFrom": "Platné od {date}",
+    "draft": "Návrh: údaje prodávající jsou zatím zástupné a texty čekají na kontrolu. Na klotilda.cz se stránka ukáže, až bude vše doplněné.",
+    "print": "Vytisknout formulář"
   }
 }

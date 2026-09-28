@@ -7,6 +7,7 @@ import {
   orderEntity,
   productEntity,
   SHIPPING_PRICES,
+  TERMS_VERSION,
 } from '@klotilda/domain';
 import type {
   CheckoutItem,
@@ -128,7 +129,7 @@ export function createCheckoutPlugin({
         CHECKOUT_PATH,
         ...limits,
         asyncHandler(async (req, res) => {
-          const { items, ...customer } = readCheckoutRequest(req.body);
+          const { items, termsAccepted: _accepted, ...customer } = readCheckoutRequest(req.body);
           const shippingPrice = SHIPPING_PRICES[customer.shippingMethod];
 
           const placedEvent: OrderEvent = { type: 'placed', at: new Date().toISOString() };
@@ -152,6 +153,8 @@ export function createCheckoutPlugin({
                 ...placed,
                 items: JSON.stringify(orderItems),
                 history: JSON.stringify([placedEvent]),
+                termsVersion: TERMS_VERSION,
+                termsAcceptedAt: placedEvent.at,
               },
               { transaction }
             );

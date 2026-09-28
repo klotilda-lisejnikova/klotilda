@@ -4,6 +4,7 @@ import { customerFields, MAX_ITEM_QUANTITY, MAX_ORDER_LINES } from '@klotilda/do
 import type { CheckoutItem, CheckoutRequest } from '@klotilda/domain';
 
 const ITEMS_PATH = 'items';
+const TERMS_ACCEPTED = 'termsAccepted';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -48,9 +49,13 @@ function mergeLines(items: CheckoutItem[]): CheckoutItem[] {
  */
 export function readCheckoutRequest(body: unknown): CheckoutRequest {
   const request = isRecord(body) ? body : {};
-  const issues = [
+  const issues: ValidationIssue[] = [
     ...validateFields(customerFields, request, { mode: 'create' }),
     ...findItemIssues(request.items),
+    // The customer must have ticked the terms; nothing else counts as agreeing.
+    ...(request.termsAccepted === true
+      ? []
+      : [{ path: TERMS_ACCEPTED, code: 'required' as const, params: {} }]),
   ];
   if (issues.length > 0) throw new ValidationError(issues);
 
@@ -58,6 +63,10 @@ export function readCheckoutRequest(body: unknown): CheckoutRequest {
     Object.keys(customerFields)
       .filter((name) => request[name] !== undefined)
       .map((name) => [name, request[name]])
-  ) as Omit<CheckoutRequest, 'items'>;
-  return { ...customer, items: mergeLines(request.items as CheckoutItem[]) };
+  ) as Omit<CheckoutRequest, 'items' | 'termsAccepted'>;
+  return {
+    ...customer,
+    items: mergeLines(request.items as CheckoutItem[]),
+    termsAccepted: true,
+  };
 }

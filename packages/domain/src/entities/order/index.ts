@@ -29,8 +29,14 @@ export interface CheckoutItem {
   quantity: number;
 }
 
-/** `POST /api/checkout` */
-export type CheckoutRequest = InferCreateDto<typeof customerFields> & { items: CheckoutItem[] };
+/**
+ * `POST /api/checkout`. `termsAccepted` must be `true`: the customer ticked that they have read the
+ * terms (and the complaints procedure in them); the order stores which version and when.
+ */
+export type CheckoutRequest = InferCreateDto<typeof customerFields> & {
+  items: CheckoutItem[];
+  termsAccepted: true;
+};
 
 /** What the shop shows after checkout: how to pay. */
 export interface CheckoutResponse {

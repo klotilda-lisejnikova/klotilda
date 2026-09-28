@@ -74,6 +74,15 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the
 `listGallery`, `checkout`. Photos go through `mediaUrl()` (relative `/api/files/:id` without a
 bucket). `NEXT_PUBLIC_SHOP_ENABLED` gates the shop (see `src/lib/features.ts`).
 
+Legal pages — `/obchodni-podminky` (terms, complaints under `#reklamace`), `/ochrana-osobnich-udaju`,
+`/odstoupeni-od-smlouvy` (the model withdrawal form, printable) — same path in both languages,
+gated with the shop in `src/middleware.ts`; the footer links them and names the seller. The texts
+are drafts in `src/content/legal/*.ts` (a small Markdown subset, `components/legal/LegalDocument`),
+`{{…}}` filled from `packages/domain/src/seller.ts`: the seller's details (**placeholders** —
+`SELLER.placeholder` shows a draft notice), `TERMS_VERSION`, `LEGAL_PATHS`. The checkout requires
+the terms box (`termsAccepted: true`, else 400) and each order stores `termsVersion` +
+`termsAcceptedAt`; changing what customers agree to means a new `TERMS_VERSION`.
+
 ## Admin
 
 `src/app/api.ts` (session + services), `src/app/session.ts`, `src/pages/*`. Photos are scaled down

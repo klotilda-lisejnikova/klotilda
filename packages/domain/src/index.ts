@@ -5,6 +5,7 @@ import { orderEntity } from './entities/order';
 import { productEntity } from './entities/product';
 
 export * from './constants';
+export * from './seller';
 export { adminUserEntity, type AdminUser } from './entities/admin-user';
 export { adminUserFields } from './entities/admin-user/fields';
 export {

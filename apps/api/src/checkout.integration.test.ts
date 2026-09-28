@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { TERMS_VERSION } from '@klotilda/domain';
 import { ARTIST_EMAIL, bearer, startTestApp } from './test-support/test-app';
 import type { TestApp } from './test-support/test-app';
 
@@ -10,6 +11,7 @@ const CUSTOMER = {
   city: 'Praha',
   zip: '11000',
   shippingMethod: 'zasilkovna',
+  termsAccepted: true,
 };
 const ZASILKOVNA_PRICE = 99;
 
@@ -72,6 +74,21 @@ describe('Checkout', () => {
     expect(JSON.parse(order.body.items)).toEqual([
       { productId: bowl.id, name: 'Mísa', price: 800, quantity: 2 },
     ]);
+    expect(order.body.termsVersion).toBe(TERMS_VERSION);
+    expect(new Date(order.body.termsAcceptedAt).getTime()).toBeGreaterThan(Date.now() - 60_000);
+  });
+
+  it('takes an order only with the terms agreed to', async () => {
+    const bowl = await createProduct({ stockCount: 2 });
+    const items = [{ productId: bowl.id, quantity: 1 }];
+    for (const termsAccepted of [undefined, false, 'yes']) {
+      const response = await checkout({ items, termsAccepted });
+      expect(response.status).toBe(400);
+      expect(response.body.issues).toEqual([
+        expect.objectContaining({ path: 'termsAccepted', code: 'required' }),
+      ]);
+    }
+    expect(await stockOf(bowl.id)).toBe(2);
   });
 
   it('e-mails the customer and the artist', async () => {

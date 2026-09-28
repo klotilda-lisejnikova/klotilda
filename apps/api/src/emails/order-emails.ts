@@ -1,4 +1,9 @@
-import { TRACKING_URLS } from '@klotilda/domain';
+import {
+  COMPLAINTS_ANCHOR,
+  LEGAL_PATHS,
+  TERMS_EFFECTIVE_FROM,
+  TRACKING_URLS,
+} from '@klotilda/domain';
 import type { OrderAction, OrderItem, PaymentStatus, ShippingMethod } from '@klotilda/domain';
 import { formatCzk } from './email-layout';
 import type { EmailBlock, EmailContent } from './email-layout';
@@ -85,6 +90,18 @@ export function orderReceivedEmail(order: PlacedOrder, bankAccount: string): Ema
             text: 'Až bude objednávka připravená, ozveme se, kde a kdy si ji vyzvednete.',
           }
         : { kind: 'facts', rows: [['Doručení na adresu', address(order)]] },
+      {
+        kind: 'paragraph',
+        text: `Objednávku jste odeslali podle obchodních podmínek platných od ${TERMS_EFFECTIVE_FROM}. Zboží můžete do 14 dnů od převzetí vrátit bez udání důvodu.`,
+      },
+      {
+        kind: 'links',
+        links: [
+          { label: 'Obchodní podmínky', href: LEGAL_PATHS.terms },
+          { label: 'Reklamace', href: `${LEGAL_PATHS.terms}#${COMPLAINTS_ANCHOR}` },
+          { label: 'Formulář pro odstoupení', href: LEGAL_PATHS.withdrawal },
+        ],
+      },
     ],
   };
 }

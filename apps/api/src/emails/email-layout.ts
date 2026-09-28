@@ -1,3 +1,4 @@
+import { SELLER_LINE } from '@klotilda/domain';
 import { escapeHtml } from './escape-html';
 
 /**
@@ -16,7 +17,9 @@ export type EmailBlock =
     }
   /** The admin's own words to the customer, set apart. */
   | { kind: 'note'; text: string }
-  | { kind: 'button'; label: string; href: string };
+  | { kind: 'button'; label: string; href: string }
+  /** Small links under the rest, e.g. the terms. A path (`/obchodni-podminky`) is on the site. */
+  | { kind: 'links'; links: { label: string; href: string }[] };
 
 export interface EmailContent {
   subject: string;
@@ -48,8 +51,19 @@ export const formatCzk = (amount: number) => `${amount.toLocaleString('cs-CZ')} 
 /** Line breaks the admin typed survive into the HTML. */
 const htmlText = (text: string) => escapeHtml(text).replace(/\r?\n/g, '<br />');
 
-function blockHtml(block: EmailBlock): string {
+/** A site path made absolute; full URLs stay as they are. */
+const onSite = (href: string, siteUrl: string) =>
+  href.startsWith('/') ? `${siteUrl.replace(/\/$/, '')}${href}` : href;
+
+function blockHtml(block: EmailBlock, siteUrl: string): string {
   switch (block.kind) {
+    case 'links':
+      return `<p style="margin:8px 0 0;font-size:13px;line-height:1.8">${block.links
+        .map(
+          (link) =>
+            `<a href="${escapeHtml(onSite(link.href, siteUrl))}" style="color:${COLORS.moss}">${escapeHtml(link.label)}</a>`
+        )
+        .join(' &nbsp;·&nbsp; ')}</p>`;
     case 'paragraph':
       return `<p style="margin:0 0 16px;line-height:1.6">${htmlText(block.text)}</p>`;
     case 'facts':
@@ -79,8 +93,10 @@ function blockHtml(block: EmailBlock): string {
   }
 }
 
-function blockText(block: EmailBlock): string {
+function blockText(block: EmailBlock, siteUrl: string): string {
   switch (block.kind) {
+    case 'links':
+      return block.links.map((link) => `${link.label}: ${onSite(link.href, siteUrl)}`).join('\n');
     case 'paragraph':
       return block.text;
     case 'facts':
@@ -116,11 +132,12 @@ export function renderEmail(content: EmailContent, siteUrl: string): RenderedEma
         <tr><td style="padding:0 0 20px;text-align:center;font-family:${SERIF};font-size:18px;letter-spacing:6px;color:${COLORS.ink}">${SITE_NAME}</td></tr>
         <tr><td style="background:${COLORS.card};padding:32px 28px;font-family:${SANS};font-size:15px;color:${COLORS.ink}">
           <h1 style="margin:0 0 20px;font-family:${SERIF};font-size:24px;font-weight:normal;letter-spacing:1px">${escapeHtml(content.title)}</h1>
-          ${content.blocks.map(blockHtml).join('\n')}
+          ${content.blocks.map((block) => blockHtml(block, siteUrl)).join('\n')}
         </td></tr>
         <tr><td style="padding:20px 0 0;text-align:center;font-family:${SANS};font-size:12px;line-height:1.6;color:${COLORS.muted}">
           Na tento e-mail můžete rovnou odpovědět.<br />
-          <a href="${escapeHtml(siteUrl)}" style="color:${COLORS.muted}">${escapeHtml(site)}</a>
+          <a href="${escapeHtml(siteUrl)}" style="color:${COLORS.muted}">${escapeHtml(site)}</a><br />
+          Prodávající: ${escapeHtml(SELLER_LINE)}
         </td></tr>
       </table>
     </td></tr>
@@ -131,10 +148,11 @@ export function renderEmail(content: EmailContent, siteUrl: string): RenderedEma
     '',
     content.title,
     '',
-    ...content.blocks.map((block) => `${blockText(block)}\n`),
+    ...content.blocks.map((block) => `${blockText(block, siteUrl)}\n`),
     '—',
     'Na tento e-mail můžete rovnou odpovědět.',
     siteUrl,
+    `Prodávající: ${SELLER_LINE}`,
   ].join('\n');
   return { subject: content.subject, html, text };
 }

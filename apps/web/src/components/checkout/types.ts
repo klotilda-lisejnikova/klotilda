@@ -13,6 +13,8 @@ export interface CheckoutData {
   shippingMethod: ShippingMethod;
   shippingPrice: number;
   notes: string;
+  /** The terms box on the summary step; the order can't go without it. */
+  termsAccepted: boolean;
 }
 
 export const INITIAL_CHECKOUT: CheckoutData = {
@@ -26,4 +28,5 @@ export const INITIAL_CHECKOUT: CheckoutData = {
   shippingMethod: "zasilkovna",
   shippingPrice: SHIPPING_PRICES.zasilkovna,
   notes: "",
+  termsAccepted: false,
 };

@@ -1,4 +1,7 @@
+import { useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
+import { COMPLAINTS_ANCHOR, LEGAL_PATHS } from "@klotilda/domain";
+import { Link } from "@/i18n/navigation";
 import CartLine from "@/components/shop/CartLine";
 import { cartTotal, isBlocked, type CartItem } from "@/store/cart.store";
 import { CheckoutData } from "./types";
@@ -29,6 +32,29 @@ export default function Step4Summary({
   const tCart = useTranslations("cart");
   const total = cartTotal(items) + data.shippingPrice;
   const blocked = items.some(isBlocked);
+  const termsBox = useRef<HTMLInputElement>(null);
+  const [termsMissing, setTermsMissing] = useState(false);
+
+  /** Without the terms ticked the order doesn't go: say so at the box instead. */
+  const submit = () => {
+    if (!data.termsAccepted) {
+      setTermsMissing(true);
+      termsBox.current?.focus();
+      return;
+    }
+    onSubmit();
+  };
+
+  // Opens in a new tab: the filled-in checkout stays where it is.
+  const legalLink = (href: string, chunks: ReactNode) => (
+    <Link
+      href={href}
+      target="_blank"
+      className="text-moss underline underline-offset-2"
+    >
+      {chunks}
+    </Link>
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -81,6 +107,45 @@ export default function Step4Summary({
         />
       </div>
 
+      {/* The terms: ticked by the customer, never in advance (§ 1826a of the Civil Code). */}
+      <div className="flex flex-col gap-3 border-t border-stone-100 pt-4">
+        <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-stone-600">
+          <input
+            ref={termsBox}
+            type="checkbox"
+            checked={data.termsAccepted}
+            onChange={(e) => {
+              onChange({ termsAccepted: e.target.checked });
+              if (e.target.checked) setTermsMissing(false);
+            }}
+            aria-invalid={termsMissing}
+            aria-describedby={termsMissing ? "checkout-terms-error" : undefined}
+            className="accent-moss mt-1 h-4 w-4 shrink-0"
+          />
+          <span>
+            {t.rich("summary.terms", {
+              terms: (chunks) => legalLink(LEGAL_PATHS.terms, chunks),
+              complaints: (chunks) =>
+                legalLink(`${LEGAL_PATHS.terms}#${COMPLAINTS_ANCHOR}`, chunks),
+            })}
+          </span>
+        </label>
+        {termsMissing && (
+          <p
+            id="checkout-terms-error"
+            className="text-sm text-rose-600"
+            role="alert"
+          >
+            {t("summary.termsRequired")}
+          </p>
+        )}
+        <p className="text-xs leading-relaxed text-stone-400">
+          {t.rich("summary.privacy", {
+            privacy: (chunks) => legalLink(LEGAL_PATHS.privacy, chunks),
+          })}
+        </p>
+      </div>
+
       {blocked ? (
         <p className="text-sm text-rose-600" role="alert">
           {tCart("blocked")}
@@ -104,7 +169,7 @@ export default function Step4Summary({
         </button>
         <button
           type="button"
-          onClick={onSubmit}
+          onClick={submit}
           disabled={loading || blocked}
           className="bg-moss hover:bg-moss-deep flex-1 py-3 text-sm tracking-widest text-[#fafaf8] uppercase transition-colors disabled:opacity-40"
         >
