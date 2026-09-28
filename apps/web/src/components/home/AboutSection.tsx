@@ -33,17 +33,6 @@ export default function AboutSection() {
                 {about.bio2}
               </p>
             )}
-
-            <div className="mt-10 flex flex-wrap gap-2">
-              {(["ceramics", "embroidery", "linocut"] as const).map((craft) => (
-                <span
-                  key={craft}
-                  className="border border-stone-300 px-4 py-1.5 text-[0.7rem] tracking-[0.25em] text-stone-500 uppercase"
-                >
-                  {about.crafts[craft]}
-                </span>
-              ))}
-            </div>
           </FadeIn>
 
           <FadeIn direction="right" delay={0.15} className="relative">

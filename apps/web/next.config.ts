@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
@@ -27,9 +29,23 @@ if (mediaUrl) {
   });
 }
 
+// The project version lives in the root package.json (`pnpm release`). Next runs this file
+// from apps/web, locally and on Vercel.
+const { version } = JSON.parse(
+  readFileSync(join(process.cwd(), "../../package.json"), "utf8"),
+) as { version: string };
+
 const nextConfig: NextConfig = {
   // The shared domain package ships TypeScript source.
   transpilePackages: ["@klotilda/domain"],
+  // Shown in the footer. The commit is added outside production so a test build can be told apart.
+  env: {
+    NEXT_PUBLIC_APP_VERSION: version,
+    NEXT_PUBLIC_APP_COMMIT:
+      process.env.VERCEL_ENV === "production"
+        ? ""
+        : (process.env.VERCEL_GIT_COMMIT_SHA ?? "").slice(0, 7),
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns,

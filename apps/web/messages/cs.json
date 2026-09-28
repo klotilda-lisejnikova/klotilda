@@ -120,12 +120,7 @@
     "about": {
       "title": "O mně",
       "bio1": "Ahoj, jsem Klotilda a tvořím v Praze drobné radůstky, které si můžeš koupit na těchto stránkách. Tak směle do toho!",
-      "bio2": "",
-      "crafts": {
-        "ceramics": "Keramika",
-        "embroidery": "Výšivka",
-        "linocut": "Linoryt"
-      }
+      "bio2": ""
     },
     "gallery": {
       "title": "Galerie",

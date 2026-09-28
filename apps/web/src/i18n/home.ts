@@ -12,11 +12,6 @@ export const getAboutTranslations = (t: T) => ({
   title: t("about.title"),
   bio1: t("about.bio1"),
   bio2: t("about.bio2"),
-  crafts: {
-    ceramics: t("about.crafts.ceramics"),
-    embroidery: t("about.crafts.embroidery"),
-    linocut: t("about.crafts.linocut"),
-  },
 });
 
 export const getGalleryTranslations = (t: T) => ({

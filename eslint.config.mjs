@@ -33,7 +33,7 @@ export default defineConfig(
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ['apps/api/**', '**/*.config.{ts,mts,mjs}'],
+    files: ['apps/api/**', 'tooling/**', '**/*.config.{ts,mts,mjs}'],
     languageOptions: { globals: globals.node },
   },
   {

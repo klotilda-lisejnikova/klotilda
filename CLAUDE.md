@@ -77,7 +77,11 @@ docker compose up -d      # Postgres :5435, Mailpit :8026 (SMTP :1026)
 pnpm dev                  # API :3001, web :3002, admin :5175
 pnpm lint / typecheck / test / build
 pnpm --filter @klotilda/api seed:admin
+pnpm release patch|minor|major   # bump the version, commit, tag vX.Y.Z; then git push --follow-tags
 ```
+
+One version for the whole project, in the root `package.json`. The web shows it in the footer
+(`v0.1.0`; outside production with the commit, `v0.1.0 · 5d1bd33`). No public changelog.
 
 ## Deploy
 

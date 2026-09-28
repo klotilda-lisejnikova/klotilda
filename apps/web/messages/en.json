@@ -120,12 +120,7 @@
     "about": {
       "title": "About",
       "bio1": "My name is Klotilda and I create in Prague. My work grows from a love of traditional crafts — ceramics, embroidery and linocut — which I connect with a contemporary sensibility.",
-      "bio2": "Each piece is made by hand in my studio, without rush. I believe the objects around us can be not only beautiful but deeply personal.",
-      "crafts": {
-        "ceramics": "Ceramics",
-        "embroidery": "Embroidery",
-        "linocut": "Linocut"
-      }
+      "bio2": "Each piece is made by hand in my studio, without rush. I believe the objects around us can be not only beautiful but deeply personal."
     },
     "gallery": {
       "title": "Gallery",

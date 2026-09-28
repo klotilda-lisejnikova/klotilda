@@ -1,12 +1,14 @@
 {
   "name": "klotilda",
   "private": true,
+  "version": "0.1.0",
   "description": "Klotilda: the artist's website, e-shop and its administration",
   "packageManager": "pnpm@12.4.2",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
+    "release": "node tooling/release.mjs",
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
     "build": "pnpm -r build",
     "lint": "eslint . && pnpm --filter @klotilda/web lint",

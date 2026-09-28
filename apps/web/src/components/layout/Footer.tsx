@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { SHOP_ENABLED } from "@/lib/features";
+import { APP_VERSION } from "@/lib/version";
 
 export default function Footer() {
   const t = useTranslations("footer");
@@ -38,7 +39,12 @@ export default function Footer() {
         {/* Tagline + copyright */}
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-stone-100 pt-3 text-xs text-stone-400">
           <p>{t("tagline")}</p>
-          <p>{t("copyright")}</p>
+          <p>
+            {t("copyright")}
+            <span className="ml-3 text-stone-300 tabular-nums">
+              {APP_VERSION}
+            </span>
+          </p>
         </div>
 
       </div>
