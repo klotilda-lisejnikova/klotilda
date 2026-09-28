@@ -65,7 +65,10 @@ async function listAdmins(database: Sequelize): Promise<string[]> {
 
 async function setAdmin(database: Sequelize, databaseUrl: string): Promise<void> {
   const email = requireVariable(process.env, 'SEED_ADMIN_EMAIL').trim();
-  const password = process.env.SEED_ADMIN_PASSWORD || (await ask(`Heslo pro ${email}: `, true));
+  const fromEnv = process.env.SEED_ADMIN_PASSWORD;
+  // Said out loud: a password in apps/api/.env is used without asking.
+  if (fromEnv) console.info('Heslo: z proměnné SEED_ADMIN_PASSWORD (apps/api/.env nebo shell).');
+  const password = fromEnv || (await ask(`Heslo pro ${email}: `, true));
   const issues = validateFields(
     adminUserEntity.config.fields,
     { email, password },
