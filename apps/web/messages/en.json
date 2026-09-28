@@ -92,7 +92,7 @@
     "title": "Shop",
     "description": "Original handmade works",
     "heroSubtitle": "Ceramics · Embroidery · Linocut",
-    "productsCount": "{count} items",
+    "productsCount": "{count, plural, one {# item} other {# items}}",
     "filters": {
       "all": "All",
       "keramika": "Ceramics",

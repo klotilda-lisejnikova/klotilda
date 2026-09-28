@@ -92,7 +92,7 @@
     "title": "E-shop",
     "description": "Originální ručně vyráběná díla",
     "heroSubtitle": "Keramika · Výšivka · Linoryt",
-    "productsCount": "{count} položek",
+    "productsCount": "{count, plural, one {# položka} few {# položky} other {# položek}}",
     "filters": {
       "all": "Vše",
       "keramika": "Keramika",

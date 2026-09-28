@@ -1,50 +1,37 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
-import { ProductCategory } from "@/services";
+import { PRODUCT_CATEGORIES, type ProductCategory } from "@/services";
 
-const CATEGORIES: Array<ProductCategory | "all"> = [
-  "all",
-  "keramika",
-  "vysivka",
-  "linoryt",
-];
+export type CategoryChoice = ProductCategory | "all";
 
-export default function CategoryFilter() {
+const CATEGORIES: CategoryChoice[] = ["all", ...PRODUCT_CATEGORIES];
+
+/** The category pills. Without `onSelect` (the server render) they show but do nothing yet. */
+export default function CategoryFilter({
+  active,
+  onSelect,
+}: {
+  active: CategoryChoice;
+  onSelect?: (category: CategoryChoice) => void;
+}) {
   const t = useTranslations("shop.filters");
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const active = (searchParams.get("category") ?? "all") as
-    ProductCategory | "all";
-
-  const setCategory = useCallback(
-    (cat: ProductCategory | "all") => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (cat === "all") {
-        params.delete("category");
-      } else {
-        params.set("category", cat);
-      }
-      router.push(`?${params.toString()}`);
-    },
-    [router, searchParams],
-  );
 
   return (
     <div className="flex flex-wrap gap-2">
-      {CATEGORIES.map((cat) => (
+      {CATEGORIES.map((category) => (
         <button
-          key={cat}
-          onClick={() => setCategory(cat)}
+          key={category}
+          type="button"
+          onClick={() => onSelect?.(category)}
+          aria-pressed={active === category}
           className={`rounded-full px-4 py-1.5 text-sm tracking-wide transition-colors ${
-            active === cat
+            active === category
               ? "bg-stone-800 text-white"
               : "border border-stone-300 text-stone-600 hover:border-stone-500"
           }`}
         >
-          {t(cat)}
+          {t(category)}
         </button>
       ))}
     </div>

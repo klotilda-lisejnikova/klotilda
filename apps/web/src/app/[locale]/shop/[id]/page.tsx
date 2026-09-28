@@ -1,22 +1,40 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { ApiError } from "@eleansphere/entity-core";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { getProduct, type Product } from "@/services";
-import AddToCartButton from "@/components/shop/AddToCartButton";
+import { getProduct, listAllProducts, type Product } from "@/services";
+import { loadStaticData } from "@/lib/static-data";
 import ProductGallery from "@/components/shop/ProductGallery";
-
-export const dynamic = "force-dynamic";
+import ProductPurchase from "@/components/shop/ProductPurchase";
 
 /**
- * One API call per request for the metadata and the page. A missing product 404s here, in the
- * metadata, so the status is still 404 before the page streams.
+ * Rendered on the first visit, then served from the cache and regenerated at most every minute.
+ * Price and stock are looked up again in the browser (`ProductPurchase`).
+ */
+export const revalidate = 60;
+
+/**
+ * Every product on offer is rendered at build time. That matters for Czech: its URLs carry no
+ * prefix and reach the page through the next-intl rewrite, and a page first rendered behind a
+ * rewrite was served uncached by `next start`. Products added later render on their first visit.
+ */
+export async function generateStaticParams() {
+  const products = await loadStaticData("ProductPage", listAllProducts, []);
+  return products.map((product) => ({ id: product.id }));
+}
+
+/**
+ * One API call per render for the metadata and the page. A missing product 404s here, in the
+ * metadata, so the status is still 404. Any other failure is rethrown: the cache then keeps the
+ * last good page instead of storing a 404 for an existing product.
  */
 const loadProduct = cache(async (id: string): Promise<Product> => {
   try {
     return await getProduct(id);
-  } catch {
-    notFound();
+  } catch (err) {
+    if (err instanceof ApiError && err.isNotFound) notFound();
+    throw err;
   }
 });
 
@@ -34,6 +52,7 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { locale, id } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "shop" });
 
   const product = await loadProduct(id);
@@ -44,7 +63,6 @@ export default async function ProductDetailPage({ params }: Props) {
     locale === "en" && product.description_en
       ? product.description_en
       : product.description_cs;
-  const inStock = product.stockCount > 0;
 
   return (
     <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
@@ -84,47 +102,13 @@ export default async function ProductDetailPage({ params }: Props) {
             {name}
           </h1>
 
-          {/* Price */}
-          <p className="mt-4 text-3xl font-light text-stone-800 tabular-nums">
-            {product.price.toLocaleString("cs-CZ")}&nbsp;
-            <span className="text-xl text-stone-500">{t("currency")}</span>
-          </p>
-
-          <div className="my-6 h-px bg-stone-100" />
-
-          {/* Stock status */}
-          <div className="mb-6">
-            {inStock ? (
-              <div className="flex items-center gap-2">
-                <span className="flex h-2 w-2 items-center justify-center">
-                  <span className="absolute h-2 w-2 animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
-                <span className="text-sm text-emerald-700">
-                  {t("inStock")}
-                  <span className="ml-1.5 text-emerald-500/80">
-                    · {t("pieces", { count: product.stockCount })}
-                  </span>
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-rose-400" />
-                <span className="text-sm text-rose-600">{t("soldOut")}</span>
-              </div>
+          <ProductPurchase product={product}>
+            {description && (
+              <p className="mb-8 text-sm leading-relaxed text-stone-500">
+                {description}
+              </p>
             )}
-          </div>
-
-          {/* Description */}
-          {description && (
-            <p className="mb-8 text-sm leading-relaxed text-stone-500">
-              {description}
-            </p>
-          )}
-
-          <div className="mt-auto">
-            <AddToCartButton product={product} />
-          </div>
+          </ProductPurchase>
         </div>
       </div>
     </section>

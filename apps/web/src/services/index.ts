@@ -3,7 +3,6 @@ import type {
   CheckoutRequest,
   CheckoutResponse,
   GalleryItemWithImages,
-  ProductCategory,
   ProductWithImages,
 } from "@klotilda/domain";
 import type { PaginatedResponse } from "@eleansphere/entity-core";
@@ -16,23 +15,29 @@ const services = createServices(
   () => null,
 );
 
-export interface ProductListParams {
-  category?: ProductCategory;
-  page?: number;
-  limit?: number;
+/** The most rows the API returns per page. */
+const PAGE_LIMIT = 200;
+
+/** Every row of a list, page by page — the shop and the gallery are small enough to load whole. */
+async function fetchAll<T>(
+  getPage: (page: number) => Promise<PaginatedResponse<T>>,
+): Promise<T[]> {
+  const rows: T[] = [];
+  for (let page = 1; ; page++) {
+    const { data, total } = await getPage(page);
+    rows.push(...data);
+    if (data.length === 0 || rows.length >= total) return rows;
+  }
 }
 
-/** Products on offer, newest first, each with its photos. */
-export function listProducts({
-  category,
-  page,
-  limit,
-}: ProductListParams): Promise<PaginatedResponse<ProductWithImages>> {
-  return services.products.getAll({
-    filter: category ? { category } : undefined,
-    page,
-    limit,
-  }) as Promise<PaginatedResponse<ProductWithImages>>;
+/** Everything on offer, each with its photos; the shop page filters by category itself. */
+export function listAllProducts(): Promise<ProductWithImages[]> {
+  return fetchAll(
+    (page) =>
+      services.products.getAll({ page, limit: PAGE_LIMIT }) as Promise<
+        PaginatedResponse<ProductWithImages>
+      >,
+  );
 }
 
 export function getProduct(id: string): Promise<ProductWithImages> {
@@ -40,12 +45,13 @@ export function getProduct(id: string): Promise<ProductWithImages> {
 }
 
 /** The landing page's gallery, row by row, in the order the admin set. */
-export function listGallery(): Promise<
-  PaginatedResponse<GalleryItemWithImages>
-> {
-  return services.gallery.getAll() as Promise<
-    PaginatedResponse<GalleryItemWithImages>
-  >;
+export function listGallery(): Promise<GalleryItemWithImages[]> {
+  return fetchAll(
+    (page) =>
+      services.gallery.getAll({ page, limit: PAGE_LIMIT }) as Promise<
+        PaginatedResponse<GalleryItemWithImages>
+      >,
+  );
 }
 
 /** Places the order; the API charges its own prices and answers how to pay. */

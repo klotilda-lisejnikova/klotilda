@@ -6,7 +6,10 @@ export default function ShopLoading() {
 
       <div className="flex flex-wrap gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-8 w-20 animate-pulse rounded-full bg-stone-200" />
+          <div
+            key={i}
+            className="h-8 w-20 animate-pulse rounded-full bg-stone-200"
+          />
         ))}
       </div>
 

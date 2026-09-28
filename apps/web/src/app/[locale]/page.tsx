@@ -1,21 +1,23 @@
+import { setRequestLocale } from "next-intl/server";
 import HeroSection from "@/components/home/HeroSection";
 import AboutSection from "@/components/home/AboutSection";
 import GallerySection from "@/components/home/GallerySection";
 import CtaSection from "@/components/home/CtaSection";
 import ContactSection from "@/components/home/ContactSection";
-import { listGallery, type GalleryItem } from "@/services";
+import { listGallery } from "@/services";
+import { loadStaticData } from "@/lib/static-data";
 
 // Regenerate the landing page (incl. the gallery) at most every 10 minutes.
 export const revalidate = 600;
 
-export default async function HomePage() {
-  let galleryItems: GalleryItem[] = [];
-  try {
-    const result = await listGallery();
-    galleryItems = result.data;
-  } catch (err) {
-    console.error("[HomePage] Failed to fetch gallery:", err);
-  }
+export default async function HomePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const galleryItems = await loadStaticData("HomePage", listGallery, []);
 
   return (
     <>

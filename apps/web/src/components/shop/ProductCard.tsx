@@ -11,9 +11,14 @@ import { maxQuantity, useCart, useCartStore } from "@/store/cart.store";
 interface Props {
   product: Product;
   locale: string;
+  /** On screen at once (the first row): its photo loads before the rest. */
+  eager?: boolean;
 }
 
-export default function ProductCard({ product, locale }: Props) {
+/** The grid is 2 columns, 3 from `lg`, 4 from `xl` inside a 1152px container. */
+const CARD_SIZES = "(min-width: 1280px) 270px, (min-width: 1024px) 33vw, 50vw";
+
+export default function ProductCard({ product, locale, eager = false }: Props) {
   const t = useTranslations("shop");
   const tPhotos = useTranslations("lightbox");
   const [loaded, setLoaded] = useState(false);
@@ -75,7 +80,8 @@ export default function ProductCard({ product, locale }: Props) {
                 src={mediaUrl(img.url)}
                 alt={name}
                 fill
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                sizes={CARD_SIZES}
+                priority={eager && i === 0}
                 className={`object-cover transition-all duration-500 group-hover:scale-[1.03] ${
                   activeImage?.id === img.id ? "opacity-100" : "opacity-0"
                 }`}
