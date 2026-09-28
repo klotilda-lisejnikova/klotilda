@@ -100,7 +100,7 @@ export default function CheckoutPage() {
         <p className="mb-6 text-stone-500">{t("emptyCart")}</p>
         <Link
           href="/shop"
-          className="inline-block bg-stone-800 px-8 py-3 text-sm tracking-widest text-white uppercase transition-colors hover:bg-stone-700"
+          className="bg-moss hover:bg-moss-deep inline-block px-8 py-3 text-sm tracking-widest text-[#fafaf8] uppercase transition-colors"
         >
           {t("goToShop")}
         </Link>

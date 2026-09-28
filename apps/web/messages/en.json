@@ -91,7 +91,6 @@
   "shop": {
     "title": "Shop",
     "description": "Original handmade works",
-    "heroSubtitle": "Ceramics · Embroidery · Linocut",
     "productsCount": "{count, plural, one {# item} other {# items}}",
     "filters": {
       "all": "All",
@@ -99,7 +98,6 @@
       "vysivka": "Embroidery",
       "linoryt": "Linocut"
     },
-    "inStock": "In stock",
     "soldOut": "Sold out",
     "addToCart": "Add to cart",
     "inCart": "In cart",
@@ -107,10 +105,11 @@
     "empty": "No products in this category.",
     "currency": "CZK",
     "addAnother": "Add another ({count} in cart)",
-    "pieces": "{count, plural, one {# piece} other {# pieces}}",
     "addShort": "Add to cart",
     "addAnotherShort": "Add another",
-    "piecesShort": "{count} pcs"
+    "lastPiece": "Last piece",
+    "lastPieceOriginal": "One of a kind · last piece",
+    "piecesInStock": "{count, plural, one {# piece} other {# pieces}} in stock"
   },
   "home": {
     "hero": {

@@ -16,8 +16,8 @@ const ICON_PATHS: Record<State, string> = {
 
 const STATE_CLASS: Record<State, string> = {
   soldOut: "cursor-not-allowed bg-stone-100 text-stone-400",
-  add: "bg-stone-800 text-white hover:bg-stone-700 active:bg-stone-900",
-  addAnother: "bg-stone-800 text-white hover:bg-stone-700 active:bg-stone-900",
+  add: "bg-moss text-[#fafaf8] hover:bg-moss-deep",
+  addAnother: "bg-moss text-[#fafaf8] hover:bg-moss-deep",
   full: "cursor-default bg-stone-200 text-stone-500",
 };
 

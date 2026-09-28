@@ -91,7 +91,6 @@
   "shop": {
     "title": "E-shop",
     "description": "Originální ručně vyráběná díla",
-    "heroSubtitle": "Keramika · Výšivka · Linoryt",
     "productsCount": "{count, plural, one {# položka} few {# položky} other {# položek}}",
     "filters": {
       "all": "Vše",
@@ -99,7 +98,6 @@
       "vysivka": "Výšivka",
       "linoryt": "Linoryt"
     },
-    "inStock": "Skladem",
     "soldOut": "Vyprodáno",
     "addToCart": "Přidat do košíku",
     "inCart": "V košíku",
@@ -107,10 +105,11 @@
     "empty": "Žádné produkty v této kategorii.",
     "currency": "Kč",
     "addAnother": "Přidat další ({count} v košíku)",
-    "pieces": "{count, plural, one {# kus} few {# kusy} other {# kusů}}",
     "addShort": "Do košíku",
     "addAnotherShort": "Přidat další",
-    "piecesShort": "{count} ks"
+    "lastPiece": "Poslední kus",
+    "lastPieceOriginal": "Originál · poslední kus",
+    "piecesInStock": "{count, plural, one {# kus} few {# kusy} other {# kusů}} skladem"
   },
   "home": {
     "hero": {

@@ -38,16 +38,14 @@ export default function Step2Shipping({
               onClick={() => select(method)}
               className={`flex items-center justify-between border px-4 py-3 text-left transition-colors ${
                 active
-                  ? "border-stone-800 bg-stone-50"
+                  ? "border-moss bg-moss/5"
                   : "border-stone-200 hover:border-stone-400"
               }`}
             >
               <div className="flex items-center gap-3">
                 <div
                   className={`h-4 w-4 shrink-0 rounded-full border-2 ${
-                    active
-                      ? "border-stone-800 bg-stone-800"
-                      : "border-stone-300"
+                    active ? "border-moss bg-moss" : "border-stone-300"
                   }`}
                 />
                 <span className="text-sm text-stone-800">
@@ -71,7 +69,7 @@ export default function Step2Shipping({
         </button>
         <button
           onClick={onNext}
-          className="flex-1 bg-stone-800 py-3 text-sm tracking-widest text-white uppercase transition-colors hover:bg-stone-700"
+          className="bg-moss hover:bg-moss-deep flex-1 py-3 text-sm tracking-widest text-[#fafaf8] uppercase transition-colors"
         >
           {t("next")}
         </button>

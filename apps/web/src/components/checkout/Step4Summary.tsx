@@ -106,7 +106,7 @@ export default function Step4Summary({
           type="button"
           onClick={onSubmit}
           disabled={loading || blocked}
-          className="flex-1 bg-stone-800 py-3 text-sm tracking-widest text-white uppercase transition-colors hover:bg-stone-700 disabled:opacity-40"
+          className="bg-moss hover:bg-moss-deep flex-1 py-3 text-sm tracking-widest text-[#fafaf8] uppercase transition-colors disabled:opacity-40"
         >
           {loading ? t("loading") : t("summary.confirm")}
         </button>

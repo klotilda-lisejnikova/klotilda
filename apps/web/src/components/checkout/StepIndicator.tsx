@@ -20,9 +20,9 @@ export default function StepIndicator({ current }: Props) {
               <div
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs transition-colors ${
                   done
-                    ? "bg-stone-800 text-white"
+                    ? "bg-moss text-[#fafaf8]"
                     : active
-                      ? "border-2 border-stone-800 text-stone-800"
+                      ? "border-moss text-moss border-2"
                       : "border border-stone-300 text-stone-400"
                 }`}
               >
@@ -54,7 +54,7 @@ export default function StepIndicator({ current }: Props) {
             </div>
             {i < STEPS.length - 1 && (
               <div
-                className={`mx-2 h-px w-8 sm:w-16 ${done ? "bg-stone-800" : "bg-stone-200"}`}
+                className={`mx-2 h-px w-8 sm:w-16 ${done ? "bg-moss" : "bg-stone-200"}`}
               />
             )}
           </li>

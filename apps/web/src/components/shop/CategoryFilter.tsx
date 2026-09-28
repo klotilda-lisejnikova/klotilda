@@ -25,10 +25,11 @@ export default function CategoryFilter({
           type="button"
           onClick={() => onSelect?.(category)}
           aria-pressed={active === category}
-          className={`rounded-full px-4 py-1.5 text-sm tracking-wide transition-colors ${
+          // The craft chips of "O mně", with moss for the chosen one.
+          className={`border px-4 py-1.5 text-[0.7rem] tracking-[0.25em] uppercase transition-colors ${
             active === category
-              ? "bg-stone-800 text-white"
-              : "border border-stone-300 text-stone-600 hover:border-stone-500"
+              ? "border-moss bg-moss text-[#fafaf8]"
+              : "hover:border-moss hover:text-moss border-stone-300 text-stone-500"
           }`}
         >
           {t(category)}

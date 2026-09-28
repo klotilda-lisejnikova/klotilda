@@ -84,7 +84,7 @@ export default function Step1Contact({ data, onChange, onNext }: Props) {
       </div>
       <button
         type="submit"
-        className="mt-2 bg-stone-800 py-3 text-sm tracking-widest text-white uppercase transition-colors hover:bg-stone-700"
+        className="bg-moss hover:bg-moss-deep mt-2 py-3 text-sm tracking-widest text-[#fafaf8] uppercase transition-colors"
       >
         {t("next")}
       </button>

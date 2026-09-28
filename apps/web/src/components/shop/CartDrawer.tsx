@@ -54,7 +54,7 @@ export default function CartDrawer() {
         }`}
       >
         <div className="flex items-center justify-between border-b border-stone-200 px-6 py-4">
-          <h2 className="text-sm tracking-widest text-stone-800 uppercase">
+          <h2 className="font-serif text-lg font-light tracking-[0.12em] text-stone-800">
             {t("title")}
           </h2>
           <button
@@ -117,7 +117,7 @@ export default function CartDrawer() {
               <Link
                 href="/checkout"
                 onClick={() => setOpen(false)}
-                className="block w-full bg-stone-800 py-3 text-center text-sm tracking-widest text-white uppercase transition-colors hover:bg-stone-700"
+                className="bg-moss hover:bg-moss-deep block w-full py-3 text-center text-sm tracking-widest text-[#fafaf8] uppercase transition-colors"
               >
                 {t("checkout")}
               </Link>
@@ -150,7 +150,7 @@ export default function CartDrawer() {
           />
         </svg>
         {count > 0 && (
-          <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-stone-800 px-1 text-[10px] text-white tabular-nums">
+          <span className="bg-moss absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] text-[#fafaf8] tabular-nums">
             {count}
           </span>
         )}

@@ -40,34 +40,28 @@ export default function ProductPurchase({
 
   return (
     <>
-      <p className="mt-4 text-3xl font-light text-stone-800 tabular-nums">
+      <p className="mt-5 text-2xl font-light text-stone-800 tabular-nums">
         {live.price.toLocaleString("cs-CZ")}&nbsp;
-        <span className="text-xl text-stone-500">{t("currency")}</span>
+        <span className="text-lg text-stone-500">{t("currency")}</span>
       </p>
 
-      <div className="my-6 h-px bg-stone-100" />
+      <div className="my-7 h-px bg-stone-200" />
 
-      <div className="mb-6">
-        {inStock ? (
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2 items-center justify-center">
-              <span className="absolute h-2 w-2 animate-ping rounded-full bg-emerald-400 opacity-60" />
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            </span>
-            <span className="text-sm text-emerald-700">
-              {t("inStock")}
-              <span className="ml-1.5 text-emerald-500/80">
-                · {t("pieces", { count: live.stockCount })}
-              </span>
-            </span>
-          </div>
+      <p className="mb-6 flex items-center gap-2.5 text-[0.7rem] tracking-[0.2em] uppercase">
+        <span
+          aria-hidden="true"
+          className={`h-1.5 w-1.5 rounded-full ${inStock ? "bg-moss" : "bg-stone-300"}`}
+        />
+        {!inStock ? (
+          <span className="text-stone-400">{t("soldOut")}</span>
+        ) : live.stockCount === 1 ? (
+          <span className="text-moss">{t("lastPieceOriginal")}</span>
         ) : (
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-rose-400" />
-            <span className="text-sm text-rose-600">{t("soldOut")}</span>
-          </div>
+          <span className="text-moss">
+            {t("piecesInStock", { count: live.stockCount })}
+          </span>
         )}
-      </div>
+      </p>
 
       {children}
 

@@ -10,6 +10,10 @@
   --color-foreground: var(--foreground);
   /* Accent — mossy green, sampled from the hero image's green overlay. */
   --color-moss: #567042;
+  /* The moss a shade darker: hover and pressed states of moss buttons. */
+  --color-moss-deep: #455a35;
+  /* Warm paper — the gallery's and the shop's background. */
+  --color-paper: #f5efe6;
   --font-sans: var(--font-geist);
   --font-serif: Georgia, "Times New Roman", serif;
 }

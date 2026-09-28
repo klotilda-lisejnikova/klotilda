@@ -29,7 +29,7 @@ export default function Step3Payment({ onNext, onBack }: Props) {
         </button>
         <button
           onClick={onNext}
-          className="flex-1 bg-stone-800 py-3 text-sm tracking-widest text-white uppercase transition-colors hover:bg-stone-700"
+          className="bg-moss hover:bg-moss-deep flex-1 py-3 text-sm tracking-widest text-[#fafaf8] uppercase transition-colors"
         >
           {t("next")}
         </button>

@@ -27,7 +27,7 @@ export default function ProductGallery({ images, alt }: Props) {
   }, [active?.id]);
 
   if (!active) {
-    return <div className="aspect-square w-full bg-stone-100" />;
+    return <div className="aspect-[3/4] w-full rounded-md bg-stone-100" />;
   }
 
   const markFailed = (id: string) =>
@@ -50,7 +50,7 @@ export default function ProductGallery({ images, alt }: Props) {
           type="button"
           onClick={() => setLightboxIndex(visible.indexOf(active))}
           aria-label={`${tGallery("open")}: ${alt}`}
-          className="group focus-visible:outline-moss relative aspect-square w-full cursor-zoom-in overflow-hidden bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-4"
+          className="group focus-visible:outline-moss relative aspect-[3/4] w-full cursor-zoom-in overflow-hidden rounded-md bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-4"
         >
           {!loaded && (
             <div className="absolute inset-0 animate-pulse bg-stone-200" />
@@ -97,9 +97,9 @@ export default function ProductGallery({ images, alt }: Props) {
                 onClick={() => setActiveIndex(i)}
                 aria-label={`${i + 1} / ${visible.length}`}
                 aria-current={active.id === img.id}
-                className={`relative h-20 w-20 shrink-0 overflow-hidden bg-stone-100 transition-opacity ${
+                className={`relative h-20 w-[3.75rem] shrink-0 overflow-hidden rounded-sm bg-stone-100 transition-opacity ${
                   active.id === img.id
-                    ? "ring-2 ring-stone-800"
+                    ? "ring-2 ring-moss ring-offset-2 ring-offset-[#fafaf8]"
                     : "opacity-60 hover:opacity-80"
                 }`}
               >

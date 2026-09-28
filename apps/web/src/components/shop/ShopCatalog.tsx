@@ -64,10 +64,10 @@ export function CatalogView({
               <span className="shrink-0 text-[11px] tracking-[0.22em] text-stone-400 uppercase tabular-nums">
                 {t("productsCount", { count: shown.length })}
               </span>
-              <div className="h-px flex-1 bg-stone-100" />
+              <div className="h-px flex-1 bg-stone-300/50" />
             </div>
 
-            <div className="grid grid-cols-2 gap-6 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-6 md:gap-x-5 md:gap-y-8 lg:grid-cols-3 xl:grid-cols-4">
               {shown.map((product, index) => (
                 <ProductCard
                   key={product.id}

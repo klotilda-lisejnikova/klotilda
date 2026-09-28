@@ -65,11 +65,11 @@ export default async function ProductDetailPage({ params }: Props) {
       : product.description_cs;
 
   return (
-    <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+    <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 md:py-16 lg:px-8">
       {/* Back */}
       <Link
         href="/shop"
-        className="mb-10 inline-flex items-center gap-1.5 text-xs tracking-wide text-stone-400 uppercase transition-colors hover:text-stone-700"
+        className="hover:text-moss mb-10 inline-flex items-center gap-1.5 text-[0.7rem] tracking-[0.25em] text-stone-400 uppercase transition-colors"
       >
         <svg
           className="h-3.5 w-3.5"
@@ -92,19 +92,19 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {/* Info */}
         <div className="flex flex-col">
-          {/* Category chip */}
-          <span className="mb-3 self-start rounded-full border border-stone-200 px-3 py-0.5 text-xs tracking-wider text-stone-500 uppercase">
+          {/* Category chip — the craft chips of "O mně" */}
+          <span className="mb-5 self-start border border-stone-300 px-3 py-1 text-[0.65rem] tracking-[0.25em] text-stone-500 uppercase">
             {t(`filters.${product.category}`)}
           </span>
 
-          {/* Name */}
-          <h1 className="text-2xl leading-snug font-light tracking-wide text-stone-800 sm:text-3xl">
+          {/* Name — the serif of the home page's headings */}
+          <h1 className="font-serif text-3xl leading-snug font-light tracking-[0.06em] text-stone-800 sm:text-4xl">
             {name}
           </h1>
 
           <ProductPurchase product={product}>
             {description && (
-              <p className="mb-8 text-sm leading-relaxed text-stone-500">
+              <p className="mb-10 leading-relaxed text-stone-600">
                 {description}
               </p>
             )}
