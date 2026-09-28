@@ -71,7 +71,9 @@ function readCorsOrigins(variables: Variables, isProduction: boolean): string[] 
   return ANY_ORIGIN;
 }
 
+/** Resend (`RESEND_API_KEY`, HTTP — Railway blocks outbound SMTP), else SMTP, else only logged. */
 function readEmailTransport(variables: Variables): EmailTransportConfig {
+  if (variables.RESEND_API_KEY) return { kind: 'resend', apiKey: variables.RESEND_API_KEY };
   if (!variables.SMTP_HOST) return { kind: 'log' };
   return {
     kind: 'smtp',
@@ -119,7 +121,7 @@ function readWebRevalidation(variables: Variables): WebRevalidation | undefined 
 function assertProductionReady(environment: Environment): void {
   if (!environment.isProduction) return;
   const gaps: string[] = [];
-  if (environment.email.kind === 'log') gaps.push('SMTP_HOST (e-mails would only be logged)');
+  if (environment.email.kind === 'log') gaps.push('RESEND_API_KEY or SMTP_HOST (e-mails would only be logged)');
   if (environment.storage.kind === 'memory') gaps.push('R2_* (photos would be lost on restart)');
   if (!environment.adminEmail) gaps.push('ADMIN_EMAIL (new orders would go unannounced)');
   if (gaps.length > 0) throw new Error(`Production needs ${gaps.join(', ')}`);

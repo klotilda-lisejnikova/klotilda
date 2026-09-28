@@ -60,8 +60,10 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the
   are public.
 - Auth: be-core's login with rotating refresh tokens; accounts come from `seed:admin`
   (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`). There is no registration.
-- E-mail: SMTP (the klotilda.cz mailbox); without `SMTP_HOST` e-mails are only logged. Production
-  refuses to start without SMTP, R2 and `ADMIN_EMAIL`.
+- E-mail: Resend's HTTP API when `RESEND_API_KEY` is set — Railway blocks outbound SMTP below the
+  Pro plan — else SMTP (Mailpit locally); with neither, e-mails are only logged. The klotilda.cz
+  mailbox itself is at Zoner (`postmaster@`, alias `info@`). Production refuses to start without
+  an e-mail transport, R2 and `ADMIN_EMAIL`.
 - Schema: `syncMode: 'migrate'`. `2026-09-27-baseline` is the DDL `sync()` generated, frozen,
   `IF NOT EXISTS` throughout — on production (built by the older be-core's `sync()`) it only adds
   the `Files` indexes and `RefreshTokens`. A model change needs a new migration:
