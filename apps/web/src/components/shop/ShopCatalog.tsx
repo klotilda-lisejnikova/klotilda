@@ -2,12 +2,10 @@
 
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import {
-  PRODUCT_CATEGORIES,
-  type Product,
-  type ProductCategory,
-} from "@/services";
+import type { Product } from "@/services";
+import { categoriesOf } from "@/lib/category";
 import CategoryFilter, {
+  ALL_CATEGORIES,
   type CategoryChoice,
 } from "@/components/shop/CategoryFilter";
 import ProductCard from "@/components/shop/ProductCard";
@@ -16,10 +14,14 @@ const CATEGORY_PARAM = "category";
 /** The first row is on screen at once: its photos load first. */
 const EAGER_CARDS = 4;
 
-function readCategory(value: string | null): CategoryChoice {
-  return PRODUCT_CATEGORIES.includes(value as ProductCategory)
-    ? (value as ProductCategory)
-    : "all";
+/** The chosen category, when the shop has something in it; otherwise every product. */
+function readCategory(
+  value: string | null,
+  products: Product[],
+): CategoryChoice {
+  return value && products.some((p) => p.category?.slug === value)
+    ? value
+    : ALL_CATEGORIES;
 }
 
 /**
@@ -28,7 +30,7 @@ function readCategory(value: string | null): CategoryChoice {
  */
 function selectCategory(category: CategoryChoice): void {
   const url = new URL(window.location.href);
-  if (category === "all") url.searchParams.delete(CATEGORY_PARAM);
+  if (category === ALL_CATEGORIES) url.searchParams.delete(CATEGORY_PARAM);
   else url.searchParams.set(CATEGORY_PARAM, category);
   window.history.replaceState(null, "", url);
 }
@@ -47,11 +49,18 @@ export function CatalogView({
 }) {
   const t = useTranslations("shop");
   const shown =
-    active === "all" ? products : products.filter((p) => p.category === active);
+    active === ALL_CATEGORIES
+      ? products
+      : products.filter((p) => p.category?.slug === active);
 
   return (
     <>
-      <CategoryFilter active={active} onSelect={onSelect} />
+      <CategoryFilter
+        categories={categoriesOf(products)}
+        active={active}
+        locale={locale}
+        onSelect={onSelect}
+      />
 
       <div className="mt-10">
         {shown.length === 0 ? (
@@ -92,7 +101,7 @@ export default function ShopCatalog({
   products: Product[];
   locale: string;
 }) {
-  const active = readCategory(useSearchParams().get(CATEGORY_PARAM));
+  const active = readCategory(useSearchParams().get(CATEGORY_PARAM), products);
   return (
     <CatalogView
       products={products}

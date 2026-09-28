@@ -4,14 +4,14 @@ import { useToast } from '@nuxt/ui/composables';
 import { useRouter } from 'vue-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import { DEFAULT_STOCK_COUNT, productFields } from '@klotilda/domain';
-import type { ProductCategory, ProductWithImages } from '@klotilda/domain';
+import type { ProductWithImages } from '@klotilda/domain';
 import ConfirmDelete from '@/components/ConfirmDelete.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PhotoManager from '@/components/PhotoManager.vue';
 import { services } from '@/app/api';
 import { describeError } from '@/app/errors';
 import { emptyToNull, nullToEmpty } from '@/app/form-values';
-import { CATEGORY_LABELS, toSelectItems } from '@/app/labels';
+import { NO_CATEGORY, toCategoryChoice, toCategoryId, useCategories } from '@/app/categories';
 import { formSchema, VALIDATE_ON } from '@/app/validation';
 
 const props = defineProps<{ id?: string }>();
@@ -22,7 +22,7 @@ interface ProductForm {
   description_cs: string;
   description_en: string;
   price: number | undefined;
-  category: ProductCategory;
+  categoryId: string;
   stockCount: number;
   active: boolean;
 }
@@ -33,7 +33,7 @@ const EMPTY_FORM: ProductForm = {
   description_cs: '',
   description_en: '',
   price: undefined,
-  category: 'keramika',
+  categoryId: NO_CATEGORY,
   stockCount: DEFAULT_STOCK_COUNT,
   active: true,
 };
@@ -42,8 +42,14 @@ const toast = useToast();
 const router = useRouter();
 const queryClient = useQueryClient();
 const isNew = computed(() => !props.id);
-const schema = computed(() => formSchema(productFields, isNew.value ? 'create' : 'patch'));
-const categoryItems = toSelectItems(CATEGORY_LABELS);
+/** The category is picked from a list that also offers "none", so the form doesn't check it. */
+const { categoryId: _categoryId, ...checkedFields } = productFields;
+const schema = computed(() => formSchema(checkedFields, isNew.value ? 'create' : 'patch'));
+const { selectItems } = useCategories();
+const categoryItems = computed(() => [
+  { value: NO_CATEGORY, label: 'Bez kategorie' },
+  ...selectItems.value,
+]);
 const form = reactive<ProductForm>({ ...EMPTY_FORM });
 
 const {
@@ -70,7 +76,7 @@ watch(
       }),
       {
         price: loaded.price,
-        category: loaded.category ?? EMPTY_FORM.category,
+        categoryId: toCategoryChoice(loaded.categoryId),
         stockCount: loaded.stockCount,
         active: loaded.active,
       }
@@ -81,7 +87,11 @@ watch(
 
 const save = useMutation({
   mutationFn: () => {
-    const values = { ...emptyToNull({ ...form }), price: form.price ?? 0 };
+    const values = {
+      ...emptyToNull({ ...form }),
+      price: form.price ?? 0,
+      categoryId: toCategoryId(form.categoryId),
+    };
     return props.id ? services.products.update(props.id, values) : services.products.create(values);
   },
   onSuccess: async (saved) => {
@@ -159,8 +169,8 @@ function photosChanged() {
           <UFormField label="Cena (Kč)" name="price" required>
             <UInputNumber v-model="form.price" :min="0" :step="10" class="w-full" />
           </UFormField>
-          <UFormField label="Kategorie" name="category">
-            <USelect v-model="form.category" :items="categoryItems" class="w-full" />
+          <UFormField label="Kategorie" name="categoryId">
+            <USelect v-model="form.categoryId" :items="categoryItems" class="w-full" />
           </UFormField>
           <UFormField label="Kusů skladem" name="stockCount">
             <UInputNumber v-model="form.stockCount" :min="0" class="w-full" />

@@ -10,12 +10,14 @@ import { toModelConfigs } from '@eleansphere/entity-core';
 import {
   adminUserEntity,
   allEntities,
+  categoryEntity,
   ENTITIES_WITHOUT_CRUD_ROUTES,
   FILE_REF_TYPES,
   galleryItemEntity,
   orderEntity,
   productEntity,
 } from '@klotilda/domain';
+import { normalizeSlug, withCategory } from './catalogue/categories';
 import { CHECKOUT_RATE_LIMIT, createCheckoutPlugin } from './checkout/checkout-plugin';
 import type { Environment, StorageSettings } from './env';
 import { authorizeFileAccess } from './files/authorize-file-access';
@@ -74,14 +76,17 @@ export function buildAppConfig(
     cors: { origin: environment.corsOrigins },
     modelConfigs: toModelConfigs(allEntities, { custom: ENTITIES_WITHOUT_CRUD_ROUTES }),
     routes: {
+      [categoryEntity.config.name]: {
+        hooks: { beforeCreate: normalizeSlug, beforeUpdate: normalizeSlug },
+      },
       [productEntity.config.name]: {
         access: { read: activeUnlessSignedIn },
-        enrich: productImages.attach,
+        enrich: withCategory(models, productImages.attach),
         beforeDelete: productImages.removeWithRow,
       },
       [galleryItemEntity.config.name]: {
         access: { read: activeUnlessSignedIn },
-        enrich: galleryImages.attach,
+        enrich: withCategory(models, galleryImages.attach),
         beforeDelete: galleryImages.removeWithRow,
       },
       [orderEntity.config.name]: {

@@ -1,13 +1,7 @@
-import type { OrderStatus, PaymentStatus, ProductCategory, ShippingMethod } from '@klotilda/domain';
+import type { OrderStatus, PaymentStatus, ShippingMethod } from '@klotilda/domain';
 import type { BadgeProps } from '@nuxt/ui';
 
 type BadgeColor = NonNullable<BadgeProps['color']>;
-
-export const CATEGORY_LABELS: Record<ProductCategory, string> = {
-  keramika: 'Keramika',
-  vysivka: 'Výšivka',
-  linoryt: 'Linoryt',
-};
 
 export const SHIPPING_LABELS: Record<ShippingMethod, string> = {
   zasilkovna: 'Zásilkovna',

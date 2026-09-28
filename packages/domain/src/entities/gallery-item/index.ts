@@ -2,6 +2,7 @@ import { defineEntity, withImages } from '@eleansphere/entity-core';
 import type { FileDto } from '@eleansphere/entity-core';
 import { FILE_REF_TYPES } from '../../constants';
 import type { GalleryRow } from '../../constants';
+import type { CategorySummary } from '../category';
 import { galleryItemFields } from './fields';
 
 export const GALLERY_PATH = '/api/gallery';
@@ -19,7 +20,7 @@ export const galleryItemEntity = defineEntity({
   access: { read: 'public', write: 'auth' },
   fields: galleryItemFields,
   query: {
-    filter: { active: 'eq', row: 'eq' },
+    filter: { active: 'eq', row: 'eq', categoryId: 'eq' },
     sort: ['row', 'sortOrder', 'createdAt'],
     defaultSort: GALLERY_ORDER,
     defaultLimit: 200,
@@ -34,4 +35,5 @@ export type GalleryItem = InstanceType<typeof galleryItemEntity.Dto>;
 export type GalleryItemWithImages = Omit<GalleryItem, 'row'> & {
   row: GalleryRow;
   images: FileDto[];
+  category: CategorySummary | null;
 };

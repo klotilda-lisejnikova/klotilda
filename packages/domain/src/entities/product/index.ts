@@ -1,6 +1,7 @@
 import { defineEntity, withImages } from '@eleansphere/entity-core';
 import type { FileDto } from '@eleansphere/entity-core';
 import { FILE_REF_TYPES } from '../../constants';
+import type { CategorySummary } from '../category';
 import { productFields } from './fields';
 
 export const PRODUCTS_PATH = '/api/products';
@@ -16,7 +17,7 @@ export const productEntity = defineEntity({
   access: { read: 'public', write: 'auth' },
   fields: productFields,
   query: {
-    filter: { category: 'eq', active: 'eq' },
+    filter: { categoryId: 'eq', active: 'eq' },
     sort: ['createdAt', 'price', 'name_cs'],
     defaultSort: '-createdAt',
     search: ['name_cs', 'name_en'],
@@ -28,5 +29,8 @@ export const productEntity = defineEntity({
 
 export type Product = InstanceType<typeof productEntity.Dto>;
 
-/** A product as the API returns it: with its photos, in their order. */
-export type ProductWithImages = Product & { images: FileDto[] };
+/** A product as the API returns it: with its photos, in their order, and its category. */
+export type ProductWithImages = Product & {
+  images: FileDto[];
+  category: CategorySummary | null;
+};

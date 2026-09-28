@@ -1,7 +1,3 @@
-/** What the artist makes: a product's and a gallery picture's `category`. */
-export const PRODUCT_CATEGORIES = ['keramika', 'vysivka', 'linoryt'] as const;
-export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
-
 /** How an order travels, with what it costs in CZK. The server charges these, never the client. */
 export const SHIPPING_PRICES = {
   zasilkovna: 99,

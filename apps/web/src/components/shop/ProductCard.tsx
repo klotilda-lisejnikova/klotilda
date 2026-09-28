@@ -7,6 +7,7 @@ import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { Product } from "@/services";
 import { maxQuantity, useCart, useCartStore } from "@/store/cart.store";
+import { categoryName } from "@/lib/category";
 
 interface Props {
   product: Product;
@@ -28,7 +29,6 @@ const CHECK_ICON = "M5 13l4 4L19 7";
  */
 export default function ProductCard({ product, locale, eager = false }: Props) {
   const t = useTranslations("shop");
-  const tCategory = useTranslations("shop.filters");
   const [failed, setFailed] = useState<Set<string>>(new Set());
   const addItem = useCartStore((state) => state.addItem);
   const cartLine = useCart().find((i) => i.productId === product.id);
@@ -88,7 +88,7 @@ export default function ProductCard({ product, locale, eager = false }: Props) {
             className="absolute top-3 right-3 z-10 px-2.5 py-1 text-[0.6rem] tracking-[0.2em] text-[#6b5e50] uppercase"
             style={{ background: "rgba(250,250,248,0.9)" }}
           >
-            {tCategory(product.category)}
+            {categoryName(product.category, locale)}
           </span>
         )}
 

@@ -54,6 +54,8 @@ const LEGACY_PRODUCTION = [
   `CREATE TABLE "Orders" ("id" VARCHAR(255) NOT NULL, "customerFirstName" VARCHAR(255) NOT NULL, "customerLastName" VARCHAR(255) NOT NULL, "customerEmail" VARCHAR(255) NOT NULL, "customerPhone" VARCHAR(255), "street" VARCHAR(255) NOT NULL, "city" VARCHAR(255) NOT NULL, "zip" VARCHAR(255) NOT NULL, "shippingMethod" VARCHAR(255) NOT NULL, "shippingPrice" FLOAT DEFAULT '0', "items" TEXT NOT NULL, "totalAmount" FLOAT NOT NULL, "variableSymbol" VARCHAR(255) NOT NULL, "paymentStatus" VARCHAR(255) DEFAULT 'pending', "orderStatus" VARCHAR(255) DEFAULT 'new', "notes" TEXT, "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL, "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL, PRIMARY KEY ("id"))`,
   `CREATE TABLE "Files" ("id" VARCHAR(255) NOT NULL, "storageKey" VARCHAR(255) NOT NULL, "originalName" VARCHAR(255), "mimeType" VARCHAR(255) NOT NULL, "size" INTEGER NOT NULL, "checksum" VARCHAR(255), "visibility" VARCHAR(255) DEFAULT 'public', "ownerId" VARCHAR(255), "refType" VARCHAR(255), "refId" VARCHAR(255), "role" VARCHAR(255), "sortOrder" INTEGER DEFAULT 0, "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL, "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL, PRIMARY KEY ("id"))`,
   `INSERT INTO "Products" VALUES ('prod1', 'Váza', NULL, NULL, NULL, 1200, 'keramika', 1, true, now(), now())`,
+  `INSERT INTO "Products" VALUES ('prod2', 'Bez kategorie', NULL, NULL, NULL, 300, NULL, 1, true, now(), now())`,
+  `INSERT INTO "GalleryItems" VALUES ('gal1', 'Les', NULL, 'linoryt', 2, 0, true, now(), now())`,
   `INSERT INTO "Files" VALUES ('file1', 'Product/file1/vaza.jpg', 'vaza.jpg', 'image/jpeg', 10, NULL, 'public', 'adm1', 'Product', 'prod1', 'image', 0, now(), now())`,
   `INSERT INTO "Orders" VALUES ('ord1', 'Jana', 'Nová', 'jana@example.cz', NULL, 'Dlouhá 1', 'Praha', '11000', 'zasilkovna', 99, '[]', 1299, '1234567890', 'paid', 'shipped', NULL, now(), now())`,
 ];
@@ -108,6 +110,24 @@ describe('Migrations', () => {
       expect(product.status).toBe(200);
       expect(product.body.images).toEqual([
         expect.objectContaining({ id: 'file1', url: 'https://media.test/Product/file1/vaza.jpg' }),
+      ]);
+      // The fixed category list became rows; each row keeps the craft it had.
+      expect(product.body.category).toEqual(
+        expect.objectContaining({ slug: 'keramika', name_cs: 'Keramika', name_en: 'Ceramics' })
+      );
+      expect(product.body.categoryId).toBe(product.body.category.id);
+      expect((await request(core.app).get('/api/products/prod2')).body.category).toBeNull();
+      expect((await request(core.app).get('/api/gallery')).body.data).toEqual([
+        expect.objectContaining({
+          id: 'gal1',
+          category: expect.objectContaining({ slug: 'linoryt' }),
+        }),
+      ]);
+      const categories = await request(core.app).get('/api/categories');
+      expect(categories.body.data.map((category: { slug: string }) => category.slug)).toEqual([
+        'keramika',
+        'vysivka',
+        'linoryt',
       ]);
       const order = await core.models.Order.findByPk('ord1');
       expect(order?.get('paymentStatus')).toBe('paid');

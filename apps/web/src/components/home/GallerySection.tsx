@@ -9,18 +9,12 @@ import { getGalleryTranslations } from "@/i18n/home";
 import FadeIn from "@/components/ui/FadeIn";
 import Lightbox, { type LightboxSlide } from "@/components/ui/Lightbox";
 import { scrollBehavior } from "@/lib/motion";
+import { categoryName } from "@/lib/category";
 import type { Locale } from "@/types/locale";
 import type { GalleryItem, GalleryRow as GalleryRowNumber } from "@/services";
 
 const ROWS: GalleryRowNumber[] = [1, 2];
 const SECTION_BG = "#f5efe6";
-
-// Subtle per-category accent for the badge text (kept from the old hand-curated gallery).
-const CATEGORY_ACCENT: Record<string, string> = {
-  keramika: "#6b5e50",
-  vysivka: "#6e6050",
-  linoryt: "#62574e",
-};
 
 /** Above this many photos the phone slider shows "3 / 20" instead of a dot per photo. */
 const MAX_DOTS = 12;
@@ -64,7 +58,6 @@ function ArtworkCard({
   openLabel: string;
 }) {
   const { item, title, category } = artwork;
-  const accent = (item.category && CATEGORY_ACCENT[item.category]) || "#6b5e50";
 
   return (
     <button
@@ -86,8 +79,8 @@ function ArtworkCard({
         {category && (
           <div className="absolute top-3 right-3 z-10">
             <span
-              className="px-2.5 py-1 text-[0.6rem] tracking-[0.2em] uppercase"
-              style={{ background: "rgba(250,250,248,0.9)", color: accent }}
+              className="px-2.5 py-1 text-[0.6rem] tracking-[0.2em] text-[#6b5e50] uppercase"
+              style={{ background: "rgba(250,250,248,0.9)" }}
             >
               {category}
             </span>
@@ -335,7 +328,6 @@ function MobileSlider({
 
 export default function GallerySection({ items }: Props) {
   const t = useTranslations("home");
-  const tCat = useTranslations("home.gallery.categories");
   const labels = getGalleryTranslations(t);
   const locale = useLocale() as Locale;
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -347,10 +339,7 @@ export default function GallerySection({ items }: Props) {
     item,
     index,
     title: locale === "en" && item.title_en ? item.title_en : item.title_cs,
-    category:
-      item.category && CATEGORY_ACCENT[item.category]
-        ? tCat(item.category)
-        : null,
+    category: item.category ? categoryName(item.category, locale) : null,
   }));
 
   if (artworks.length === 0) return null;

@@ -27,13 +27,17 @@ access, the DTO types, the typed clients and the admin's form schema (`formSchem
 `apps/admin/src/app/validation.ts`, the server's own rules with Czech messages). Changing the data
 model means changing `fields.ts` — plus a migration (below).
 
-Model names (`Product`, `GalleryItem`, `Order`, `AdminUser`) are the production table names
+Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the production table names
 (`Products`, …) — never rename them.
 
 ## Backend
 
 `apps/api/src/app-config.ts` is the whole backend, declared; `src/env.ts` reads the environment.
 
+- Categories: auto CRUD, anyone reads, the admin writes; the slug is stored normalized (`toSlug`).
+  Products and gallery pictures point at one (`categoryId`, a foreign key: a category in use can't
+  be deleted) and come back with it attached as `category` (`src/catalogue/categories.ts`). The
+  shop shows only categories that hold something on offer.
 - Products and the gallery: auto CRUD. Anyone reads the **active** rows; the signed-in admin reads
   all and writes (`activeUnlessSignedIn`). Each row carries `images` (`File` rows, `role: 'image'`,
   `refType` `Product` / `GalleryItem`); deleting a row deletes its photos.

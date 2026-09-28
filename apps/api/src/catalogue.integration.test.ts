@@ -2,16 +2,25 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bearer, PNG_SIGNATURE, startTestApp } from './test-support/test-app';
 import type { TestApp } from './test-support/test-app';
 
-const VASE = { name_cs: 'Váza', price: 1200, category: 'keramika' };
+const VASE = { name_cs: 'Váza', price: 1200 };
 
 describe('Products and the gallery', () => {
   let app: TestApp;
   let token: string;
+  /** The migration creates the first categories. */
+  let ceramicsId: string;
 
   beforeAll(async () => {
     app = await startTestApp();
     token = await app.signInAdmin();
+    const categories = await app.api().get('/api/categories');
+    ceramicsId = categories.body.data.find(
+      (category: { slug: string }) => category.slug === 'keramika'
+    ).id;
   });
+
+  const createCategory = (body: object) =>
+    app.api().post('/api/categories').set('Authorization', bearer(token)).send(body);
 
   afterAll(async () => {
     await app?.close();
@@ -59,14 +68,75 @@ describe('Products and the gallery', () => {
       .api()
       .post('/api/products')
       .set('Authorization', bearer(token))
-      .send({ name_cs: 'Tričko', price: -5, category: 'textil' });
+      .send({ name_cs: 'Tričko', price: -5 });
     expect(response.status).toBe(400);
-    expect(response.body.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ path: 'price', code: 'min' }),
-        expect.objectContaining({ path: 'category', code: 'enum' }),
-      ])
+    expect(response.body.issues).toEqual([expect.objectContaining({ path: 'price', code: 'min' })]);
+
+    const unknownCategory = await app
+      .api()
+      .post('/api/products')
+      .set('Authorization', bearer(token))
+      .send({ ...VASE, categoryId: 'cat_missing' });
+    expect(unknownCategory.status).toBe(400);
+    expect(unknownCategory.body.issues).toEqual([
+      expect.objectContaining({ path: 'categoryId', code: 'reference' }),
+    ]);
+  });
+
+  it('returns each product with its category', async () => {
+    const product = await createProduct({ ...VASE, categoryId: ceramicsId });
+    const read = await app.api().get(`/api/products/${product.id}`);
+    expect(read.body.category).toEqual({
+      id: ceramicsId,
+      slug: 'keramika',
+      name_cs: 'Keramika',
+      name_en: 'Ceramics',
+      sortOrder: 0,
+    });
+    const filtered = await app.api().get('/api/products').query({ categoryId: ceramicsId });
+    expect(filtered.body.data.map((row: { id: string }) => row.id)).toContain(product.id);
+    const without = await createProduct(VASE);
+    expect((await app.api().get(`/api/products/${without.id}`)).body.category).toBeNull();
+  });
+
+  it('lets the admin add categories, with a plain slug', async () => {
+    expect((await app.api().post('/api/categories').send({ slug: 'x', name_cs: 'X' })).status).toBe(
+      401
     );
+    const created = await createCategory({ slug: 'Síťované Ubrusy', name_cs: 'Síťované ubrusy' });
+    expect(created.status).toBe(201);
+    expect(created.body.slug).toBe('sitovane-ubrusy');
+
+    const duplicate = await createCategory({ slug: 'sitovane-ubrusy', name_cs: 'Znovu' });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.issues).toEqual([
+      expect.objectContaining({ path: 'slug', code: 'unique' }),
+    ]);
+    const empty = await createCategory({ slug: '—', name_cs: 'Nic' });
+    expect(empty.status).toBe(400);
+    expect(empty.body.issues).toEqual([expect.objectContaining({ path: 'slug', code: 'format' })]);
+
+    const renamed = await app
+      .api()
+      .patch(`/api/categories/${created.body.id}`)
+      .set('Authorization', bearer(token))
+      .send({ slug: 'Ubrusy ' });
+    expect(renamed.body.slug).toBe('ubrusy');
+  });
+
+  it('refuses to delete a category that still holds something, and deletes an empty one', async () => {
+    const category = (await createCategory({ slug: 'podsedaky', name_cs: 'Podsedáky' })).body;
+    const product = await createProduct({ ...VASE, categoryId: category.id });
+    const del = () =>
+      app.api().delete(`/api/categories/${category.id}`).set('Authorization', bearer(token));
+
+    expect((await del()).status).toBe(409);
+    await app
+      .api()
+      .patch(`/api/products/${product.id}`)
+      .set('Authorization', bearer(token))
+      .send({ categoryId: null });
+    expect((await del()).status).toBe(204);
   });
 
   it('attaches photos, and removes them with the product', async () => {

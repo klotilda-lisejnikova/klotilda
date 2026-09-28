@@ -4,24 +4,22 @@ import { useToast } from '@nuxt/ui/composables';
 import { useRouter } from 'vue-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import { GALLERY_ROWS, galleryItemFields } from '@klotilda/domain';
-import type { GalleryItemWithImages, GalleryRow, ProductCategory } from '@klotilda/domain';
+import type { GalleryItemWithImages, GalleryRow } from '@klotilda/domain';
 import ConfirmDelete from '@/components/ConfirmDelete.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PhotoManager from '@/components/PhotoManager.vue';
 import { services } from '@/app/api';
 import { describeError } from '@/app/errors';
 import { emptyToNull } from '@/app/form-values';
-import { CATEGORY_LABELS, toSelectItems } from '@/app/labels';
+import { NO_CATEGORY, toCategoryChoice, toCategoryId, useCategories } from '@/app/categories';
 import { formSchema, VALIDATE_ON } from '@/app/validation';
 
 const props = defineProps<{ id?: string }>();
 
-const NO_CATEGORY = 'none';
-
 interface GalleryForm {
   title_cs: string;
   title_en: string;
-  category: ProductCategory | typeof NO_CATEGORY;
+  categoryId: string;
   row: GalleryRow;
   sortOrder: number;
   active: boolean;
@@ -30,7 +28,7 @@ interface GalleryForm {
 const EMPTY_FORM: GalleryForm = {
   title_cs: '',
   title_en: '',
-  category: NO_CATEGORY,
+  categoryId: NO_CATEGORY,
   row: GALLERY_ROWS[0],
   sortOrder: 0,
   active: true,
@@ -40,21 +38,22 @@ const toast = useToast();
 const router = useRouter();
 const queryClient = useQueryClient();
 const isNew = computed(() => !props.id);
-const categoryItems = [
+const { selectItems } = useCategories();
+const categoryItems = computed(() => [
   { value: NO_CATEGORY, label: 'Bez kategorie' },
-  ...toSelectItems(CATEGORY_LABELS),
-];
+  ...selectItems.value,
+]);
 const rowItems = GALLERY_ROWS.map((row) => ({ value: row, label: `${row}. řada` }));
 const form = reactive<GalleryForm>({ ...EMPTY_FORM });
 
 /** The category is picked from a list that also offers "none", so the form doesn't check it. */
-const { category: _category, ...checkedFields } = galleryItemFields;
+const { categoryId: _categoryId, ...checkedFields } = galleryItemFields;
 const schema = computed(() => formSchema(checkedFields, isNew.value ? 'create' : 'patch'));
 
 function toValues() {
   return emptyToNull({
     ...form,
-    category: form.category === NO_CATEGORY ? null : form.category,
+    categoryId: toCategoryId(form.categoryId),
   });
 }
 
@@ -75,7 +74,7 @@ watch(
     Object.assign(form, {
       title_cs: loaded.title_cs,
       title_en: loaded.title_en ?? '',
-      category: loaded.category ?? NO_CATEGORY,
+      categoryId: toCategoryChoice(loaded.categoryId),
       row: loaded.row,
       sortOrder: loaded.sortOrder,
       active: loaded.active,
@@ -148,8 +147,8 @@ function photoChanged() {
           <UFormField label="Název anglicky" name="title_en">
             <UInput v-model="form.title_en" class="w-full" />
           </UFormField>
-          <UFormField label="Kategorie" name="category" help="Jen štítek u fotky.">
-            <USelect v-model="form.category" :items="categoryItems" class="w-full" />
+          <UFormField label="Kategorie" name="categoryId" help="Jen štítek u fotky.">
+            <USelect v-model="form.categoryId" :items="categoryItems" class="w-full" />
           </UFormField>
           <UFormField label="Řada" name="row">
             <USelect v-model="form.row" :items="rowItems" class="w-full" />

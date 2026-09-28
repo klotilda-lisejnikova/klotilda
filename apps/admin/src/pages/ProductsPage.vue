@@ -1,23 +1,24 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { keepPreviousData, useQuery } from '@tanstack/vue-query';
-import type { ProductCategory, ProductWithImages } from '@klotilda/domain';
+import type { ProductWithImages } from '@klotilda/domain';
 import type { PaginatedResponse } from '@eleansphere/entity-core';
 import PageHeader from '@/components/PageHeader.vue';
 import { fileUrl, services } from '@/app/api';
 import { formatCzk } from '@/app/format';
-import { CATEGORY_LABELS, toSelectItems } from '@/app/labels';
+import { useCategories } from '@/app/categories';
 
 const PAGE_SIZE = 24;
 const ALL = 'all';
 
-const category = ref<ProductCategory | typeof ALL>(ALL);
+const category = ref<string>(ALL);
 const search = ref('');
 const page = ref(1);
-const categoryItems = [
+const { selectItems } = useCategories();
+const categoryItems = computed(() => [
   { value: ALL, label: 'Všechny kategorie' },
-  ...toSelectItems(CATEGORY_LABELS),
-];
+  ...selectItems.value,
+]);
 
 watch([category, search], () => {
   page.value = 1;
@@ -27,7 +28,7 @@ const { data, isPending, isError } = useQuery({
   queryKey: ['products', { category, search, page }],
   queryFn: () =>
     services.products.getAll({
-      filter: { category: category.value === ALL ? undefined : category.value },
+      filter: { categoryId: category.value === ALL ? undefined : category.value },
       q: search.value.trim() || undefined,
       page: page.value,
       limit: PAGE_SIZE,
@@ -97,7 +98,7 @@ const total = computed(() => data.value?.total ?? 0);
         <div class="p-3">
           <p class="truncate font-medium text-highlighted">{{ product.name_cs }}</p>
           <p class="flex justify-between text-sm text-muted">
-            <span>{{ product.category ? CATEGORY_LABELS[product.category] : '—' }}</span>
+            <span class="truncate">{{ product.category?.name_cs ?? '—' }}</span>
             <span class="tabular-nums">{{ formatCzk(product.price) }}</span>
           </p>
         </div>

@@ -4,6 +4,7 @@ import { listAllProducts } from "@/services";
 import { loadStaticData } from "@/lib/static-data";
 import FadeIn from "@/components/ui/FadeIn";
 import ShopCatalog, { CatalogView } from "@/components/shop/ShopCatalog";
+import { ALL_CATEGORIES } from "@/components/shop/CategoryFilter";
 
 /**
  * Static, regenerated at most every minute. Stock shown here may be that old; the cart and the
@@ -43,7 +44,11 @@ export default async function ShopPage({ params }: Props) {
         {/* The static HTML holds every product; the browser then applies ?category= itself. */}
         <Suspense
           fallback={
-            <CatalogView products={products} active="all" locale={locale} />
+            <CatalogView
+              products={products}
+              active={ALL_CATEGORIES}
+              locale={locale}
+            />
           }
         >
           <ShopCatalog products={products} locale={locale} />

@@ -93,10 +93,7 @@
     "description": "Originální ručně vyráběná díla",
     "productsCount": "{count, plural, one {# položka} few {# položky} other {# položek}}",
     "filters": {
-      "all": "Vše",
-      "keramika": "Keramika",
-      "vysivka": "Výšivka",
-      "linoryt": "Linoryt"
+      "all": "Vše"
     },
     "soldOut": "Vyprodáno",
     "addToCart": "Přidat do košíku",
@@ -125,11 +122,6 @@
     "gallery": {
       "title": "Galerie",
       "subtitle": "Výběr z posledních prací",
-      "categories": {
-        "keramika": "Keramika",
-        "vysivka": "Výšivka",
-        "linoryt": "Linoryt"
-      },
       "open": "Zvětšit",
       "previous": "Předchozí práce",
       "next": "Další práce"

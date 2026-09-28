@@ -93,10 +93,7 @@
     "description": "Original handmade works",
     "productsCount": "{count, plural, one {# item} other {# items}}",
     "filters": {
-      "all": "All",
-      "keramika": "Ceramics",
-      "vysivka": "Embroidery",
-      "linoryt": "Linocut"
+      "all": "All"
     },
     "soldOut": "Sold out",
     "addToCart": "Add to cart",
@@ -125,11 +122,6 @@
     "gallery": {
       "title": "Gallery",
       "subtitle": "A selection of recent works",
-      "categories": {
-        "keramika": "Ceramics",
-        "vysivka": "Embroidery",
-        "linoryt": "Linocut"
-      },
       "open": "Enlarge",
       "previous": "Previous work",
       "next": "Next work"

@@ -5,6 +5,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getProduct, listAllProducts, type Product } from "@/services";
 import { loadStaticData } from "@/lib/static-data";
+import { categoryName } from "@/lib/category";
 import ProductGallery from "@/components/shop/ProductGallery";
 import ProductPurchase from "@/components/shop/ProductPurchase";
 
@@ -92,10 +93,11 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {/* Info */}
         <div className="flex flex-col">
-          {/* Category chip — the craft chips of "O mně" */}
-          <span className="mb-5 self-start border border-stone-300 px-3 py-1 text-[0.65rem] tracking-[0.25em] text-stone-500 uppercase">
-            {t(`filters.${product.category}`)}
-          </span>
+          {product.category && (
+            <span className="mb-5 self-start border border-stone-300 px-3 py-1 text-[0.65rem] tracking-[0.25em] text-stone-500 uppercase">
+              {categoryName(product.category, locale)}
+            </span>
+          )}
 
           {/* Name — the serif of the home page's headings */}
           <h1 className="font-serif text-3xl leading-snug font-light tracking-[0.06em] text-stone-800 sm:text-4xl">

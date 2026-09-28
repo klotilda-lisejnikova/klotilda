@@ -1,12 +1,7 @@
 import { AuthSession, createMemorySessionStorage } from '@eleansphere/entity-core';
-import {
-  createServices,
-  type GalleryRow,
-  type ProductCategory,
-  type Services,
-} from '@klotilda/domain';
+import { createServices, type GalleryRow, type Services } from '@klotilda/domain';
 import { loadEnvFile, requireVariable } from '../env';
-import { demoImage, type DemoPalette } from './demo-image';
+import { demoImage, type DemoCraft, type DemoPalette } from './demo-image';
 
 /**
  * Fills a test shop with made-up products and gallery pictures, through the API like the admin
@@ -26,7 +21,7 @@ interface DemoProduct {
   description_cs: string;
   description_en: string;
   price: number;
-  category: ProductCategory;
+  category: DemoCraft;
   stockCount: number;
   active: boolean;
   photos: DemoPalette[];
@@ -35,7 +30,7 @@ interface DemoProduct {
 interface DemoGalleryItem {
   title_cs: string;
   title_en: string;
-  category: ProductCategory;
+  category: DemoCraft;
   row: GalleryRow;
   sortOrder: number;
   active: boolean;
@@ -271,25 +266,31 @@ async function seedDemo(): Promise<void> {
 }
 
 async function createDemoData(services: Services): Promise<void> {
+  const categoryIds = new Map(
+    (await services.categories.getAll({ limit: LIST_LIMIT })).data.map((c) => [c.slug, c.id])
+  );
+  const categoryId = (craft: DemoCraft) => {
+    const id = categoryIds.get(craft);
+    if (!id) throw new Error(`The API has no category "${craft}" — is it migrated?`);
+    return id;
+  };
+
   const existingProducts = new Set(
     (await services.products.getAll({ limit: LIST_LIMIT })).data.map((p) => p.name_cs)
   );
-  for (const { photos, ...product } of PRODUCTS) {
+  for (const { photos, category, ...product } of PRODUCTS) {
     if (existingProducts.has(product.name_cs)) {
       console.info(`Product "${product.name_cs}" exists, skipped`);
       continue;
     }
     const created = await services.products.create({
       ...product,
+      categoryId: categoryId(category),
       description_cs: `${product.description_cs} ${DEMO_NOTE}`,
       description_en: `${product.description_en} ${DEMO_NOTE_EN}`,
     });
     for (const [index, palette] of photos.entries()) {
-      await services.products.uploadImage(
-        created.id,
-        png(demoImage(product.category, palette)),
-        index
-      );
+      await services.products.uploadImage(created.id, png(demoImage(category, palette)), index);
     }
     console.info(`Product "${product.name_cs}" created with ${photos.length} photo(s)`);
   }
@@ -297,13 +298,13 @@ async function createDemoData(services: Services): Promise<void> {
   const existingGallery = new Set(
     (await services.gallery.getAll({ limit: LIST_LIMIT })).data.map((g) => g.title_cs)
   );
-  for (const { photo, ...item } of GALLERY) {
+  for (const { photo, category, ...item } of GALLERY) {
     if (existingGallery.has(item.title_cs)) {
       console.info(`Gallery item "${item.title_cs}" exists, skipped`);
       continue;
     }
-    const created = await services.gallery.create(item);
-    await services.gallery.uploadImage(created.id, png(demoImage(item.category, photo)), 0);
+    const created = await services.gallery.create({ ...item, categoryId: categoryId(category) });
+    await services.gallery.uploadImage(created.id, png(demoImage(category, photo)), 0);
     console.info(`Gallery item "${item.title_cs}" created`);
   }
 }

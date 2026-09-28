@@ -44,6 +44,11 @@ export const router = createRouter({
           props: true,
         },
         {
+          path: 'categories',
+          name: 'categories',
+          component: () => import('@/pages/CategoriesPage.vue'),
+        },
+        {
           path: 'gallery',
           name: 'gallery',
           component: () => import('@/pages/GalleryPage.vue'),

@@ -7,6 +7,8 @@ defineProps<{
   /** What else goes with it. */
   detail?: string;
   loading?: boolean;
+  /** Only the bin, for a row in a list. */
+  compact?: boolean;
 }>();
 const emit = defineEmits<{ confirm: [] }>();
 
@@ -21,6 +23,15 @@ function confirm() {
 <template>
   <UModal v-model:open="open" :title="question" :description="detail">
     <UButton
+      v-if="compact"
+      icon="i-lucide-trash-2"
+      color="error"
+      variant="ghost"
+      aria-label="Smazat"
+      :loading="loading"
+    />
+    <UButton
+      v-else
       icon="i-lucide-trash-2"
       label="Smazat"
       color="error"

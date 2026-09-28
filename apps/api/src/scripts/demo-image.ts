@@ -1,5 +1,4 @@
 import { crc32, deflateSync } from 'node:zlib';
-import type { ProductCategory } from '@klotilda/domain';
 
 /** Portrait 3:4, like the photos the site crops to. */
 const WIDTH = 750;
@@ -7,6 +6,9 @@ const HEIGHT = 1000;
 const CHANNELS = 3;
 
 type Rgb = readonly [number, number, number];
+
+/** The slugs of the first categories, which the migration creates. */
+export type DemoCraft = 'keramika' | 'vysivka' | 'linoryt';
 
 /** Background top / bottom and the motif colour of one placeholder. */
 export interface DemoPalette {
@@ -56,7 +58,7 @@ function grain(x: number, y: number): number {
 }
 
 /** Whether (u, v) — 0…1 across the picture — belongs to the craft's motif. */
-const MOTIFS: Record<ProductCategory, (u: number, v: number, x: number, y: number) => boolean> = {
+const MOTIFS: Record<DemoCraft, (u: number, v: number, x: number, y: number) => boolean> = {
   // A bowl: the lower half of an ellipse with a rim.
   keramika: (u, v) => {
     const dx = (u - 0.5) / 0.34;
@@ -83,7 +85,7 @@ const MOTIFS: Record<ProductCategory, (u: number, v: number, x: number, y: numbe
 };
 
 /** A 750×1000 PNG placeholder: a soft gradient with the craft's motif on it. */
-export function demoImage(category: ProductCategory, palette: DemoPalette): Buffer {
+export function demoImage(category: DemoCraft, palette: DemoPalette): Buffer {
   const pixels = Buffer.alloc(WIDTH * HEIGHT * CHANNELS);
   const isMotif = MOTIFS[category];
   for (let y = 0; y < HEIGHT; y++) {

@@ -25,7 +25,7 @@ export const session = new AuthSession({
   onSessionExpired: () => reportSessionExpired(),
 });
 
-/** `services.products`, `services.gallery`, `services.orders`, `services.auth`. */
+/** `services.products`, `services.categories`, `services.gallery`, `services.orders`, `services.auth`. */
 export const services = createServices(apiBaseUrl, session);
 
 /**

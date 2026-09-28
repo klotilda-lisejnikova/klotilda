@@ -6,6 +6,7 @@ import { useSession } from '@/app/session';
 const NAV_ITEMS = [
   { to: { name: 'orders' }, label: 'Objednávky', icon: 'i-lucide-receipt' },
   { to: { name: 'products' }, label: 'Produkty', icon: 'i-lucide-package' },
+  { to: { name: 'categories' }, label: 'Kategorie', icon: 'i-lucide-tags' },
   { to: { name: 'gallery' }, label: 'Galerie', icon: 'i-lucide-images' },
 ] as const;
 
