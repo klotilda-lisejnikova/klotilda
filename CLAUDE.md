@@ -49,6 +49,13 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the
   rows locked (`FOR UPDATE`), so the last piece sells once. It answers the bank account, a random
   variable symbol and a QR Platba code, and e-mails the customer and `ADMIN_EMAIL` (a failed
   e-mail is only logged).
+- Order actions: `POST /api/orders/:id/actions/:action` (`src/orders/`), signed-in admin only. The
+  steps and when each is allowed are in the domain (`availableActions`, `applyAction` in
+  `entities/order/workflow.ts`): mark-paid, ship (parcel number), ready-for-pickup, mark-delivered,
+  cancel (puts the pieces back in stock unless `restock: false`), mark-refunded. Each is written to
+  the order's `history` (JSON) and e-mails the customer unless `notify: false`; PATCHing the
+  statuses stays for corrections and does neither. E-mails are blocks rendered as HTML in the
+  site's colours and as plain text (`src/emails/email-layout.ts`); `SITE_URL` is linked in them.
 - Files: any signed-in admin uploads (only product / gallery images) and deletes any photo; photos
   are public.
 - Auth: be-core's login with rotating refresh tokens; accounts come from `seed:admin`
@@ -98,6 +105,11 @@ Branches: `main` = production, `dev` = test.
   - `test` — follows `dev`, domain `klotilda-api-test-b60e.up.railway.app`, its own database,
     photos in the R2 bucket `klotilda-media-test` served through the API (no public bucket URL),
     CORS only for the test sites. Admin accounts are seeded separately there.
+
+  After a change to the catalogue, the gallery or the stock the API calls the web's
+  `POST /api/revalidate` (`WEB_REVALIDATE_URL`, `WEB_REVALIDATE_SECRET` = the web's
+  `REVALIDATE_SECRET`), so admin edits show at once; set for `test` / the `dev` branch, not yet
+  for production. `SITE_URL` (linked from e-mails) is `https://test.klotilda.cz` on `test`.
 
   `apps/api/Dockerfile`, build context the repository root, `NODE_AUTH_TOKEN` as a build argument
   (the placeholder in `tooling/user.npmrc`; never name the token in a `RUN` line). Migrations run

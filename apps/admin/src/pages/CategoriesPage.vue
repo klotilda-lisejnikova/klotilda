@@ -11,6 +11,7 @@ import { services } from '@/app/api';
 import { CATEGORIES_QUERY_KEY, useCategories } from '@/app/categories';
 import { describeError } from '@/app/errors';
 import { emptyToNull } from '@/app/form-values';
+import { plural } from '@/app/format';
 import { formSchema, VALIDATE_ON } from '@/app/validation';
 
 interface CategoryForm {
@@ -55,17 +56,11 @@ const inUse = (category: Category) => {
   return !counts || counts.products + counts.gallery > 0;
 };
 
-/** Czech: 1 produkt, 2–4 produkty, 5 produktů. */
-function countProducts(count: number): string {
-  if (count === 1) return '1 produkt';
-  return count >= 2 && count <= 4 ? `${count} produkty` : `${count} produktů`;
-}
-
 function describeUsage(category: Category): string {
   const counts = usage.value?.[category.id];
   if (!counts) return '';
   if (counts.products + counts.gallery === 0) return 'prázdná';
-  const products = countProducts(counts.products);
+  const products = plural(counts.products, 'produkt', 'produkty', 'produktů');
   return counts.gallery ? `${products} · ${counts.gallery} v galerii` : products;
 }
 

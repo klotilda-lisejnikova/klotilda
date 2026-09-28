@@ -14,6 +14,8 @@ const STREET_MAX_LENGTH = 200;
 const CITY_MAX_LENGTH = 100;
 const ZIP_MAX_LENGTH = 10;
 const NOTES_MAX_LENGTH = 2000;
+const TRACKING_NUMBER_MAX_LENGTH = 60;
+const ACTION_MESSAGE_MAX_LENGTH = 1000;
 
 /** What the customer fills in at checkout. */
 export const customerFields = {
@@ -56,4 +58,19 @@ export const orderFields = {
   variableSymbol: { type: 'STRING', required: true, readOnly: true },
   paymentStatus: { type: 'ENUM', values: PAYMENT_STATUSES, default: DEFAULT_PAYMENT_STATUS },
   orderStatus: { type: 'ENUM', values: ORDER_STATUSES, default: DEFAULT_ORDER_STATUS },
+  /** The carrier's parcel number, set when the order is shipped. */
+  trackingNumber: { type: 'STRING', maxLength: TRACKING_NUMBER_MAX_LENGTH, readOnly: true },
+  /** What happened to the order, as `OrderEvent[]` JSON, oldest first. Empty on older orders. */
+  history: { type: 'TEXT', readOnly: true },
+} as const satisfies Fields;
+
+/** What the admin may send with an order action (`POST /api/orders/:id/actions/:action`). */
+export const orderActionFields = {
+  /** E-mail the customer about it; on unless turned off. */
+  notify: { type: 'BOOLEAN' },
+  /** A few words for the customer, added to the e-mail — e.g. where to pick the parcel up. */
+  message: { type: 'TEXT', maxLength: ACTION_MESSAGE_MAX_LENGTH },
+  trackingNumber: { type: 'STRING', maxLength: TRACKING_NUMBER_MAX_LENGTH },
+  /** Cancelling puts the pieces back in stock; on unless turned off. */
+  restock: { type: 'BOOLEAN' },
 } as const satisfies Fields;

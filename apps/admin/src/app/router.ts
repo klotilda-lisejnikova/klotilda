@@ -15,7 +15,11 @@ export const router = createRouter({
       path: '/',
       component: AdminLayout,
       children: [
-        { path: '', redirect: { name: 'orders' } },
+        {
+          path: '',
+          name: 'overview',
+          component: () => import('@/pages/OverviewPage.vue'),
+        },
         {
           path: 'orders',
           name: 'orders',
@@ -73,7 +77,7 @@ export const router = createRouter({
 router.beforeEach(async (to) => {
   const session = useSession();
   await session.restore();
-  if (to.meta.guest) return session.isSignedIn.value ? { name: 'orders' } : true;
+  if (to.meta.guest) return session.isSignedIn.value ? { name: 'overview' } : true;
   if (!session.isSignedIn.value) return { name: 'sign-in', query: { redirect: to.fullPath } };
   return true;
 });

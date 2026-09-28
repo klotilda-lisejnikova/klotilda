@@ -24,6 +24,8 @@ import { authorizeFileAccess } from './files/authorize-file-access';
 import { createShopImages } from './files/shop-images';
 import { createModelRegistry } from './models-registry';
 import { migrations } from './migrations';
+import { createOrderActionsPlugin } from './orders/order-actions-plugin';
+import { createWebRevalidator } from './web/revalidate-web';
 
 const ACCESS_TOKEN_LIFETIME = '15m';
 const REFRESH_TOKEN_LIFETIME = '30d';
@@ -74,6 +76,7 @@ export function buildAppConfig(
     port: environment.port,
     trustProxy: environment.trustProxy,
     cors: { origin: environment.corsOrigins },
+    middleware: [createWebRevalidator(environment.webRevalidation)],
     modelConfigs: toModelConfigs(allEntities, { custom: ENTITIES_WITHOUT_CRUD_ROUTES }),
     routes: {
       [categoryEntity.config.name]: {
@@ -99,7 +102,13 @@ export function buildAppConfig(
         registry: models,
         bankAccount: environment.bankAccount,
         adminEmail: environment.adminEmail,
+        siteUrl: environment.siteUrl,
         rateLimit: rateLimitsOff ? 'off' : (overrides.rateLimit ?? CHECKOUT_RATE_LIMIT),
+      }),
+      createOrderActionsPlugin({
+        registry: models,
+        jwtSecret: environment.jwtSecret,
+        siteUrl: environment.siteUrl,
       }),
     ],
     email: {

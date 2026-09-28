@@ -34,6 +34,8 @@ export const testEnvironment: Environment = {
   emailFrom: 'Klotilda <info@klotilda.test>',
   email: { kind: 'log' },
   adminEmail: ARTIST_EMAIL,
+  siteUrl: 'https://klotilda.test',
+  webRevalidation: undefined,
   storage: { kind: 'memory' },
   bankAccount: { iban: 'CZ6508000000192000145399', display: '192000145399/0800' },
 };

@@ -1,13 +1,15 @@
-import type { OrderItem, ShippingMethod } from '@klotilda/domain';
-import { escapeHtml } from './escape-html';
+import { TRACKING_URLS } from '@klotilda/domain';
+import type { OrderAction, OrderItem, PaymentStatus, ShippingMethod } from '@klotilda/domain';
+import { formatCzk } from './email-layout';
+import type { EmailBlock, EmailContent } from './email-layout';
 
 const SHIPPING_LABELS: Record<ShippingMethod, string> = {
   zasilkovna: 'Zásilkovna',
   ceska_posta: 'Česká pošta',
-  osobni_odber: 'Osobní odběr',
+  osobni_odber: 'Osobní odběr v Praze',
 };
 
-/** What both e-mails about a new order say. */
+/** What the e-mails about an order say. Customers know an order by its variable symbol. */
 export interface PlacedOrder {
   id: string;
   customerFirstName: string;
@@ -20,82 +22,185 @@ export interface PlacedOrder {
   shippingPrice: number;
   totalAmount: number;
   variableSymbol: string;
+  paymentStatus: PaymentStatus;
   items: OrderItem[];
 }
 
-export interface EmailMessage {
-  subject: string;
-  html: string;
+/** What the admin added to the action. */
+export interface ActionDetails {
+  message?: string;
+  trackingNumber?: string;
 }
 
-const formatCzk = (amount: number) => `${amount.toLocaleString('cs-CZ')} Kč`;
+/** "Odeslali jsme ji …" */
+const SHIPPED_WITH: Partial<Record<ShippingMethod, string>> = {
+  zasilkovna: 'Zásilkovnou',
+  ceska_posta: 'Českou poštou',
+};
 
-function describeAddress(order: PlacedOrder): string {
-  return escapeHtml(`${order.street}, ${order.zip} ${order.city}`);
+const address = (order: PlacedOrder) => `${order.street}, ${order.zip} ${order.city}`;
+
+function itemsBlock(order: PlacedOrder): EmailBlock {
+  return {
+    kind: 'items',
+    items: order.items,
+    shipping: { label: SHIPPING_LABELS[order.shippingMethod], price: order.shippingPrice },
+    total: order.totalAmount,
+  };
 }
 
-function describeItems(items: OrderItem[]): string {
-  return items
-    .map(
-      (item) => `<tr>
-          <td style="padding:4px 8px">${escapeHtml(item.name)}</td>
-          <td style="padding:4px 8px">${item.quantity}×</td>
-          <td style="padding:4px 8px">${formatCzk(item.price)}</td>
-        </tr>`
-    )
-    .join('');
-}
+const noteBlocks = (message: string | undefined): EmailBlock[] =>
+  message?.trim() ? [{ kind: 'note', text: message.trim() }] : [];
 
 /**
  * To the customer, as soon as the order is placed: what they ordered and how to pay. The QR code
  * is on the shop's confirmation page; the e-mail carries account, symbol and amount as text.
  */
-export function orderReceivedEmail(order: PlacedOrder, bankAccount: string): EmailMessage {
+export function orderReceivedEmail(order: PlacedOrder, bankAccount: string): EmailContent {
+  const isPickup = order.shippingMethod === 'osobni_odber';
   return {
-    subject: `Objednávka ${order.id} přijata — čeká se na platbu`,
-    html: `
-      <h2>Děkujeme za vaši objednávku!</h2>
-      <p>Číslo objednávky: <strong>${escapeHtml(order.id)}</strong></p>
-      <table border="0" cellspacing="0">
-        <thead>
-          <tr>
-            <th style="padding:4px 8px;text-align:left">Produkt</th>
-            <th style="padding:4px 8px;text-align:left">Ks</th>
-            <th style="padding:4px 8px;text-align:left">Cena</th>
-          </tr>
-        </thead>
-        <tbody>${describeItems(order.items)}</tbody>
-      </table>
-      <p>Doprava: ${SHIPPING_LABELS[order.shippingMethod]} (${formatCzk(order.shippingPrice)})</p>
-      <p><strong>Celkem: ${formatCzk(order.totalAmount)}</strong></p>
-      <p>Adresa doručení: ${describeAddress(order)}</p>
-      <h3>Platební údaje</h3>
-      <p>
-        Prosím uhraďte částku převodem nebo naskenováním QR kódu na stránce s potvrzením objednávky.
-        <br />Číslo účtu: <strong>${escapeHtml(bankAccount)}</strong>
-        <br />Variabilní symbol: <strong>${order.variableSymbol}</strong>
-        <br />Částka: <strong>${formatCzk(order.totalAmount)}</strong>
-      </p>
-      <p>Po přijetí platby vaši objednávku zpracujeme a o odeslání zásilky vás budeme informovat.</p>
-    `,
+    subject: `Objednávka ${order.variableSymbol} — čeká na platbu`,
+    title: 'Děkujeme za objednávku',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: `Dobrý den, objednávku ${order.variableSymbol} jsme přijali. Jakmile na účet dorazí platba, pustíme se do přípravy.`,
+      },
+      itemsBlock(order),
+      {
+        kind: 'facts',
+        rows: [
+          ['Číslo účtu', bankAccount],
+          ['Variabilní symbol', order.variableSymbol],
+          ['Částka', formatCzk(order.totalAmount)],
+        ],
+      },
+      {
+        kind: 'paragraph',
+        text: 'Platit můžete i QR kódem ze stránky s potvrzením objednávky.',
+      },
+      isPickup
+        ? {
+            kind: 'paragraph',
+            text: 'Až bude objednávka připravená, ozveme se, kde a kdy si ji vyzvednete.',
+          }
+        : { kind: 'facts', rows: [['Doručení na adresu', address(order)]] },
+    ],
   };
 }
 
 /** To the artist: a new order, and the symbol to look for on the bank account. */
-export function newOrderEmail(order: PlacedOrder): EmailMessage {
-  const customer = `${order.customerFirstName} ${order.customerLastName} (${order.customerEmail})`;
-  const items = order.items.map((item) => `${item.name} ×${item.quantity}`).join(', ');
+export function newOrderEmail(order: PlacedOrder): EmailContent {
   return {
-    subject: `Nová objednávka ${order.id} — čeká na platbu (VS ${order.variableSymbol})`,
-    html: `
-      <h2>Nová objednávka</h2>
-      <p>Objednávka: <strong>${escapeHtml(order.id)}</strong> · VS: <strong>${order.variableSymbol}</strong></p>
-      <p>Zákazník: ${escapeHtml(customer)}</p>
-      <p>Položky: ${escapeHtml(items)}</p>
-      <p>Celkem: ${formatCzk(order.totalAmount)}</p>
-      <p>Doprava: ${SHIPPING_LABELS[order.shippingMethod]}</p>
-      <p>Adresa: ${describeAddress(order)}</p>
-      <p>Sklad byl u položek objednávky již snížen. Až platba dorazí na účet (hledejte VS ${order.variableSymbol}), označte objednávku v adminu jako zaplacenou.</p>
-    `,
+    subject: `Nová objednávka ${order.variableSymbol} — ${formatCzk(order.totalAmount)}`,
+    title: 'Nová objednávka',
+    blocks: [
+      {
+        kind: 'facts',
+        rows: [
+          ['Zákazník', `${order.customerFirstName} ${order.customerLastName}`],
+          ['E-mail', order.customerEmail],
+          ['Adresa', address(order)],
+          ['Variabilní symbol', order.variableSymbol],
+        ],
+      },
+      itemsBlock(order),
+      {
+        kind: 'paragraph',
+        text: `Sklad je u položek už snížený. Až platba s VS ${order.variableSymbol} dorazí na účet, dejte v adminu „Platba dorazila“.`,
+      },
+    ],
   };
 }
+
+type ActionEmail = (order: PlacedOrder, details: ActionDetails) => EmailContent;
+
+/** The customer's e-mail for each action that has one; `mark-delivered` has none. */
+export const ORDER_ACTION_EMAILS: Partial<Record<OrderAction, ActionEmail>> = {
+  'mark-paid': (order, { message }) => ({
+    subject: `Objednávka ${order.variableSymbol} — platba dorazila`,
+    title: 'Platba dorazila',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text:
+          order.shippingMethod === 'osobni_odber'
+            ? `Děkujeme, platbu za objednávku ${order.variableSymbol} jsme přijali. Až bude připravená k vyzvednutí, dáme vám vědět.`
+            : `Děkujeme, platbu za objednávku ${order.variableSymbol} jsme přijali. Teď ji balíme a ozveme se, až bude na cestě.`,
+      },
+      ...noteBlocks(message),
+      itemsBlock(order),
+    ],
+  }),
+
+  ship: (order, { message, trackingNumber }) => {
+    const trackingUrl = trackingNumber && TRACKING_URLS[order.shippingMethod]?.(trackingNumber);
+    return {
+      subject: `Objednávka ${order.variableSymbol} je na cestě`,
+      title: 'Zásilka je na cestě',
+      blocks: [
+        {
+          kind: 'paragraph',
+          text:
+            `Objednávku ${order.variableSymbol} jsme odeslali ${SHIPPED_WITH[order.shippingMethod] ?? ''}`.trim() +
+            '.',
+        },
+        ...(trackingNumber
+          ? [{ kind: 'facts', rows: [['Číslo zásilky', trackingNumber]] } satisfies EmailBlock]
+          : []),
+        ...(trackingUrl
+          ? [{ kind: 'button', label: 'Sledovat zásilku', href: trackingUrl } satisfies EmailBlock]
+          : []),
+        ...noteBlocks(message),
+        { kind: 'facts', rows: [['Doručení na adresu', address(order)]] },
+      ],
+    };
+  },
+
+  'ready-for-pickup': (order, { message }) => ({
+    subject: `Objednávka ${order.variableSymbol} je připravená k vyzvednutí`,
+    title: 'Připraveno k vyzvednutí',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: `Objednávka ${order.variableSymbol} na vás čeká.`,
+      },
+      ...(message?.trim()
+        ? noteBlocks(message)
+        : [
+            {
+              kind: 'paragraph',
+              text: 'Odpovězte prosím na tento e-mail a domluvíme se, kde a kdy si ji vyzvednete.',
+            } satisfies EmailBlock,
+          ]),
+    ],
+  }),
+
+  cancel: (order, { message }) => ({
+    subject: `Objednávka ${order.variableSymbol} byla zrušena`,
+    title: 'Objednávka zrušena',
+    blocks: [
+      { kind: 'paragraph', text: `Objednávku ${order.variableSymbol} jsme zrušili.` },
+      ...noteBlocks(message),
+      {
+        kind: 'paragraph',
+        text:
+          order.paymentStatus === 'paid'
+            ? `Zaplacenou částku ${formatCzk(order.totalAmount)} vám vrátíme na účet, ze kterého platba přišla.`
+            : 'Pokud jste ji mezitím zaplatili, peníze vám vrátíme na účet, ze kterého platba přišla.',
+      },
+    ],
+  }),
+
+  'mark-refunded': (order, { message }) => ({
+    subject: `Objednávka ${order.variableSymbol} — peníze jsou na cestě zpět`,
+    title: 'Vrátili jsme vám peníze',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: `Za zrušenou objednávku ${order.variableSymbol} jsme vám poslali ${formatCzk(order.totalAmount)} zpět na účet. Na účtu je uvidíte obvykle do dvou pracovních dnů.`,
+      },
+      ...noteBlocks(message),
+    ],
+  }),
+};

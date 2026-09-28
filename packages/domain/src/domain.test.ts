@@ -1,13 +1,57 @@
 import { describe, expect, it } from 'vitest';
 import { validateFields } from '@eleansphere/schema';
 import {
+  applyAction,
+  availableActions,
   customerFields,
   orderFields,
+  parseOrderHistory,
   parseOrderItems,
   SHIPPING_METHODS,
   SHIPPING_PRICES,
   toSlug,
 } from './index';
+import type { OrderState } from './index';
+
+describe('Order actions', () => {
+  const placed: OrderState = {
+    paymentStatus: 'pending',
+    orderStatus: 'new',
+    shippingMethod: 'zasilkovna',
+  };
+
+  it('follow an order from payment to delivery', () => {
+    expect(availableActions(placed)).toEqual(['mark-paid', 'cancel']);
+    const paid = { ...placed, ...applyAction(placed, 'mark-paid') };
+    expect(paid).toMatchObject({ paymentStatus: 'paid', orderStatus: 'processing' });
+    expect(availableActions(paid)).toEqual(['ship', 'cancel']);
+    const shipped = { ...paid, ...applyAction(paid, 'ship') };
+    expect(availableActions(shipped)).toEqual(['mark-delivered']);
+    expect(applyAction(shipped, 'mark-delivered').orderStatus).toBe('delivered');
+  });
+
+  it('hand a pickup over in person instead of shipping it', () => {
+    const paid: OrderState = { ...placed, shippingMethod: 'osobni_odber', paymentStatus: 'paid' };
+    expect(availableActions(paid)).toEqual(['ready-for-pickup', 'cancel']);
+    const ready = { ...paid, ...applyAction(paid, 'ready-for-pickup') };
+    expect(ready.orderStatus).toBe('ready');
+    expect(availableActions(ready)).toEqual(['mark-delivered', 'cancel']);
+  });
+
+  it('refund a paid order only once it is cancelled', () => {
+    const paid: OrderState = { ...placed, paymentStatus: 'paid', orderStatus: 'processing' };
+    expect(availableActions(paid)).not.toContain('mark-refunded');
+    const cancelled = { ...paid, ...applyAction(paid, 'cancel') };
+    expect(availableActions(cancelled)).toEqual(['mark-refunded']);
+    expect(availableActions({ ...placed, orderStatus: 'cancelled' })).toEqual([]);
+  });
+
+  it('read an older order without history as an empty one', () => {
+    expect(parseOrderHistory({ history: null })).toEqual([]);
+    const events = [{ type: 'placed', at: '2026-09-28T10:00:00.000Z' }];
+    expect(parseOrderHistory({ history: JSON.stringify(events) })).toEqual(events);
+  });
+});
 
 describe('Categories', () => {
   it('turn a name into the slug the shop address uses', () => {

@@ -2,6 +2,10 @@ import { defineEntity } from '@eleansphere/entity-core';
 import type { InferCreateDto } from '@eleansphere/entity-core';
 import { orderFields } from './fields';
 import type { customerFields } from './fields';
+import { ORDER_ACTION_ROUTE } from './workflow';
+import type { OrderAction, OrderActionRequest } from './workflow';
+
+export * from './workflow';
 
 export const ORDERS_PATH = '/api/orders';
 /** Where the shop places an order: public, and the only way an order comes to be. */
@@ -50,7 +54,8 @@ export const orderEntity = defineEntity({
   access: { read: 'auth', write: 'auth' },
   fields: orderFields,
   query: {
-    filter: { paymentStatus: 'eq', orderStatus: 'eq' },
+    // Lists of values: the admin's tabs each cover a few statuses.
+    filter: { paymentStatus: 'in', orderStatus: 'in' },
     sort: ['createdAt', 'totalAmount'],
     defaultSort: '-createdAt',
     search: ['customerLastName', 'customerEmail', 'variableSymbol'],
@@ -61,6 +66,15 @@ export const orderEntity = defineEntity({
     class extends Base {
       checkout(request: CheckoutRequest) {
         return this.post<CheckoutResponse>(CHECKOUT_PATH, request);
+      }
+
+      /** Takes the order a step further (`availableActions`); answers the updated order. */
+      act(id: string, action: OrderAction, request: OrderActionRequest = {}) {
+        const path = ORDER_ACTION_ROUTE.replace(':id', encodeURIComponent(id)).replace(
+          ':action',
+          action
+        );
+        return this.post<Order>(path, request);
       }
     },
 });

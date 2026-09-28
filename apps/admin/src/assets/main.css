@@ -3,6 +3,28 @@
 
 @theme static {
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  /* The website's serif (apps/web globals.css). */
+  --font-serif: Georgia, 'Times New Roman', serif;
+
+  /* The website's moss (#567042 = 600, its hover #455a35 = 700), as a full scale for Nuxt UI. */
+  --color-moss-50: #f4f7f0;
+  --color-moss-100: #e6ecdd;
+  --color-moss-200: #cddbbd;
+  --color-moss-300: #adc393;
+  --color-moss-400: #8aa76b;
+  --color-moss-500: #6d8c4f;
+  --color-moss-600: #567042;
+  --color-moss-700: #455a35;
+  --color-moss-800: #39492d;
+  --color-moss-900: #313e28;
+  --color-moss-950: #182013;
+}
+
+:root {
+  /* A shade darker than Nuxt UI's default 500, so white text on a button stays readable. */
+  --ui-primary: var(--ui-color-primary-600);
+  /* The website's paper behind the cards. */
+  --ui-bg-muted: #f7f3ec;
 }
 
 /* Tailwind 4 leaves buttons with the arrow cursor. */

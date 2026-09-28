@@ -231,3 +231,132 @@ describe('Orders', () => {
     expect(pending.body.total).toBe(0);
   });
 });
+
+describe('Order actions', () => {
+  let app: TestApp;
+  let token: string;
+
+  beforeAll(async () => {
+    app = await startTestApp();
+    token = await app.signInAdmin();
+  });
+
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  const createProduct = async (body: object) =>
+    (
+      await app
+        .api()
+        .post('/api/products')
+        .set('Authorization', bearer(token))
+        .send({ name_cs: 'Váza', price: 700, stockCount: 1, ...body })
+    ).body as { id: string };
+  const placeOrder = async (body: object = {}) => {
+    const product = await createProduct({});
+    const placed = await app
+      .api()
+      .post('/api/checkout')
+      .send({ ...CUSTOMER, items: [{ productId: product.id, quantity: 1 }], ...body });
+    return { orderId: placed.body.orderId as string, productId: product.id };
+  };
+  const act = (orderId: string, action: string, body: object = {}) =>
+    app
+      .api()
+      .post(`/api/orders/${orderId}/actions/${action}`)
+      .set('Authorization', bearer(token))
+      .send(body);
+  const readOrder = async (orderId: string) =>
+    (await app.api().get(`/api/orders/${orderId}`).set('Authorization', bearer(token))).body;
+  const emailsTo = (to: string, since: number) =>
+    app.outbox.sent.slice(since).filter((email) => email.to === to);
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 50));
+
+  it('are for the signed-in admin, and only the known ones', async () => {
+    const { orderId } = await placeOrder();
+    expect((await app.api().post(`/api/orders/${orderId}/actions/mark-paid`)).status).toBe(401);
+    expect((await act(orderId, 'teleport')).status).toBe(404);
+    expect((await act('ord_missing', 'mark-paid')).status).toBe(404);
+  });
+
+  it('take a shipped order from payment to delivery, e-mailing the customer', async () => {
+    const { orderId } = await placeOrder();
+    await settle();
+    expect((await act(orderId, 'ship')).status).toBe(409);
+
+    const before = app.outbox.sent.length;
+    const paid = await act(orderId, 'mark-paid', { message: 'Balím ještě dnes.' });
+    expect(paid.status).toBe(200);
+    expect(paid.body).toMatchObject({ paymentStatus: 'paid', orderStatus: 'processing' });
+    const [paidEmail] = emailsTo(CUSTOMER.customerEmail, before);
+    expect(paidEmail.subject).toMatch(/platba dorazila/);
+    expect(paidEmail.html).toContain('Balím ještě dnes.');
+    expect(paidEmail.text).toContain('> Balím ještě dnes.');
+
+    const shipped = await act(orderId, 'ship', { trackingNumber: ' Z 123 ' });
+    expect(shipped.body).toMatchObject({ orderStatus: 'shipped', trackingNumber: 'Z 123' });
+    const shippedEmail = emailsTo(CUSTOMER.customerEmail, before)[1];
+    expect(shippedEmail.html).toContain('https://tracking.packeta.com/cs/?id=Z%20123');
+
+    const delivered = await act(orderId, 'mark-delivered');
+    expect(delivered.body.orderStatus).toBe('delivered');
+    expect(emailsTo(CUSTOMER.customerEmail, before)).toHaveLength(2);
+
+    const history = JSON.parse((await readOrder(orderId)).history);
+    expect(
+      history.map((event: { type: string; email?: string }) => [event.type, event.email])
+    ).toEqual([
+      ['placed', 'sent'],
+      ['mark-paid', 'sent'],
+      ['ship', 'sent'],
+      ['mark-delivered', undefined],
+    ]);
+    expect(history[1].message).toBe('Balím ještě dnes.');
+  });
+
+  it('hand a pickup over in person', async () => {
+    const { orderId } = await placeOrder({ shippingMethod: 'osobni_odber' });
+    await act(orderId, 'mark-paid');
+    expect((await act(orderId, 'ship')).status).toBe(409);
+    const before = app.outbox.sent.length;
+    const ready = await act(orderId, 'ready-for-pickup', { message: 'Ve čtvrtek v ateliéru.' });
+    expect(ready.body.orderStatus).toBe('ready');
+    const [email] = emailsTo(CUSTOMER.customerEmail, before);
+    expect(email.subject).toMatch(/připravená k vyzvednutí/);
+    expect(email.text).toContain('Ve čtvrtek v ateliéru.');
+  });
+
+  it('put a cancelled order back in stock, and refund it', async () => {
+    const { orderId, productId } = await placeOrder();
+    await act(orderId, 'mark-paid');
+    const before = app.outbox.sent.length;
+    const cancelled = await act(orderId, 'cancel');
+    expect(cancelled.body.orderStatus).toBe('cancelled');
+    const product = await app
+      .api()
+      .get(`/api/products/${productId}`)
+      .set('Authorization', bearer(token));
+    expect(product.body.stockCount).toBe(1);
+    expect(emailsTo(CUSTOMER.customerEmail, before)[0].text).toContain('vrátíme na účet');
+
+    const refunded = await act(orderId, 'mark-refunded', { notify: false });
+    expect(refunded.body.paymentStatus).toBe('refunded');
+    expect(emailsTo(CUSTOMER.customerEmail, before)).toHaveLength(1);
+    const history = JSON.parse(refunded.body.history);
+    expect(history.at(-2)).toMatchObject({ type: 'cancel', restocked: true, email: 'sent' });
+    expect(history.at(-1)).toMatchObject({ type: 'mark-refunded', email: 'skipped' });
+    expect((await act(orderId, 'mark-refunded')).status).toBe(409);
+  });
+
+  it('can cancel without restocking', async () => {
+    const { orderId, productId } = await placeOrder();
+    await act(orderId, 'cancel', { restock: false, notify: false });
+    const product = await app
+      .api()
+      .get(`/api/products/${productId}`)
+      .set('Authorization', bearer(token));
+    expect(product.body.stockCount).toBe(0);
+    expect((await act(orderId, 'cancel', { restock: 'yes' })).status).toBe(400);
+  });
+});

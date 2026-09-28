@@ -8,9 +8,16 @@ import {
   productEntity,
   SHIPPING_PRICES,
 } from '@klotilda/domain';
-import type { CheckoutItem, CheckoutResponse, OrderItem } from '@klotilda/domain';
+import type {
+  CheckoutItem,
+  CheckoutResponse,
+  OrderEvent,
+  OrderItem,
+  PaymentStatus,
+} from '@klotilda/domain';
 import { newOrderEmail, orderReceivedEmail } from '../emails/order-emails';
 import type { PlacedOrder } from '../emails/order-emails';
+import { sendEmail } from '../emails/send-email';
 import type { BankAccount } from '../env';
 import { asyncHandler } from '../http/async-handler';
 import type { ModelRegistry } from '../models-registry';
@@ -29,6 +36,8 @@ export interface CheckoutPluginOptions {
   bankAccount: BankAccount;
   /** Where new orders are announced; unset, only the customer is e-mailed. */
   adminEmail: string | undefined;
+  /** Linked from the e-mails. */
+  siteUrl: string;
   rateLimit: RateLimitConfig | 'off';
 }
 
@@ -64,26 +73,52 @@ async function reserveStock(
   );
 }
 
-function sendQuietly(
-  emailService: EmailService,
-  to: string,
-  message: { subject: string; html: string }
-) {
-  emailService
-    .send({ to, ...message })
-    .catch((err: unknown) => console.error(`Order e-mail to ${to} failed:`, err));
+/**
+ * The confirmation to the customer and the announcement to the artist, after the answer is sent.
+ * How the customer's went is written into the order's first history line.
+ */
+async function announceOrder(
+  registry: ModelRegistry,
+  emailService: EmailService | undefined,
+  {
+    order,
+    placedEvent,
+    bankAccount,
+    adminEmail,
+    siteUrl,
+  }: {
+    order: PlacedOrder;
+    placedEvent: OrderEvent;
+    bankAccount: BankAccount;
+    adminEmail: string | undefined;
+    siteUrl: string;
+  }
+): Promise<void> {
+  const [email] = await Promise.all([
+    sendEmail(
+      emailService,
+      order.customerEmail,
+      orderReceivedEmail(order, bankAccount.display),
+      siteUrl
+    ),
+    adminEmail && sendEmail(emailService, adminEmail, newOrderEmail(order), siteUrl),
+  ]);
+  await registry
+    .get(orderEntity.config.name)
+    .update({ history: JSON.stringify([{ ...placedEvent, email }]) }, { where: { id: order.id } });
 }
 
 /**
  * `POST /api/checkout` — public. Places an order from the cart: prices come from the products,
  * never from the client; the stock is taken down at once (payment is a bank transfer the admin
- * confirms later, matched by the variable symbol). Answers how to pay, QR code included, and
- * e-mails the customer and the artist; a failed e-mail is only logged.
+ * confirms later, matched by the variable symbol). Answers how to pay, QR code included, then
+ * e-mails the customer and the artist; a failed e-mail is logged and noted in the order's history.
  */
 export function createCheckoutPlugin({
   registry,
   bankAccount,
   adminEmail,
+  siteUrl,
   rateLimit,
 }: CheckoutPluginOptions): ProjectPlugin {
   return {
@@ -96,6 +131,7 @@ export function createCheckoutPlugin({
           const { items, ...customer } = readCheckoutRequest(req.body);
           const shippingPrice = SHIPPING_PRICES[customer.shippingMethod];
 
+          const placedEvent: OrderEvent = { type: 'placed', at: new Date().toISOString() };
           const order: PlacedOrder = await sequelize.transaction(async (transaction) => {
             const orderItems = await reserveStock(registry, items, transaction);
             const itemsTotal = orderItems.reduce(
@@ -108,12 +144,17 @@ export function createCheckoutPlugin({
               shippingPrice,
               totalAmount: itemsTotal + shippingPrice,
               variableSymbol: createVariableSymbol(),
-              paymentStatus: DEFAULT_PAYMENT_STATUS,
+              paymentStatus: DEFAULT_PAYMENT_STATUS as PaymentStatus,
               orderStatus: DEFAULT_ORDER_STATUS,
             };
-            await registry
-              .get(orderEntity.config.name)
-              .create({ ...placed, items: JSON.stringify(orderItems) }, { transaction });
+            await registry.get(orderEntity.config.name).create(
+              {
+                ...placed,
+                items: JSON.stringify(orderItems),
+                history: JSON.stringify([placedEvent]),
+              },
+              { transaction }
+            );
             return { ...placed, items: orderItems };
           });
 
@@ -129,15 +170,14 @@ export function createCheckoutPlugin({
             }),
           };
 
-          if (emailService) {
-            sendQuietly(
-              emailService,
-              order.customerEmail,
-              orderReceivedEmail(order, bankAccount.display)
-            );
-            if (adminEmail) sendQuietly(emailService, adminEmail, newOrderEmail(order));
-          }
           res.status(CREATED).json(answer);
+          announceOrder(registry, emailService, {
+            order,
+            placedEvent,
+            bankAccount,
+            adminEmail,
+            siteUrl,
+          }).catch((err: unknown) => console.error(`Announcing order ${order.id} failed:`, err));
         })
       );
     },

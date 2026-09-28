@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import type { EmailTransportConfig, S3StorageConfig } from '@eleansphere/be-core';
+import type { WebRevalidation } from './web/revalidate-web';
 
 export type StorageSettings = { kind: 's3'; s3: S3StorageConfig } | { kind: 'memory' };
 
@@ -23,6 +24,10 @@ export interface Environment {
   email: EmailTransportConfig;
   /** Where new orders are announced. */
   adminEmail: string | undefined;
+  /** The public website, linked from the e-mails. */
+  siteUrl: string;
+  /** Tells the website to rebuild its cached pages after a change; unset, it catches up alone. */
+  webRevalidation: WebRevalidation | undefined;
   storage: StorageSettings;
   bankAccount: BankAccount;
 }
@@ -33,6 +38,7 @@ const LOCAL_ENV_FILE = '.env';
 const DEFAULT_PORT = 3001;
 const DEFAULT_SMTP_PORT = 587;
 const DEFAULT_EMAIL_FROM = 'Klotilda <info@klotilda.cz>';
+const DEFAULT_SITE_URL = 'https://www.klotilda.cz';
 /** Local SMTP catchers such as Mailpit accept any credentials. */
 const LOCAL_SMTP_CREDENTIALS = { user: 'klotilda', pass: 'klotilda' };
 const LIST_SEPARATOR = ',';
@@ -102,6 +108,13 @@ function readBankAccount(variables: Variables): BankAccount {
   };
 }
 
+/** `WEB_REVALIDATE_URL` (the website's `/api/revalidate`) with `WEB_REVALIDATE_SECRET`. */
+function readWebRevalidation(variables: Variables): WebRevalidation | undefined {
+  const url = variables.WEB_REVALIDATE_URL;
+  if (!url) return undefined;
+  return { url, secret: requireVariable(variables, 'WEB_REVALIDATE_SECRET') };
+}
+
 /** Production refuses to start without what orders need: e-mail, file storage, the admin inbox. */
 function assertProductionReady(environment: Environment): void {
   if (!environment.isProduction) return;
@@ -126,6 +139,8 @@ export function readEnvironment(variables: Variables = process.env): Environment
     emailFrom: variables.FROM_EMAIL ?? DEFAULT_EMAIL_FROM,
     email: readEmailTransport(variables),
     adminEmail: variables.ADMIN_EMAIL || undefined,
+    siteUrl: variables.SITE_URL || DEFAULT_SITE_URL,
+    webRevalidation: readWebRevalidation(variables),
     storage: readStorage(variables),
     bankAccount: readBankAccount(variables),
   };

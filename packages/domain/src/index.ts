@@ -32,19 +32,30 @@ export {
 } from './entities/gallery-item';
 export { galleryItemFields } from './entities/gallery-item/fields';
 export {
+  applyAction,
+  availableActions,
   CHECKOUT_PATH,
   MAX_ITEM_QUANTITY,
   MAX_ORDER_LINES,
+  ORDER_ACTION_ROUTE,
+  ORDER_ACTIONS,
   orderEntity,
   ORDERS_PATH,
+  parseOrderHistory,
   parseOrderItems,
+  TRACKING_URLS,
   type CheckoutItem,
   type CheckoutRequest,
   type CheckoutResponse,
+  type EmailOutcome,
   type Order,
+  type OrderAction,
+  type OrderActionRequest,
+  type OrderEvent,
   type OrderItem,
+  type OrderState,
 } from './entities/order';
-export { customerFields, orderFields } from './entities/order/fields';
+export { customerFields, orderActionFields, orderFields } from './entities/order/fields';
 export { createServices, KlotildaAuthService, type Services } from './services';
 
 /** Every entity, for the API's `toModelConfigs(allEntities)`. */
