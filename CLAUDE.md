@@ -119,8 +119,10 @@ pictures within a row and categories are reordered by dragging or with arrow but
 (`app/reorder.ts`). The product and gallery forms keep a save bar in view, send only the fields
 that changed, and ask before unsaved changes are dropped (`app/unsaved-changes.ts`: leaving the
 page, signing out, closing the tab). The products list is a table or cards (remembered per browser)
-with an "in the shop" switch on every product. Every `UFormField` keeps a line free for its message
-(`vite.config.ts`), so a message that appears or goes never moves a button from under the pointer.
+with an "in the shop" switch on every product. The overview counts through the API and charts the
+paid revenue of the last 12 months by the month of the order (`app/revenue.ts`). Every `UFormField`
+keeps a line free for its message (`vite.config.ts`), so a message that appears or goes never moves
+a button from under the pointer.
 `vercel.json` sends a Content-Security-Policy that allows only the admin's own scripts (hence
 `public/color-scheme.js` instead of an inline script) and API calls only to `*.up.railway.app`.
 

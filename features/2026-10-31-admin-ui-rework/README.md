@@ -1,7 +1,7 @@
 # Admin UI rework
 
 **Ticket:** none yet
-**Status:** active — steps 1–8 done, 9 open
+**Status:** shipped (2026-10-31)
 
 The owner wants the admin's UI reworked and improved overall, and suggested shadcn. This plan reviews
 the current admin (`dev` @ b6fc27f), weighs shadcn-vue against staying on Nuxt UI, and splits the work
@@ -110,7 +110,14 @@ Each step is one commit (or a small PR) to `dev`, verified on `admin.test.klotil
    (`app/table-sort.ts`, shared with the orders table) and every row and card has an "in the shop"
    switch: it moves at once, goes back with a message if the save fails, and the list reloads once
    no switch is still saving. A page emptied by a switch gives way to the last page left.
-9. **Overview.** Tidy the stat tiles in the new theme; optionally a small paid-revenue chart by month.
+9. **Overview.** _(done)_ Stat tiles (`StatTile.vue`): awaiting payment (with how many of those
+   are overdue, `isPaymentOverdue`, the same rule as the badges in both order lists), to send and on
+   offer, counted by the API; paid this month, the chart's last column. The sold-out products still
+   in the shop link to their tab. A chart of the paid revenue of the last
+   12 months, by the month the order was placed (`RevenueChart.vue`, `app/revenue.ts`): plain HTML
+   columns in the moss accent, a tooltip on hover and on keyboard focus, and a table view. The order
+   entity filters `createdAt` as a range, a query setting with no migration; the paid orders are
+   read page by page (`app/all-pages.ts`).
 
 Steps 1–2 change the look of everything and are worth doing first; 3–9 are independent and can be
 picked in any order or dropped.
@@ -147,6 +154,8 @@ From the review of step 6:
 
 - Adding or deleting a category while a reorder is being saved makes the save fail with 409 (the
   move is lost, the list reloads). The window is one request long.
+- Website revalidation matches paths case-sensitively, Express does not; the admin never sends an
+  odd-cased path.
 
 From the review of step 7:
 
@@ -168,13 +177,29 @@ From the review of step 8:
 - Sorting by name follows the database's collation: under `C` (the local database) "Čajník" comes
   after "Zvonek". Production's collation is unchecked; a Czech ICU collation on `name_cs` would fix
   it.
-- Website revalidation matches paths case-sensitively, Express does not; the admin never sends an
-  odd-cased path.
+
+From step 9 and its review:
+
+- Revenue counts an order in the month it was placed, not the month it was paid: one placed on the
+  30th and paid on the 2nd counts in the earlier month. The `mark-paid` event in the order's
+  history holds the payment date (an order marked paid by a PATCH correction has none).
+- The chart's months are fixed when the page opens; a page left open into a new month shows the old
+  window until it is reloaded.
+- The bars use moss-500, which the dataviz palette check flags as below its chroma floor (the brand
+  moss is muted). Harmless for one series; a second series needs a checked palette.
+- A paid order that was cancelled counts as revenue until it is marked refunded.
+- On a phone a tap focuses a column without opening its tooltip; the table view shows the values.
+- be-core checks a `DATE` filter value with `Date.parse` but Sequelize formats it with moment:
+  `createdAt[gte]=2026-02-30` reaches Postgres as `'Invalid date'` and answers 500 (a signed-in
+  admin's hand-made address only; the admin sends `toISOString()`). The fix belongs in
+  `coerceValue` in Eleansphere/core, beside the empty range of step 8.
+- An order action whose e-mail failed refreshes only that order (`OrderDetailPage`), not the lists,
+  so the overview can show the old state until its next refetch.
 
 ## Not in scope
 
-The website (`apps/web`), the API and the data model, except the reorder routes of steps 5 and 6. No
-new pages.
+The website (`apps/web`), the API and the data model, except the reorder routes of steps 5 and 6
+and the query settings of steps 8 and 9 (with `http/query-guard.ts`). No new pages.
 
 ## Decided
 

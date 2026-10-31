@@ -60,8 +60,9 @@ export const orderEntity = defineEntity({
   access: { read: 'auth', write: 'auth' },
   fields: orderFields,
   query: {
-    // Lists of values: the admin's tabs each cover a few statuses.
-    filter: { paymentStatus: 'in', orderStatus: 'in' },
+    // Lists of values: the admin's tabs each cover a few statuses. `createdAt` as a range: the
+    // overview reads the paid orders of its months and counts unpaid orders past their days.
+    filter: { paymentStatus: 'in', orderStatus: 'in', createdAt: 'range' },
     sort: ['createdAt', 'totalAmount'],
     defaultSort: '-createdAt',
     search: ['customerLastName', 'customerEmail', 'variableSymbol'],

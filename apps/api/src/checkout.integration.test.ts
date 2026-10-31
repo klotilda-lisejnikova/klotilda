@@ -247,6 +247,22 @@ describe('Orders', () => {
     expect(paid.body.total).toBe(1);
     expect(pending.body.total).toBe(0);
   });
+
+  it('filter by when they were placed', async () => {
+    const list = (query: object) =>
+      app.api().get('/api/orders').query(query).set('Authorization', bearer(token));
+    const { createdAt } = (await list({})).body.data[0];
+    const totalPlaced = async (bound: string) =>
+      (await list({ [`createdAt[${bound}]`]: createdAt })).body.total;
+
+    expect(await totalPlaced('gte')).toBe(1);
+    expect(await totalPlaced('lte')).toBe(1);
+    expect(await totalPlaced('gt')).toBe(0);
+    expect(await totalPlaced('lt')).toBe(0);
+    const refused = await list({ 'createdAt[gte]': 'yesterday' });
+    expect(refused.status).toBe(400);
+    expect(refused.body.message).toContain('createdAt[gte]');
+  });
 });
 
 describe('Order actions', () => {

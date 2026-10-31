@@ -21,7 +21,7 @@ import {
   ORDER_ACTION_LABELS,
   SHIPPING_LABELS,
 } from '@/app/labels';
-import { daysSince, ORDER_STAGES, UNPAID_WARNING_DAYS } from '@/app/order-stages';
+import { daysSince, isPaymentOverdue, ORDER_STAGES } from '@/app/order-stages';
 import { useQueryTab } from '@/app/query-tabs';
 import { useTableSort } from '@/app/table-sort';
 
@@ -90,11 +90,6 @@ function describeItems(order: Order): string {
   const [first, ...rest] = items;
   return rest.length ? `${first.name} a ${rest.length} další` : first.name;
 }
-
-const waitingTooLong = (order: Order) =>
-  order.paymentStatus === 'pending' &&
-  order.orderStatus !== 'cancelled' &&
-  daysSince(order.createdAt) >= UNPAID_WARNING_DAYS;
 
 // ── The table (from a tablet up; phones keep the list) ──────────────
 const columns: TableColumn<Order>[] = [
@@ -255,7 +250,7 @@ function reportBulkOutcome({ done, failed, emailFailed }: BulkOutcome) {
           </p>
         </div>
         <UBadge
-          v-if="waitingTooLong(order)"
+          v-if="isPaymentOverdue(order)"
           :label="`čeká ${daysSince(order.createdAt)} dní`"
           icon="i-lucide-clock-alert"
           color="error"
@@ -349,7 +344,7 @@ function reportBulkOutcome({ done, failed, emailFailed }: BulkOutcome) {
       <template #createdAt-cell="{ row }">
         <span class="whitespace-nowrap">{{ formatDateTime(row.original.createdAt) }}</span>
         <UBadge
-          v-if="waitingTooLong(row.original)"
+          v-if="isPaymentOverdue(row.original)"
           :label="`čeká ${daysSince(row.original.createdAt)} dní`"
           icon="i-lucide-clock-alert"
           color="error"
