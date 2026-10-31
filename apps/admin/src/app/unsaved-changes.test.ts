@@ -1,6 +1,9 @@
 import { computed, reactive, ref } from 'vue';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { hasUnsavedChanges, mayLeave, registerForm, trackChanges } from './unsaved-changes';
+
+// The session module connects to the API named by the build's environment; these tests need neither.
+vi.mock('./session', () => ({ useSession: () => ({ isSignedIn: ref(true) }) }));
 
 describe('trackChanges', () => {
   const loaded = () => ({ description: 'Miska', stockCount: 1 });
