@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/vue-query';
 import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui';
 import type { RouteLocationRaw } from 'vue-router';
 import { useSession } from '@/app/session';
+import { confirmLeave, hasUnsavedChanges } from '@/app/unsaved-changes';
 import { PAGE_ACTIONS_ID, PAGE_HEADING_ID } from '@/components/page-header';
 import AdminSearch from './AdminSearch.vue';
 import BrandMark from '@/components/BrandMark.vue';
@@ -62,6 +63,7 @@ const searchPages = NAV_ITEMS.map((item) => ({ label: item.label, icon: item.ico
 const queryClient = useQueryClient();
 
 async function signOut() {
+  if (hasUnsavedChanges.value && !(await confirmLeave())) return;
   await session.signOut();
   queryClient.clear();
   await router.push({ name: 'sign-in' });
@@ -136,7 +138,16 @@ const accountMenu = computed<DropdownMenuItem[][]>(() => [
       </template>
     </UDashboardSidebar>
 
-    <UDashboardPanel id="main" :ui="{ body: 'block p-4 pb-24 sm:p-6 sm:pb-24 lg:pb-8' }">
+    <!--
+      Below lg the bottom padding clears the bottom nav, which also keeps a form's save bar above
+      it; the scroll padding keeps a focused field clear of both.
+    -->
+    <UDashboardPanel
+      id="main"
+      :ui="{
+        body: 'block scroll-pb-40 p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:scroll-pb-24 lg:pb-8',
+      }"
+    >
       <template #header>
         <UDashboardNavbar :ui="{ left: 'flex-1' }">
           <template #leading>

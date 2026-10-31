@@ -1,7 +1,7 @@
 # Admin UI rework
 
 **Ticket:** none yet
-**Status:** active — steps 1–6 done, 7–9 open
+**Status:** active — steps 1–7 done, 8–9 open
 
 The owner wants the admin's UI reworked and improved overall, and suggested shadcn. This plan reviews
 the current admin (`dev` @ b6fc27f), weighs shadcn-vue against staying on Nuxt UI, and splits the work
@@ -90,8 +90,15 @@ Each step is one commit (or a small PR) to `dev`, verified on `admin.test.klotil
    to the saved one if the save fails. A category is dragged by its grip, so its text stays
    selectable. All three reorder routes lock their rows in id order (parallel saves wait instead of
    deadlocking), and the arrows on all three pages keep the keyboard focus after a move.
-7. **Forms.** A sticky save bar on product and gallery forms, an unsaved-changes guard
-   (`onBeforeRouteLeave` + `beforeunload`).
+7. **Forms.** _(done)_ A save bar that stays in view (`SaveBar.vue`, above the phone's bottom bar)
+   with "unsaved changes" / "all saved"; Save is enabled once something changed. An unsaved-changes
+   guard (`app/unsaved-changes.ts`): another page, another product or picture opened from the
+   search palette, or signing out asks first (`LeaveDialog.vue`); closing or reloading the tab gets
+   the browser's prompt. Changes are tracked per field: a reload of the row (a photo uploaded
+   meanwhile) keeps the fields the admin edited and takes the rest from the server, so it neither
+   wipes the edits (it used to overwrite the whole form) nor puts back a stock count a sale took
+   down. An update sends only the changed fields; an edit typed while a save runs stays unsaved;
+   an existing row's form shows a skeleton until it has loaded.
 8. **Products.** A table/cards toggle, filters for hidden and sold-out, inline "in the shop" switch.
 9. **Overview.** Tidy the stat tiles in the new theme; optionally a small paid-revenue chart by month.
 
@@ -119,7 +126,7 @@ From the review of step 4:
 - The order search matches the surname, e-mail and VS with no accent folding: "Jana Nováková" and
   "novakova" find nothing. Adding `customerFirstName` to the order's `search` and folding accents
   is an API change, planned separately. The palette shows five hits per group with no "show all".
-- Ctrl+K works inside a form, so jumping away drops unsaved edits; step 7's guard covers it.
+- Ctrl+K works inside a form, so jumping away dropped unsaved edits; step 7's guard covers it now.
 
 From the review of step 5:
 
@@ -130,6 +137,14 @@ From the review of step 6:
 
 - Adding or deleting a category while a reorder is being saved makes the save fail with 409 (the
   move is lost, the list reloads). The window is one request long.
+
+From the review of step 7:
+
+- The category dialog (`CategoriesPage`) has no unsaved-changes guard: closing it drops the typed
+  name. It is two fields, so it was left out.
+- When the session expires the form is left without asking (the way to sign-in must stay open),
+  and the edits are lost. A draft kept in `sessionStorage` and offered back after signing in again
+  would cover it.
 - Website revalidation matches paths case-sensitively, Express does not; the admin never sends an
   odd-cased path.
 

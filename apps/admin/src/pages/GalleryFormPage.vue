@@ -8,10 +8,12 @@ import type { GalleryItemWithImages, GalleryRow } from '@klotilda/domain';
 import ConfirmDelete from '@/components/ConfirmDelete.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PhotoManager from '@/components/PhotoManager.vue';
+import SaveBar from '@/components/SaveBar.vue';
 import { services } from '@/app/api';
 import { describeError } from '@/app/errors';
-import { emptyToNull } from '@/app/form-values';
+import { emptyToNull, pick } from '@/app/form-values';
 import { NO_CATEGORY, toCategoryChoice, toCategoryId, useCategories } from '@/app/categories';
+import { useUnsavedChanges } from '@/app/unsaved-changes';
 import { formSchema, VALIDATE_ON } from '@/app/validation';
 
 const props = defineProps<{ id?: string }>();
@@ -45,15 +47,17 @@ const categoryItems = computed(() => [
 ]);
 const rowItems = GALLERY_ROWS.map((row) => ({ value: row, label: `${row}. řada` }));
 const form = reactive<GalleryForm>({ ...EMPTY_FORM });
+const changes = useUnsavedChanges(form);
 
 /** The category is picked from a list that also offers "none", so the form doesn't check it. */
 const { categoryId: _categoryId, ...checkedFields } = galleryItemFields;
 const schema = computed(() => formSchema(checkedFields, isNew.value ? 'create' : 'patch'));
 
-function toValues() {
+/** The form's values as the API takes them. */
+function toValues(values: GalleryForm) {
   return emptyToNull({
-    ...form,
-    categoryId: toCategoryId(form.categoryId),
+    ...values,
+    categoryId: toCategoryId(values.categoryId),
   });
 }
 
@@ -67,26 +71,32 @@ const {
   enabled: () => !isNew.value,
 });
 
-watch(
-  item,
-  (loaded) => {
-    if (!loaded) return Object.assign(form, EMPTY_FORM);
-    Object.assign(form, {
-      title_cs: loaded.title_cs,
-      title_en: loaded.title_en ?? '',
-      categoryId: toCategoryChoice(loaded.categoryId),
-      row: loaded.row,
-      sortOrder: loaded.sortOrder,
-      active: loaded.active,
-    });
-  },
-  { immediate: true }
-);
+/** A gallery picture as the form edits it. */
+function toForm(loaded: GalleryItemWithImages): GalleryForm {
+  return {
+    title_cs: loaded.title_cs,
+    title_en: loaded.title_en ?? '',
+    categoryId: toCategoryChoice(loaded.categoryId),
+    row: loaded.row,
+    sortOrder: loaded.sortOrder,
+    active: loaded.active,
+  };
+}
 
+watch(item, (loaded) => changes.load(loaded ? toForm(loaded) : { ...EMPTY_FORM }), {
+  immediate: true,
+});
+
+/** Saves the form as it was when sent: a new picture whole, an existing one only what changed. */
 const save = useMutation({
-  mutationFn: () =>
-    props.id ? services.gallery.update(props.id, toValues()) : services.gallery.create(toValues()),
-  onSuccess: async (saved) => {
+  mutationFn: (sent: GalleryForm) => {
+    const values = toValues(sent);
+    return props.id
+      ? services.gallery.update(props.id, pick(values, changes.changed.value))
+      : services.gallery.create(values);
+  },
+  onSuccess: async (saved, sent) => {
+    changes.markSaved(sent);
     void queryClient.invalidateQueries({ queryKey: ['gallery'] });
     const title = isNew.value ? 'Uloženo. Teď nahrajte fotku.' : 'Uloženo';
     toast.add({ title, color: 'success' });
@@ -102,6 +112,7 @@ const save = useMutation({
 const remove = useMutation({
   mutationFn: () => services.gallery.delete(props.id!),
   onSuccess: async () => {
+    changes.markSaved();
     void queryClient.invalidateQueries({ queryKey: ['gallery'] });
     toast.add({ title: 'Smazáno', color: 'success' });
     await router.push({ name: 'gallery' });
@@ -131,13 +142,17 @@ function photoChanged() {
   </PageHeader>
 
   <UAlert v-if="isError" title="Fotku se nepodařilo načíst." color="error" variant="soft" />
+  <div v-else-if="!isNew && !item" class="grid max-w-5xl gap-4 lg:grid-cols-5" aria-busy="true">
+    <USkeleton class="h-80 lg:col-span-3" />
+    <USkeleton class="h-64 lg:col-span-2" />
+  </div>
   <div v-else class="grid max-w-5xl gap-4 lg:grid-cols-5">
     <UForm
       :schema="schema"
       :state="form"
       :validate-on="VALIDATE_ON"
       class="space-y-4 lg:col-span-3"
-      @submit="save.mutate()"
+      @submit="save.mutate({ ...form })"
     >
       <UCard>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -164,15 +179,12 @@ function photoChanged() {
           class="mt-4"
         />
       </UCard>
-      <div class="flex gap-2">
-        <UButton
-          type="submit"
-          label="Uložit"
-          icon="i-lucide-save"
-          :loading="save.isPending.value"
-        />
-        <UButton :to="{ name: 'gallery' }" label="Zrušit" color="neutral" variant="ghost" />
-      </div>
+      <SaveBar
+        :dirty="changes.dirty.value"
+        :saving="save.isPending.value"
+        :cancel-to="{ name: 'gallery' }"
+        :is-new="isNew"
+      />
     </UForm>
 
     <UCard class="lg:col-span-2">

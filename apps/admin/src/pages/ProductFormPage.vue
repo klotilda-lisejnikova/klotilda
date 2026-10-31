@@ -8,10 +8,12 @@ import type { ProductWithImages } from '@klotilda/domain';
 import ConfirmDelete from '@/components/ConfirmDelete.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PhotoManager from '@/components/PhotoManager.vue';
+import SaveBar from '@/components/SaveBar.vue';
 import { services } from '@/app/api';
 import { describeError } from '@/app/errors';
-import { emptyToNull, nullToEmpty } from '@/app/form-values';
+import { emptyToNull, nullToEmpty, pick } from '@/app/form-values';
 import { NO_CATEGORY, toCategoryChoice, toCategoryId, useCategories } from '@/app/categories';
+import { useUnsavedChanges } from '@/app/unsaved-changes';
 import { formSchema, VALIDATE_ON } from '@/app/validation';
 
 const props = defineProps<{ id?: string }>();
@@ -51,6 +53,7 @@ const categoryItems = computed(() => [
   ...selectItems.value,
 ]);
 const form = reactive<ProductForm>({ ...EMPTY_FORM });
+const changes = useUnsavedChanges(form);
 
 const {
   data: product,
@@ -62,39 +65,45 @@ const {
   enabled: () => !isNew.value,
 });
 
-watch(
-  product,
-  (loaded) => {
-    if (!loaded) return Object.assign(form, EMPTY_FORM);
-    Object.assign(
-      form,
-      nullToEmpty({
-        name_cs: loaded.name_cs,
-        name_en: loaded.name_en,
-        description_cs: loaded.description_cs,
-        description_en: loaded.description_en,
-      }),
-      {
-        price: loaded.price,
-        categoryId: toCategoryChoice(loaded.categoryId),
-        stockCount: loaded.stockCount,
-        active: loaded.active,
-      }
-    );
-  },
-  { immediate: true }
-);
+/** A product as the form edits it. */
+function toForm(loaded: ProductWithImages): ProductForm {
+  return {
+    ...nullToEmpty({
+      name_cs: loaded.name_cs,
+      name_en: loaded.name_en,
+      description_cs: loaded.description_cs,
+      description_en: loaded.description_en,
+    }),
+    price: loaded.price,
+    categoryId: toCategoryChoice(loaded.categoryId),
+    stockCount: loaded.stockCount,
+    active: loaded.active,
+  };
+}
 
+watch(product, (loaded) => changes.load(loaded ? toForm(loaded) : { ...EMPTY_FORM }), {
+  immediate: true,
+});
+
+/** The form's values as the API takes them. */
+function toValues(values: ProductForm) {
+  return {
+    ...emptyToNull({ ...values }),
+    price: values.price ?? 0,
+    categoryId: toCategoryId(values.categoryId),
+  };
+}
+
+/** Saves the form as it was when sent: a new product whole, an existing one only what changed. */
 const save = useMutation({
-  mutationFn: () => {
-    const values = {
-      ...emptyToNull({ ...form }),
-      price: form.price ?? 0,
-      categoryId: toCategoryId(form.categoryId),
-    };
-    return props.id ? services.products.update(props.id, values) : services.products.create(values);
+  mutationFn: (sent: ProductForm) => {
+    const values = toValues(sent);
+    return props.id
+      ? services.products.update(props.id, pick(values, changes.changed.value))
+      : services.products.create(values);
   },
-  onSuccess: async (saved) => {
+  onSuccess: async (saved, sent) => {
+    changes.markSaved(sent);
     void queryClient.invalidateQueries({ queryKey: ['products'] });
     const title = isNew.value ? 'Uloženo. Teď můžete přidat fotky.' : 'Uloženo';
     toast.add({ title, color: 'success' });
@@ -110,6 +119,7 @@ const save = useMutation({
 const remove = useMutation({
   mutationFn: () => services.products.delete(props.id!),
   onSuccess: async () => {
+    changes.markSaved();
     void queryClient.invalidateQueries({ queryKey: ['products'] });
     toast.add({ title: 'Produkt smazán', color: 'success' });
     await router.push({ name: 'products' });
@@ -139,13 +149,17 @@ function photosChanged() {
   </PageHeader>
 
   <UAlert v-if="isError" title="Produkt se nepodařilo načíst." color="error" variant="soft" />
+  <div v-else-if="!isNew && !product" class="grid max-w-5xl gap-4 lg:grid-cols-5" aria-busy="true">
+    <USkeleton class="h-96 lg:col-span-3" />
+    <USkeleton class="h-64 lg:col-span-2" />
+  </div>
   <div v-else class="grid max-w-5xl gap-4 lg:grid-cols-5">
     <UForm
       :schema="schema"
       :state="form"
       :validate-on="VALIDATE_ON"
       class="space-y-4 lg:col-span-3"
-      @submit="save.mutate()"
+      @submit="save.mutate({ ...form })"
     >
       <UCard>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -184,15 +198,12 @@ function photosChanged() {
         />
       </UCard>
 
-      <div class="flex gap-2">
-        <UButton
-          type="submit"
-          label="Uložit"
-          icon="i-lucide-save"
-          :loading="save.isPending.value"
-        />
-        <UButton :to="{ name: 'products' }" label="Zrušit" color="neutral" variant="ghost" />
-      </div>
+      <SaveBar
+        :dirty="changes.dirty.value"
+        :saving="save.isPending.value"
+        :cancel-to="{ name: 'products' }"
+        :is-new="isNew"
+      />
     </UForm>
 
     <UCard class="lg:col-span-2">

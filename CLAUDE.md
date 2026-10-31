@@ -107,9 +107,10 @@ the terms box (`termsAccepted: true`, else 400) and each order stores `termsVers
 `src/app/api.ts` (session + services), `src/app/session.ts`, `src/pages/*`. Photos are scaled down
 to WebP (2048 px) in the browser before upload (`resize-image.ts`); product photos, gallery
 pictures within a row and categories are reordered by dragging or with arrow buttons
-(`app/reorder.ts`). Every `UFormField` keeps a line
-free for its message (`vite.config.ts`), so a message that appears or goes never moves a button
-from under the pointer.
+(`app/reorder.ts`). The product and gallery forms keep a save bar in view, send only the fields
+that changed, and ask before unsaved changes are dropped (`app/unsaved-changes.ts`: leaving the
+page, signing out, closing the tab). Every `UFormField` keeps a line free for its message
+(`vite.config.ts`), so a message that appears or goes never moves a button from under the pointer.
 
 ## Commands
 
