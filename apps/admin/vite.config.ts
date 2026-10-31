@@ -10,7 +10,7 @@ export default defineConfig({
       ui: {
         // Klotilda's moss (defined in main.css) on warm greys, like the website.
         colors: { primary: 'moss', secondary: 'violet', neutral: 'stone' },
-        // Cards a touch rounder, with a hairline shadow, as in shadcn.
+        // Cards rounder, with a hairline shadow, as in shadcn.
         card: { slots: { root: 'rounded-xl shadow-xs' } },
         // Every field keeps a line free under it for its error or help text. A message that
         // appears or goes (a number committed on blur, say) then never moves the save button

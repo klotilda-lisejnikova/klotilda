@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ApiError } from '@eleansphere/entity-core';
 import { describeError } from '@/app/errors';
+import BrandMark from '@/components/BrandMark.vue';
 import { useSession } from '@/app/session';
 
 const TOO_MANY_REQUESTS = 429;
@@ -43,12 +44,7 @@ async function signIn() {
     <UCard class="w-full max-w-sm">
       <template #header>
         <div class="flex items-center gap-2">
-          <span
-            class="flex size-8 items-center justify-center rounded-md bg-primary font-semibold text-inverted"
-            aria-hidden="true"
-          >
-            K
-          </span>
+          <BrandMark />
           <h1 class="text-lg font-semibold text-highlighted">
             Klotilda <span class="text-sm font-normal text-muted">admin</span>
           </h1>

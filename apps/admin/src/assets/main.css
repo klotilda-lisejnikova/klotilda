@@ -4,7 +4,7 @@
 @theme static {
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 
-  /* Klotilda's moss green, the website's accent (#567042 is 600), as a full scale for Nuxt UI. */
+  /* Klotilda's moss as a full scale for Nuxt UI; 600 is the website's --color-moss (apps/web globals.css). */
   --color-moss-50: #f4f7f0;
   --color-moss-100: #e6eddd;
   --color-moss-200: #ccdabd;

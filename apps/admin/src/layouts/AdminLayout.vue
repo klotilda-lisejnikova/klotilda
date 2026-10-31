@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useQueryClient } from '@tanstack/vue-query';
 import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui';
 import type { RouteLocationRaw } from 'vue-router';
 import { useSession } from '@/app/session';
 import { PAGE_ACTIONS_ID, PAGE_HEADING_ID } from '@/components/page-header';
+import BrandMark from '@/components/BrandMark.vue';
 
 interface NavItem {
   to: RouteLocationRaw;
@@ -38,12 +39,19 @@ function isCurrent(item: NavItem): boolean {
   return item.exact ? route.path === path : route.path.startsWith(path);
 }
 
+/** The sidebar as a slide-over on phones and tablets. */
+const sidebarOpen = ref(false);
+
 const navigation = computed<NavigationMenuItem[]>(() =>
   NAV_ITEMS.map((item) => ({
     label: item.label,
     icon: item.icon,
     to: item.to,
     active: isCurrent(item),
+    // The phone's slide-over closes on its own only when the route changes.
+    onSelect: () => {
+      sidebarOpen.value = false;
+    },
   }))
 );
 
@@ -66,6 +74,7 @@ const accountMenu = computed<DropdownMenuItem[][]>(() => [
   <UDashboardGroup unit="rem" storage="local" storage-key="klotilda-admin">
     <UDashboardSidebar
       id="sidebar"
+      v-model:open="sidebarOpen"
       collapsible
       :default-size="15"
       :min-size="12"
@@ -76,12 +85,7 @@ const accountMenu = computed<DropdownMenuItem[][]>(() => [
     >
       <template #header="{ collapsed }">
         <RouterLink :to="{ name: 'overview' }" class="flex min-w-0 items-center gap-2">
-          <span
-            class="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary font-semibold text-inverted"
-            aria-hidden="true"
-          >
-            K
-          </span>
+          <BrandMark />
           <span v-if="!collapsed" class="truncate">
             <span class="font-semibold text-highlighted">Klotilda</span>
             <span class="ml-1 text-xs text-muted">admin</span>
@@ -100,24 +104,30 @@ const accountMenu = computed<DropdownMenuItem[][]>(() => [
       </template>
 
       <template #footer="{ collapsed }">
-        <UDropdownMenu
-          :items="accountMenu"
-          :content="{ align: 'start', side: 'top' }"
-          :ui="{ content: 'w-(--reka-dropdown-menu-trigger-width) min-w-48' }"
+        <div
+          class="flex w-full min-w-0 items-center gap-1.5"
+          :class="{ 'flex-col-reverse': collapsed }"
         >
-          <UButton
-            :avatar="{ text: email.charAt(0).toUpperCase(), size: 'xs' }"
-            :label="collapsed ? undefined : email"
-            :trailing-icon="collapsed ? undefined : 'i-lucide-chevrons-up-down'"
-            color="neutral"
-            variant="ghost"
-            :square="collapsed"
-            class="min-w-0 flex-1"
-            :ui="{ label: 'truncate', trailingIcon: 'ms-auto text-dimmed' }"
-            aria-label="Účet"
-          />
-        </UDropdownMenu>
-        <UColorModeButton v-if="!collapsed" />
+          <UDropdownMenu
+            :items="accountMenu"
+            :content="{ align: 'start', side: 'top' }"
+            :ui="{ content: 'w-(--reka-dropdown-menu-trigger-width) min-w-48' }"
+          >
+            <UButton
+              :avatar="{ text: email.charAt(0).toUpperCase(), size: 'xs' }"
+              :label="collapsed ? undefined : email"
+              :trailing-icon="collapsed ? undefined : 'i-lucide-chevrons-up-down'"
+              color="neutral"
+              variant="ghost"
+              :square="collapsed"
+              class="min-w-0 flex-1"
+              :ui="{ label: 'truncate', trailingIcon: 'ms-auto text-dimmed' }"
+              aria-label="Účet"
+            />
+          </UDropdownMenu>
+          <!-- Stays when collapsed: the only light/dark switch on a desktop. -->
+          <UColorModeButton />
+        </div>
       </template>
     </UDashboardSidebar>
 
@@ -140,7 +150,7 @@ const accountMenu = computed<DropdownMenuItem[][]>(() => [
       </template>
     </UDashboardPanel>
 
-    <!-- Phone and tablet: the sections along the bottom edge, as before. -->
+    <!-- Phone and tablet: the sections along the bottom edge. -->
     <nav
       class="fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t border-default bg-default/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
       aria-label="Hlavní"
