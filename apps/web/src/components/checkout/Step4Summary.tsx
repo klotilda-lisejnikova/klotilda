@@ -103,7 +103,7 @@ export default function Step4Summary({
           value={data.notes}
           onChange={(e) => onChange({ notes: e.target.value })}
           rows={3}
-          className="resize-none border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-500"
+          className="resize-none border border-stone-200 bg-white px-3 py-2 text-base text-stone-800 outline-none focus:border-stone-500 md:text-sm"
         />
       </div>
 
