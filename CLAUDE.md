@@ -1,6 +1,18 @@
 # CLAUDE.md
 
-Guidance for Claude Code when working in this repository.
+Guidance for Claude Code when working in this repository — and the project's rulebook for humans
+and agents alike. The working rules, git, plans and self-review gates below are adopted from the
+author's open-procurement workspace (`open-procurement-claude`), adapted to a single GitHub monorepo
+with no ticket tracker. `AGENTS.md` only points here, for coding tools other than Claude.
+
+**Cross-cutting conventions** — comments state current intent, English for everything written down,
+credentials are used and never displayed, ISO dates, docs ship with the change:
+
+@conventions.md
+
+Architectural patterns are in [design-patterns.md](design-patterns.md), the stack guides in
+[style/](style/) (`typescript-backend.md`, `vue-projects.md`, `git-commits.md`). Where this file and
+those documents disagree, this file wins.
 
 ## What this is
 
@@ -135,9 +147,117 @@ Branches: `main` = production, `dev` = test.
   `admin.test.klotilda.cz` from `dev` (its `VITE_API_URL` for the `dev` branch is the test API).
   `VITE_API_URL` may end in `/api` (the old admin's setting); `src/app/api.ts` drops it.
 
-## Conventions
+
+## Working rules
+
+- **Language:** code, comments, commit messages and agent-facing documentation (this file,
+  `AGENTS.md`, READMEs, plans, reviews) are in **English**, whatever language the conversation is
+  in. User-facing texts stay as they are: the admin is Czech only, the website Czech and English
+  (next-intl), e-mails to customers Czech. Don't translate existing Czech strings. When in doubt,
+  ask whether an end user reads the text in the running application.
+- **Small steps:** prefer a change that can be reviewed, merged and deployed on its own over one
+  that bundles unrelated concerns. No big-bang rewrites: pick one task of a plan, finish it, stop.
+- **New code follows the rules from day one;** existing code is migrated opportunistically, when
+  you touch it anyway, never as an unrelated clean-up pass.
+- **Don't invent conventions** that are not written here, in `conventions.md`, `design-patterns.md`,
+  `style/` or a plan. If a rule seems to be missing, raise it instead of guessing.
+- **Before editing,** read the task, the surrounding code and `git status --short`. Preserve other
+  people's uncommitted changes: don't revert them, don't reformat them, don't include them in your
+  change or commit.
+- **Make the smallest coherent change;** fix nearby debt only when you are already touching it and
+  it does not grow into an unrelated refactor.
+- **Never hand-edit generated files:** `pnpm-lock.yaml` (run `pnpm install`), and nothing derived
+  from an entity by hand where `defineEntity` already derives it (see *The one rule*).
+- **pnpm, not npm or yarn;** run `pnpm install` after changing a `package.json`.
+- **Credentials:** `.env` files, `~/.npmrc`, the Railway and Vercel variables and the R2 keys hold
+  live secrets. Never open a `.env` file whole or print a value; grep key names only. Refer to a
+  secret by its name (`NODE_AUTH_TOKEN`, `RESEND_API_KEY`, `JWT_SECRET`, …), never by its value.
+- **Production is the owner's:** never change the Railway `production` environment, the `main`
+  branch, the production Vercel deployments or the production database without the owner's
+  explicit word in the current conversation.
+
+## Verifying a change
+
+With the repository's own scripts, in this order:
+
+1. Prettier on the changed files only (`pnpm exec prettier --write <files>`; `apps/web` formats with
+   its own config, `pnpm --filter @klotilda/web exec prettier --write <files>`);
+2. the relevant tests — `pnpm --filter <package> test`; the API's `*.integration.test.ts` need
+   Postgres (`docker compose up -d`, `TEST_DATABASE_URL`);
+3. `pnpm typecheck`;
+4. `pnpm lint` — check-only first; `lint:fix` deliberately, not as a reflex.
+
+A documentation-only change needs only its formatting checked. Then apply the *Self-review gates*.
+Green tests are not verification: exercise the change end to end (`pnpm dev`, or the test sites
+after a push to `dev`) and say so when that is blocked.
+
+## Git and commits
+
+Branches: `main` = production, `dev` = test (see *Deploy*). Work lands on `dev` first and reaches
+`main` only by a merge the owner asks for.
 
 - Finished, verified work may be committed and pushed to `dev` (the test sites) without asking;
-  `main` (production) only when the user asks.
+  `main` (production) only when the owner asks. Larger work goes on a branch from `dev` and a pull
+  request into `dev`. Never force-push, `reset --hard` or `clean -f`; never rewrite pushed history.
+- Create a branch without tracking (`git switch --no-track -c <name> origin/dev`) and always push
+  with the branch named (`git push -u origin <name>`), never a bare `git push`.
+- **Message:** Conventional Commits, `type(scope): subject`, scopes `api`, `web`, `admin`, `domain`
+  or none (`style/git-commits.md`). There is no ticket tracker, so no ticket ID. **No AI markers:**
+  no `Co-Authored-By:`, `Claude-Session:` or similar trailer, in commits or pull requests.
+- **Stage explicit paths** — never `git add -A`, `git add .` or `git commit -a`.
+- Releases: `pnpm release patch|minor|major` on `main`, when the owner asks.
 - `@eleansphere/*` installs from GitHub Packages; pnpm reads the token only from the user-level
   `~/.npmrc` (`//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}`).
+
+## Plans
+
+Forward-looking designs, refactor plans and reviews live in [features/](features/README.md), per
+the **`feature-plans`** skill: one directory per feature, `features/<YYYY-MM-DD>-<slug>/README.md`,
+headed by `**Ticket:**` (`none yet` — there is no tracker) and `**Status:**` — `design`, `planned`,
+`active`, `deferred`, `shipped` or `archived`, free text after the word. A plan never moves; its
+status changes in the file. Reviews sit beside their plan as `features/<slug>/review/<YYYY-MM-DD>-<subject>.md`,
+unattached ones in a root `reviews/`. `./features.sh` lists the plans and checks their links
+(`new`, `rename`, `check-links`, `due-survey`; it needs Python 3 and never commits).
+
+- "Save this for later" means a new plan, `./features.sh new <slug> --status planned`, never memory.
+- A plan's status flips to `shipped (YYYY-MM-DD)` in the commit that finishes the work.
+
+## Self-review gates
+
+Fresh context is the point: the reviewer starts from the artifacts, not from this conversation.
+**Every gate is applied without being asked.**
+
+| Gate | When | Who |
+|---|---|---|
+| Design closure | before presenting a design as ready to approve | `architecture-reviewer` over the written plan |
+| Pre-commit | tests green, before `git commit` | `convention-reviewer` and an adversarial reviewer in parallel (skills `convention-review`, `adversarial-review`) |
+| Epic survey | a workstream's `**Status:**` reaches `shipped` | `architecture-reviewer` over the epic, into `features/<epic>/review/<YYYY-MM-DD>-<subject>.md` |
+| Epic closure | the epic's own `README.md` Status flips to `shipped` | `architecture-reviewer` over the finished epic, same output |
+
+- Read the skill, don't improvise the prompt, and run the `adversarial-review` attack list against
+  the plan before writing the code. Tell the adversarial reviewer to run code, not just read it.
+- The adversarial reviewer treats the repository as read-only (no git command that changes it;
+  mutable copies go to the scratchpad) and follows the credentials rule of *Working rules*.
+- Triage each finding as right, wrong or already solved, fix what is confirmed, re-run the tests,
+  then commit.
+- Prove every new guard red, for the reason you claim (`prove-red`).
+- Skip the gates only for trivial mechanical changes: typos, doc-only touch-ups, version bumps.
+- The epic gates apply only to an epic (a plan with workstream files); the survey is skipped while
+  `./features.sh due-survey` shows fewer than ~20 commits since the epic's last survey.
+
+## Skills and agents
+
+- Skills in `.claude/skills/`: `convention-review`, `adversarial-review`, `prove-red` and
+  `feature-plans`.
+- Agents in `.claude/agents/`: `convention-reviewer` (a diff against the declared conventions) and
+  `architecture-reviewer` (a design against the architecture and the code it makes claims about).
+  Both are read-only and report through `ReportFindings`.
+- `.claude/settings.json` holds the shared permissions: broad read-only and build commands are
+  allowed, a push asks, force-push, `reset --hard`, `clean -f`, `rm -rf` and reading `.env` files
+  are denied. The rules match commands as typed — a backstop, not a sandbox. Personal rules go in
+  `.claude/settings.local.json` (gitignored).
+
+## Keeping this file current
+
+When a change alters something this file describes, update this file in the same commit rather
+than letting it drift.
