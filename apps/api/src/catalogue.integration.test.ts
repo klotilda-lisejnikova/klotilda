@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { SECURITY_HEADERS } from './http/security-headers';
 import { bearer, PNG_SIGNATURE, startTestApp } from './test-support/test-app';
 import type { TestApp } from './test-support/test-app';
 
@@ -35,6 +36,14 @@ describe('Products and the gallery', () => {
     expect(response.status).toBe(201);
     return response.body as { id: string };
   };
+
+  it('answers with the security headers and without X-Powered-By', async () => {
+    const response = await app.api().get('/api/products');
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+      expect(response.headers[name.toLowerCase()]).toBe(value);
+    }
+    expect(response.headers['x-powered-by']).toBeUndefined();
+  });
 
   it('lets only a signed-in admin write', async () => {
     expect((await app.api().post('/api/products').send(VASE)).status).toBe(401);
