@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { getContactTranslations } from "@/i18n/home";
 import FadeIn from "@/components/ui/FadeIn";
@@ -36,15 +35,7 @@ export default function ContactSection() {
             href={`mailto:${contact.email}`}
             className="group flex items-center gap-5 text-stone-600 transition-colors hover:text-moss"
           >
-            <motion.div
-              className="flex h-14 w-14 items-center justify-center rounded-full border border-stone-200"
-              whileHover={{
-                scale: 1.12,
-                backgroundColor: "rgba(86,112,66,0.12)",
-                borderColor: "#567042",
-              }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
+            <div className="group-hover:border-moss group-hover:bg-moss/12 flex h-14 w-14 items-center justify-center rounded-full border border-stone-200 transition-[scale,background-color,border-color] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-112">
               <svg
                 width="20"
                 height="20"
@@ -58,7 +49,7 @@ export default function ContactSection() {
                 <rect x="2" y="4" width="20" height="16" rx="3" />
                 <path d="M2 7.5 10.5 13a2.5 2.5 0 0 0 3 0L22 7.5" />
               </svg>
-            </motion.div>
+            </div>
             <div>
               <p className="mb-0.5 text-[0.6rem] tracking-[0.3em] text-stone-400 uppercase">
                 Email
@@ -78,15 +69,7 @@ export default function ContactSection() {
             rel="noopener noreferrer"
             className="group flex items-center gap-5 text-stone-600 transition-colors hover:text-moss"
           >
-            <motion.div
-              className="flex h-14 w-14 items-center justify-center rounded-full border border-stone-200"
-              whileHover={{
-                scale: 1.12,
-                backgroundColor: "rgba(86,112,66,0.12)",
-                borderColor: "#567042",
-              }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
+            <div className="group-hover:border-moss group-hover:bg-moss/12 flex h-14 w-14 items-center justify-center rounded-full border border-stone-200 transition-[scale,background-color,border-color] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-112">
               <svg
                 width="20"
                 height="20"
@@ -107,7 +90,7 @@ export default function ContactSection() {
                   stroke="none"
                 />
               </svg>
-            </motion.div>
+            </div>
             <div>
               <p className="mb-0.5 text-[0.6rem] tracking-[0.3em] text-stone-400 uppercase">
                 Instagram

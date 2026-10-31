@@ -14,7 +14,6 @@
     "@klotilda/domain": "workspace:*",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "framer-motion": "^12.39.0",
     "next": "15.5.18",
     "next-intl": "^4.12.0",
     "react": "19.1.0",
