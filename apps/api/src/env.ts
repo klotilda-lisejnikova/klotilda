@@ -43,6 +43,9 @@ const DEFAULT_SITE_URL = 'https://www.klotilda.cz';
 const LOCAL_SMTP_CREDENTIALS = { user: 'klotilda', pass: 'klotilda' };
 const LIST_SEPARATOR = ',';
 const ANY_ORIGIN = '*';
+/** HS256 wants a key at least as long as its 256-bit hash; shorter ones are guessable offline. */
+const MIN_JWT_SECRET_LENGTH = 32;
+const WHOLE_NUMBER = /^\d+$/;
 
 /** Loads `.env` from the working directory when present (local development). */
 export function loadEnvFile(): void {
@@ -69,6 +72,27 @@ function readCorsOrigins(variables: Variables, isProduction: boolean): string[] 
   if (origins) return origins;
   if (isProduction) throw new Error('Missing environment variable CORS_ORIGINS');
   return ANY_ORIGIN;
+}
+
+/**
+ * `TRUST_PROXY`: how many proxies stand in front of the API (Railway: 1). Rate limits count by the
+ * client's address, which only that tells Express where to find. More than there are lets a client
+ * choose its own address through `X-Forwarded-For`.
+ */
+function readTrustProxy(variables: Variables): number | undefined {
+  const value = variables.TRUST_PROXY;
+  if (!value) return undefined;
+  if (!WHOLE_NUMBER.test(value)) throw new Error('TRUST_PROXY must be a whole number of proxies');
+  return Number(value);
+}
+
+/** `JWT_SECRET`, at least `MIN_JWT_SECRET_LENGTH` characters in production. */
+function readJwtSecret(variables: Variables, isProduction: boolean): string {
+  const secret = requireVariable(variables, 'JWT_SECRET');
+  if (isProduction && secret.length < MIN_JWT_SECRET_LENGTH) {
+    throw new Error(`JWT_SECRET must be at least ${MIN_JWT_SECRET_LENGTH} characters long`);
+  }
+  return secret;
 }
 
 /** Resend (`RESEND_API_KEY`, HTTP — Railway blocks outbound SMTP), else SMTP, else only logged. */
@@ -117,13 +141,20 @@ function readWebRevalidation(variables: Variables): WebRevalidation | undefined 
   return { url, secret: requireVariable(variables, 'WEB_REVALIDATE_SECRET') };
 }
 
-/** Production refuses to start without what orders need: e-mail, file storage, the admin inbox. */
+/**
+ * Production refuses to start without what orders need — e-mail, file storage, the admin inbox —
+ * and without the proxy count the rate limits need.
+ */
 function assertProductionReady(environment: Environment): void {
   if (!environment.isProduction) return;
   const gaps: string[] = [];
-  if (environment.email.kind === 'log') gaps.push('RESEND_API_KEY or SMTP_HOST (e-mails would only be logged)');
+  if (environment.email.kind === 'log')
+    gaps.push('RESEND_API_KEY or SMTP_HOST (e-mails would only be logged)');
   if (environment.storage.kind === 'memory') gaps.push('R2_* (photos would be lost on restart)');
   if (!environment.adminEmail) gaps.push('ADMIN_EMAIL (new orders would go unannounced)');
+  if (!environment.trustProxy) {
+    gaps.push('TRUST_PROXY of at least 1 (every customer would share one rate limit)');
+  }
   if (gaps.length > 0) throw new Error(`Production needs ${gaps.join(', ')}`);
 }
 
@@ -135,9 +166,9 @@ export function readEnvironment(variables: Variables = process.env): Environment
     port: Number(variables.PORT ?? DEFAULT_PORT),
     databaseUrl: requireVariable(variables, 'DATABASE_URL'),
     databaseSsl: variables.DATABASE_SSL !== 'false',
-    jwtSecret: requireVariable(variables, 'JWT_SECRET'),
+    jwtSecret: readJwtSecret(variables, isProduction),
     corsOrigins: readCorsOrigins(variables, isProduction),
-    trustProxy: variables.TRUST_PROXY ? Number(variables.TRUST_PROXY) : undefined,
+    trustProxy: readTrustProxy(variables),
     emailFrom: variables.FROM_EMAIL ?? DEFAULT_EMAIL_FROM,
     email: readEmailTransport(variables),
     adminEmail: variables.ADMIN_EMAIL || undefined,
