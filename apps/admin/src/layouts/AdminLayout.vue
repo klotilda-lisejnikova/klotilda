@@ -6,6 +6,7 @@ import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui';
 import type { RouteLocationRaw } from 'vue-router';
 import { useSession } from '@/app/session';
 import { PAGE_ACTIONS_ID, PAGE_HEADING_ID } from '@/components/page-header';
+import AdminSearch from './AdminSearch.vue';
 import BrandMark from '@/components/BrandMark.vue';
 
 interface NavItem {
@@ -55,6 +56,9 @@ const navigation = computed<NavigationMenuItem[]>(() =>
   }))
 );
 
+/** The sections in the search palette: plain links, without the nav's active state. */
+const searchPages = NAV_ITEMS.map((item) => ({ label: item.label, icon: item.icon, to: item.to }));
+
 const queryClient = useQueryClient();
 
 async function signOut() {
@@ -94,6 +98,7 @@ const accountMenu = computed<DropdownMenuItem[][]>(() => [
       </template>
 
       <template #default="{ collapsed }">
+        <UDashboardSearchButton :collapsed="collapsed" tooltip class="bg-default ring-default" />
         <UNavigationMenu
           :items="navigation"
           :collapsed="collapsed"
@@ -141,14 +146,21 @@ const accountMenu = computed<DropdownMenuItem[][]>(() => [
           </template>
           <template #right>
             <div :id="PAGE_ACTIONS_ID" class="flex items-center gap-2" />
+            <!-- Below lg the sidebar is a slide-over: the search stays one tap away up here. -->
+            <UDashboardSearchButton collapsed class="lg:hidden" />
           </template>
         </UDashboardNavbar>
       </template>
 
       <template #body>
-        <RouterView />
+        <!-- Keyed by path: new and edit share a form, which must not keep the other's state. -->
+        <RouterView v-slot="{ Component, route: current }">
+          <component :is="Component" :key="current.path" />
+        </RouterView>
       </template>
     </UDashboardPanel>
+
+    <AdminSearch :pages="searchPages" />
 
     <!-- Phone and tablet: the sections along the bottom edge. -->
     <nav
