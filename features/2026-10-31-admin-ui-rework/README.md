@@ -1,7 +1,7 @@
 # Admin UI rework
 
 **Ticket:** none yet
-**Status:** active — Nuxt UI with the shadcn look chosen (2026-10-31); steps 1–2 done, 3–9 open
+**Status:** active — steps 1–3 done, 4–9 open
 
 The owner wants the admin's UI reworked and improved overall, and suggested shadcn. This plan reviews
 the current admin (`dev` @ b6fc27f), weighs shadcn-vue against staying on Nuxt UI, and splits the work
@@ -51,7 +51,7 @@ theme config.
 
 **Recommendation: stay on Nuxt UI 4 and give it the shadcn look.** The shadcn feel is mostly neutral
 greys, a single accent, thin borders, small radius and dense type, and that is a theme config away
-(`neutral: 'zinc'`, a Klotilda moss accent, `--ui-radius`, slimmer cards). A switch would cost a full
+(a neutral grey, a Klotilda moss accent, `--ui-radius`, slimmer cards). A switch would cost a full
 rewrite for components we already have, and lose the dashboard, table, command palette and upload
 components that make steps 2–7 cheap.
 
@@ -62,14 +62,18 @@ shadcn-vue and port the shell" and every later step also ports the pages it touc
 
 Each step is one commit (or a small PR) to `dev`, verified on `admin.test.klotilda.cz`.
 
-1. **Theme.** _(done)_ Klotilda moss as `primary`, a neutral grey (`zinc` / `stone`), Inter kept, slightly rounder corners,
-   quieter cards and rings; check contrast in light and dark (the `:root` overrides in `main.css`).
-2. **Shell.** _(done; the bottom bar kept on phones, the sidebar as a slide-over behind the menu button)_ `AdminLayout.vue` on `UDashboardGroup` + `UDashboardSidebar` (collapsible, the user's
-   e-mail, light/dark and sign-out in its footer) + `UDashboardPanel` / `UDashboardNavbar` per page,
-   which replaces `PageHeader.vue`; phones get the drawer, or keep the bottom bar if the owner likes it.
-3. **Orders table.** `UTable` with columns (customer, items, VS, date, payment, status, total), sorting,
-   the stage tabs kept, row selection with bulk "mark paid" / "mark sent" through the existing order
-   actions.
+1. **Theme.** _(done)_ Klotilda moss as `primary` on `stone` greys, Inter kept, slightly rounder
+   corners, cards with a hairline shadow, a near-black dark mode (the overrides in `main.css`).
+2. **Shell.** _(done)_ `AdminLayout.vue` on `UDashboardGroup` + a collapsible, resizable
+   `UDashboardSidebar` (account menu and light/dark in its footer) + one `UDashboardPanel` with one
+   `UDashboardNavbar`; `PageHeader.vue` teleports each page's back arrow, title and actions into it.
+   Phones keep the bottom bar; the navbar's menu button opens the sidebar as a slide-over.
+3. **Orders table.** _(done)_ From a tablet up, `UTable` with customer (items under the name), VS,
+   date, shipping, one status column and total; the API sorts by date or total (the order entity's
+   `sort` list); the stage tabs kept. Row selection with bulk actions on what every selected order
+   allows: payment arrived, ship (without a tracking number), ready for pickup, handed over, with an
+   optional shared message and the e-mail switch. Cancelling and refunding stay on the order's page.
+   Phones keep the list.
 4. **Command palette.** ⌘K / Ctrl+K: pages, orders by VS / surname / e-mail, products by name.
 5. **Photos.** `UFileUpload` with drag and drop and previews; drag to reorder product photos (the first
    is the main one) and gallery items within a row; needs a check that the API can store the photo order
@@ -83,14 +87,32 @@ Each step is one commit (or a small PR) to `dev`, verified on `admin.test.klotil
 Steps 1–2 change the look of everything and are worth doing first; 3–9 are independent and can be
 picked in any order or dropped.
 
+## Follow-ups
+
+From the review of steps 1–2 (2026-10-31), not fixed yet:
+
+- Light-mode subtle badges (`error`, `success`, `warning` text on a 10% tint) measure 4.0–4.3:1, just
+  under WCAG AA; this predates the rework. A step darker (`error-700`, `success-800`, `warning-800`)
+  would pass, and darkens the solid buttons of those colours too.
+- The sidebar's stored size is not clamped on load: a hand-edited `localStorage` value can make it
+  absurdly wide. Change `storage-key` whenever its `unit`, `min-size` or `max-size` change.
+
+From the review of step 3:
+
+- After a bulk run the focus falls back to the page (the bar that opened the dialog is gone).
+- With "send e-mail" off, the bulk dialog drops the typed message; the order's own page keeps it in
+  the history. Pick one behaviour for both.
+
 ## Not in scope
 
 The website (`apps/web`), the API and the data model, except where step 5 turns out to need a photo
 order field. No new pages.
 
+## Decided
+
+- 2026-10-31: Nuxt UI with the shadcn look, not shadcn-vue; start with steps 1–2, then continue in order.
+- Phones keep the bottom bar (the owner may still ask for the drawer alone).
+
 ## Open questions for the owner
 
-- shadcn-vue, or Nuxt UI with the shadcn look (recommended)?
-- Which steps; all, or 1–4 first?
-- Phones: the bottom bar as now, or a drawer?
 - Is there a mockup or a site whose admin look you like?

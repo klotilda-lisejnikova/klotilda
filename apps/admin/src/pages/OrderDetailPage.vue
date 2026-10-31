@@ -11,10 +11,12 @@ import {
 } from '@klotilda/domain';
 import type { Order, OrderAction, OrderStatus, PaymentStatus } from '@klotilda/domain';
 import ConfirmDelete from '@/components/ConfirmDelete.vue';
+import OrderStatusBadges from '@/components/OrderStatusBadges.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { services } from '@/app/api';
 import { describeError } from '@/app/errors';
 import { formatCzk, formatDateTime } from '@/app/format';
+import { emailFailed, refreshAfterOrderAction, shouldNotify } from '@/app/order-actions';
 import {
   EMAIL_OUTCOME_LABELS,
   NOTIFYING_ACTIONS,
@@ -22,9 +24,7 @@ import {
   ORDER_ACTION_ICONS,
   ORDER_ACTION_LABELS,
   ORDER_EVENT_LABELS,
-  ORDER_STATUS_COLORS,
   ORDER_STATUS_LABELS,
-  PAYMENT_STATUS_COLORS,
   PAYMENT_STATUS_LABELS,
   SHIPPING_LABELS,
   toSelectItems,
@@ -67,8 +67,7 @@ const address = computed(() =>
 
 function saved(updated: Order, title: string) {
   queryClient.setQueryData(['order', props.id], updated);
-  void queryClient.invalidateQueries({ queryKey: ['orders'] });
-  void queryClient.invalidateQueries({ queryKey: ['products'] });
+  refreshAfterOrderAction(queryClient);
   toast.add({ title, color: 'success' });
 }
 
@@ -86,15 +85,14 @@ function openAction(action: OrderAction) {
 const act = useMutation({
   mutationFn: (action: OrderAction) =>
     services.orders.act(props.id, action, {
-      notify: NOTIFYING_ACTIONS.includes(action) ? details.notify : false,
+      notify: shouldNotify(action, details.notify),
       message: details.message.trim() || undefined,
       trackingNumber: action === 'ship' ? details.trackingNumber.trim() || undefined : undefined,
       restock: action === 'cancel' ? details.restock : undefined,
     }),
   onSuccess: (updated, action) => {
     dialogOpen.value = false;
-    const last = parseOrderHistory(updated).at(-1);
-    if (last?.email === 'failed') {
+    if (emailFailed(updated)) {
       queryClient.setQueryData(['order', props.id], updated);
       toast.add({
         title: 'Uloženo, ale e-mail zákazníkovi se nepodařilo odeslat.',
@@ -143,21 +141,16 @@ async function copy(text: string, what: string) {
     :back="{ name: 'orders' }"
   >
     <template v-if="order" #actions>
-      <UBadge
-        :label="PAYMENT_STATUS_LABELS[order.paymentStatus]"
-        :color="PAYMENT_STATUS_COLORS[order.paymentStatus]"
-        variant="subtle"
-        size="lg"
-      />
-      <UBadge
-        :label="ORDER_STATUS_LABELS[order.orderStatus]"
-        :color="ORDER_STATUS_COLORS[order.orderStatus]"
-        variant="subtle"
-        size="lg"
-      />
+      <!-- Beside the title from a tablet up; a phone shows them above the page instead. -->
+      <div class="hidden gap-2 sm:flex">
+        <OrderStatusBadges :order="order" size="lg" />
+      </div>
     </template>
   </PageHeader>
 
+  <div v-if="order" class="mb-4 flex gap-2 sm:hidden">
+    <OrderStatusBadges :order="order" />
+  </div>
   <UAlert v-if="isError" title="Objednávku se nepodařilo načíst." color="error" variant="soft" />
   <USkeleton v-else-if="isPending" class="h-64 w-full" />
   <div v-else-if="order" class="grid gap-4 lg:grid-cols-3">
