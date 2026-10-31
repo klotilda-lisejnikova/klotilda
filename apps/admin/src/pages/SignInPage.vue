@@ -42,9 +42,17 @@ async function signIn() {
   <main class="flex min-h-dvh items-center justify-center bg-muted px-4">
     <UCard class="w-full max-w-sm">
       <template #header>
-        <h1 class="text-lg font-semibold text-highlighted">
-          Klotilda <span class="text-sm font-normal text-muted">admin</span>
-        </h1>
+        <div class="flex items-center gap-2">
+          <span
+            class="flex size-8 items-center justify-center rounded-md bg-primary font-semibold text-inverted"
+            aria-hidden="true"
+          >
+            K
+          </span>
+          <h1 class="text-lg font-semibold text-highlighted">
+            Klotilda <span class="text-sm font-normal text-muted">admin</span>
+          </h1>
+        </div>
       </template>
       <form class="space-y-4" @submit.prevent="signIn">
         <UFormField label="E-mail" name="email">
