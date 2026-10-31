@@ -18,6 +18,7 @@ import {
   productEntity,
 } from '@klotilda/domain';
 import { normalizeSlug, withCategory } from './catalogue/categories';
+import { createReorderPlugin } from './catalogue/reorder-plugin';
 import { CHECKOUT_RATE_LIMIT, createCheckoutPlugin } from './checkout/checkout-plugin';
 import type { Environment, StorageSettings } from './env';
 import { authorizeFileAccess } from './files/authorize-file-access';
@@ -110,6 +111,7 @@ export function buildAppConfig(
         jwtSecret: environment.jwtSecret,
         siteUrl: environment.siteUrl,
       }),
+      createReorderPlugin({ registry: models, jwtSecret: environment.jwtSecret }),
     ],
     email: {
       from: environment.emailFrom,

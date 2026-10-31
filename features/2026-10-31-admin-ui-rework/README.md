@@ -1,7 +1,7 @@
 # Admin UI rework
 
 **Ticket:** none yet
-**Status:** active — steps 1–4 done, 5–9 open
+**Status:** active — steps 1–5 done, 6–9 open
 
 The owner wants the admin's UI reworked and improved overall, and suggested shadcn. This plan reviews
 the current admin (`dev` @ b6fc27f), weighs shadcn-vue against staying on Nuxt UI, and splits the work
@@ -77,9 +77,13 @@ Each step is one commit (or a small PR) to `dev`, verified on `admin.test.klotil
 4. **Command palette.** _(done)_ Ctrl+K / ⌘K, or a search button (the sidebar; the top bar below
    `lg`): orders and products found by the API, the sections, "new product" and "new gallery photo",
    and Nuxt UI's colour-mode switch.
-5. **Photos.** `UFileUpload` with drag and drop and previews; drag to reorder product photos (the first
-   is the main one) and gallery items within a row; needs a check that the API can store the photo order
-   (if not, a model change + migration, planned separately).
+5. **Photos.** _(done)_ A `UFileUpload` drop zone (or click to pick) with previews while uploading;
+   product photos reordered by dragging or with arrows (the first is the main one), gallery pictures
+   likewise within their row. `File.sortOrder` and `GalleryItem.sortOrder` already existed, so no
+   migration: `PUT /api/products/:id/images/order` and `PUT /api/gallery/rows/:row/order` take every
+   id of the list in the new order (409 when the list no longer matches) and save it in one
+   transaction. Native HTML drag and drop, no new dependency; touch screens use the arrows. A
+   replaced gallery photo is deleted only after the new one is uploaded.
 6. **Categories.** Drag to reorder instead of arrows (arrows kept for keyboard).
 7. **Forms.** A sticky save bar on product and gallery forms, an unsaved-changes guard
    (`onBeforeRouteLeave` + `beforeunload`).
@@ -112,10 +116,15 @@ From the review of step 4:
   is an API change, planned separately. The palette shows five hits per group with no "show all".
 - Ctrl+K works inside a form, so jumping away drops unsaved edits; step 7's guard covers it.
 
+From the review of step 5:
+
+- A second photo move made while the first move's refetch is still under way can flicker back to
+  the first order until that refetch lands (the server keeps the right one).
+
 ## Not in scope
 
-The website (`apps/web`), the API and the data model, except where step 5 turns out to need a photo
-order field. No new pages.
+The website (`apps/web`), the API and the data model, except the photo order route of step 5. No new
+pages.
 
 ## Decided
 

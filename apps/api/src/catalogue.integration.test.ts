@@ -162,6 +162,50 @@ describe('Products and the gallery', () => {
     expect((await app.api().get(`/api/files/${upload.body.id}`)).status).toBe(404);
   });
 
+  const uploadPhoto = async (refType: string, refId: string) => {
+    const response = await app
+      .api()
+      .post('/api/files')
+      .set('Authorization', bearer(token))
+      .field('refType', refType)
+      .field('refId', refId)
+      .field('role', 'image')
+      .attach('file', PNG_SIGNATURE, { filename: 'x.png', contentType: 'image/png' });
+    expect(response.status).toBe(201);
+    return response.body.id as string;
+  };
+
+  const orderPhotos = (productId: string, ids: unknown, signedIn = true) => {
+    const request = app.api().put(`/api/products/${productId}/images/order`);
+    if (signedIn) request.set('Authorization', bearer(token));
+    return request.send({ ids });
+  };
+
+  it("reorders a product's photos, and only all of them", async () => {
+    const product = await createProduct(VASE);
+    const [first, second, third] = [
+      await uploadPhoto('Product', product.id),
+      await uploadPhoto('Product', product.id),
+      await uploadPhoto('Product', product.id),
+    ];
+    const elsewhere = await uploadPhoto('Product', (await createProduct(VASE)).id);
+
+    expect((await orderPhotos(product.id, [third, first, second])).status).toBe(204);
+    const read = await app.api().get(`/api/products/${product.id}`);
+    expect(read.body.images.map((image: { id: string }) => image.id)).toEqual([
+      third,
+      first,
+      second,
+    ]);
+
+    expect((await orderPhotos(product.id, [third, first, second], false)).status).toBe(401);
+    expect((await orderPhotos(product.id, [first, second])).status).toBe(409);
+    expect((await orderPhotos(product.id, [first, second, elsewhere])).status).toBe(409);
+    expect((await orderPhotos(product.id, [first, first, second])).status).toBe(400);
+    expect((await orderPhotos(product.id, 'nope')).status).toBe(400);
+    expect((await orderPhotos('prod_missing', [first])).status).toBe(404);
+  });
+
   it('refuses uploads from visitors and outside the shop', async () => {
     const product = await createProduct(VASE);
     const anonymous = await app
@@ -217,5 +261,40 @@ describe('Products and the gallery', () => {
       'B',
     ]);
     expect(list.body.data[0].images).toEqual([]);
+  });
+
+  it('reorders a gallery row, and only all of it', async () => {
+    const create = async (body: object) => {
+      const response = await app
+        .api()
+        .post('/api/gallery')
+        .set('Authorization', bearer(token))
+        .send(body);
+      return response.body.id as string;
+    };
+    const rowOf = async (row: number) =>
+      (await app.api().get('/api/gallery').set('Authorization', bearer(token))).body.data
+        .filter((item: { row: number }) => item.row === row)
+        .map((item: { id: string }) => item.id);
+    const orderRow = (row: number | string, ids: unknown, signedIn = true) => {
+      const request = app.api().put(`/api/gallery/rows/${row}/order`);
+      if (signedIn) request.set('Authorization', bearer(token));
+      return request.send({ ids });
+    };
+
+    await create({ title_cs: 'Druhá řada', row: 2 });
+    const row1 = await rowOf(1);
+    const hidden = await create({ title_cs: 'Nová skrytá', row: 1, sortOrder: 0, active: false });
+    const reversed = [hidden, ...row1].reverse();
+
+    expect((await orderRow(1, reversed)).status).toBe(204);
+    expect(await rowOf(1)).toEqual(reversed);
+
+    expect((await orderRow(1, reversed, false)).status).toBe(401);
+    expect((await orderRow(1, row1)).status).toBe(409);
+    expect((await orderRow(1, [...reversed, ...(await rowOf(2))])).status).toBe(409);
+    expect((await orderRow(1, [...reversed, reversed[0]])).status).toBe(400);
+    expect((await orderRow(3, reversed)).status).toBe(404);
+    expect((await orderRow('x', reversed)).status).toBe(404);
   });
 });
