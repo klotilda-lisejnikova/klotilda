@@ -4,7 +4,8 @@ import { useToast } from '@nuxt/ui/composables';
 import type { FileDto } from '@eleansphere/entity-core';
 import { fileUrl } from '@/app/api';
 import { describeError } from '@/app/errors';
-import { moveItem, useDragReorder } from '@/app/reorder';
+import { focusMoveButton, moveButtonKey, moveItem, useDragReorder } from '@/app/reorder';
+import type { MoveDirection } from '@/app/reorder';
 import { resizePhoto } from '@/app/resize-image';
 
 /** What `withImages` adds to a product's or gallery item's service; products also reorder. */
@@ -136,6 +137,13 @@ function move(from: number, to: number) {
     }
   });
 }
+
+function moveByArrow(index: number, direction: MoveDirection) {
+  const photo = ordered.value[index];
+  if (!photo || busy.value) return;
+  move(index, direction === 'back' ? index - 1 : index + 1);
+  void focusMoveButton(photo.id, direction);
+}
 </script>
 
 <template>
@@ -188,8 +196,9 @@ function move(from: number, to: number) {
             variant="solid"
             size="xs"
             aria-label="Posunout dopředu"
-            :disabled="busy || index === 0"
-            @click="move(index, index - 1)"
+            :disabled="index === 0"
+            :data-move="moveButtonKey(photo.id, 'back')"
+            @click="moveByArrow(index, 'back')"
           />
           <UButton
             icon="i-lucide-arrow-right"
@@ -197,8 +206,9 @@ function move(from: number, to: number) {
             variant="solid"
             size="xs"
             aria-label="Posunout dozadu"
-            :disabled="busy || index === ordered.length - 1"
-            @click="move(index, index + 1)"
+            :disabled="index === ordered.length - 1"
+            :data-move="moveButtonKey(photo.id, 'forward')"
+            @click="moveByArrow(index, 'forward')"
           />
         </div>
       </li>

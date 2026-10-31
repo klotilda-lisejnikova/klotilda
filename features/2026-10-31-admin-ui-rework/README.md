@@ -1,7 +1,7 @@
 # Admin UI rework
 
 **Ticket:** none yet
-**Status:** active — steps 1–5 done, 6–9 open
+**Status:** active — steps 1–6 done, 7–9 open
 
 The owner wants the admin's UI reworked and improved overall, and suggested shadcn. This plan reviews
 the current admin (`dev` @ b6fc27f), weighs shadcn-vue against staying on Nuxt UI, and splits the work
@@ -84,7 +84,12 @@ Each step is one commit (or a small PR) to `dev`, verified on `admin.test.klotil
    id of the list in the new order (409 when the list no longer matches) and save it in one
    transaction. Native HTML drag and drop, no new dependency; touch screens use the arrows. A
    replaced gallery photo is deleted only after the new one is uploaded.
-6. **Categories.** Drag to reorder instead of arrows (arrows kept for keyboard).
+6. **Categories.** _(done)_ Drag to reorder, the arrows kept for touch screens and the keyboard.
+   `PUT /api/categories/all/order` saves the whole order in one transaction, like step 5's routes
+   (it replaces one PATCH per moved category); the list shows the new order at once and goes back
+   to the saved one if the save fails. A category is dragged by its grip, so its text stays
+   selectable. All three reorder routes lock their rows in id order (parallel saves wait instead of
+   deadlocking), and the arrows on all three pages keep the keyboard focus after a move.
 7. **Forms.** A sticky save bar on product and gallery forms, an unsaved-changes guard
    (`onBeforeRouteLeave` + `beforeunload`).
 8. **Products.** A table/cards toggle, filters for hidden and sold-out, inline "in the shop" switch.
@@ -121,10 +126,17 @@ From the review of step 5:
 - A second photo move made while the first move's refetch is still under way can flicker back to
   the first order until that refetch lands (the server keeps the right one).
 
+From the review of step 6:
+
+- Adding or deleting a category while a reorder is being saved makes the save fail with 409 (the
+  move is lost, the list reloads). The window is one request long.
+- Website revalidation matches paths case-sensitively, Express does not; the admin never sends an
+  odd-cased path.
+
 ## Not in scope
 
-The website (`apps/web`), the API and the data model, except the photo order route of step 5. No new
-pages.
+The website (`apps/web`), the API and the data model, except the reorder routes of steps 5 and 6. No
+new pages.
 
 ## Decided
 

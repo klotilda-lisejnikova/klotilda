@@ -72,8 +72,9 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the
   are public.
 - Ordering (`src/catalogue/reorder-plugin.ts`, signed-in admin): `PUT /api/products/:id/images/order`
   (a product's photos, `File.sortOrder`; the first is the main one) and
-  `PUT /api/gallery/rows/:row/order` (one gallery row). Each takes `{ ids }`, every row of the list
-  once (else 409), and saves the order in one transaction.
+  `PUT /api/gallery/rows/:row/order` (one gallery row) and `PUT /api/categories/all/order` (every
+  category). Each takes `{ ids }`, every row of the list once (else 409), and saves the order in one
+  transaction.
 - Auth: be-core's login with rotating refresh tokens; accounts come from `seed:admin`
   (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`). There is no registration.
 - E-mail: Resend's HTTP API when `RESEND_API_KEY` is set — Railway blocks outbound SMTP below the
@@ -104,8 +105,9 @@ the terms box (`termsAccepted: true`, else 400) and each order stores `termsVers
 ## Admin
 
 `src/app/api.ts` (session + services), `src/app/session.ts`, `src/pages/*`. Photos are scaled down
-to WebP (2048 px) in the browser before upload (`resize-image.ts`); product photos and gallery
-pictures within a row are reordered by dragging or with arrow buttons (`app/reorder.ts`). Every `UFormField` keeps a line
+to WebP (2048 px) in the browser before upload (`resize-image.ts`); product photos, gallery
+pictures within a row and categories are reordered by dragging or with arrow buttons
+(`app/reorder.ts`). Every `UFormField` keeps a line
 free for its message (`vite.config.ts`), so a message that appears or goes never moves a button
 from under the pointer.
 

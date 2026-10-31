@@ -8,7 +8,8 @@ import type { PaginatedResponse } from '@eleansphere/entity-core';
 import PageHeader from '@/components/PageHeader.vue';
 import { fileUrl, services } from '@/app/api';
 import { describeError } from '@/app/errors';
-import { moveItem, useDragReorder } from '@/app/reorder';
+import { focusMoveButton, moveButtonKey, moveItem, useDragReorder } from '@/app/reorder';
+import type { MoveDirection } from '@/app/reorder';
 
 type GalleryPage = PaginatedResponse<GalleryItemWithImages>;
 
@@ -30,18 +31,34 @@ const rows = computed(() =>
   }))
 );
 
-/** A row in its new order, saved at once (`reorderRow`); the page shows it before the answer. */
+interface RowReorder {
+  row: GalleryRow;
+  items: GalleryItemWithImages[];
+  /** An arrow's move: its button gets the focus back. */
+  arrow?: { id: string; direction: MoveDirection };
+}
+
+/**
+ * A row in its new order, saved at once (`reorderRow`): the page shows it before the answer and
+ * goes back to the saved order if the save fails.
+ */
 const reorder = useMutation({
-  mutationFn: ({ row, items }: { row: GalleryRow; items: GalleryItemWithImages[] }) =>
+  mutationFn: ({ row, items }: RowReorder) =>
     services.gallery.reorderRow(
       row,
       items.map((item) => item.id)
     ),
-  onMutate: async ({ items }) => {
+  onMutate: async ({ items, arrow }) => {
     await queryClient.cancelQueries({ queryKey: GALLERY_QUERY_KEY });
+    const previous = queryClient.getQueryData<GalleryPage>(GALLERY_QUERY_KEY);
     queryClient.setQueryData<GalleryPage>(GALLERY_QUERY_KEY, (page) => withOrder(page, items));
+    if (arrow) void focusMoveButton(arrow.id, arrow.direction);
+    return { previous };
   },
-  onError: (err) => toast.add({ title: describeError(err), color: 'error' }),
+  onError: (err, _reorder, context) => {
+    queryClient.setQueryData(GALLERY_QUERY_KEY, context?.previous);
+    toast.add({ title: describeError(err), color: 'error' });
+  },
   onSettled: () => queryClient.invalidateQueries({ queryKey: GALLERY_QUERY_KEY }),
 });
 
@@ -63,10 +80,19 @@ function byRowThenOrder(a: GalleryItemWithImages, b: GalleryItemWithImages): num
   return a.row - b.row || a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt);
 }
 
-function move(row: GalleryRow, from: number, to: number) {
+function itemsOf(row: GalleryRow): GalleryItemWithImages[] {
+  return rows.value.find((entry) => entry.row === row)?.items ?? [];
+}
+
+function move(row: GalleryRow, from: number, to: number, arrow?: RowReorder['arrow']) {
   if (reorder.isPending.value) return;
-  const items = rows.value.find((entry) => entry.row === row)?.items ?? [];
-  reorder.mutate({ row, items: moveItem(items, from, to) });
+  reorder.mutate({ row, items: moveItem(itemsOf(row), from, to), arrow });
+}
+
+function moveByArrow(row: GalleryRow, index: number, direction: MoveDirection) {
+  const item = itemsOf(row)[index];
+  if (!item) return;
+  move(row, index, direction === 'back' ? index - 1 : index + 1, { id: item.id, direction });
 }
 
 const drag = useDragReorder<GalleryRow>(move);
@@ -101,11 +127,11 @@ const drag = useDragReorder<GalleryRow>(move);
           :key="item.id"
           class="rounded-lg ring-2 ring-transparent transition"
           :class="{
-            'cursor-grab': !reorder.isPending.value,
+            'cursor-grab': true,
             'opacity-40': drag.isDragged(row, index),
             'ring-primary': drag.isTarget(row, index),
           }"
-          v-bind="reorder.isPending.value ? {} : drag.handlers(row, index)"
+          v-bind="drag.handlers(row, index)"
         >
           <RouterLink
             draggable="false"
@@ -143,8 +169,9 @@ const drag = useDragReorder<GalleryRow>(move);
               variant="ghost"
               size="xs"
               :aria-label="`Posunout ${item.title_cs} dopředu`"
-              :disabled="reorder.isPending.value || index === 0"
-              @click="move(row, index, index - 1)"
+              :disabled="index === 0"
+              :data-move="moveButtonKey(item.id, 'back')"
+              @click="moveByArrow(row, index, 'back')"
             />
             <UButton
               icon="i-lucide-arrow-right"
@@ -152,8 +179,9 @@ const drag = useDragReorder<GalleryRow>(move);
               variant="ghost"
               size="xs"
               :aria-label="`Posunout ${item.title_cs} dozadu`"
-              :disabled="reorder.isPending.value || index === items.length - 1"
-              @click="move(row, index, index + 1)"
+              :disabled="index === items.length - 1"
+              :data-move="moveButtonKey(item.id, 'forward')"
+              @click="moveByArrow(row, index, 'forward')"
             />
           </div>
         </li>

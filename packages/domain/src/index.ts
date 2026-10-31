@@ -10,6 +10,7 @@ export * from './seller';
 export { adminUserEntity, type AdminUser } from './entities/admin-user';
 export { adminUserFields } from './entities/admin-user/fields';
 export {
+  CATEGORIES_ORDER_ROUTE,
   CATEGORIES_PATH,
   categoryEntity,
   CATEGORY_ORDER,

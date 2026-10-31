@@ -3,6 +3,18 @@ import { bearer, PNG_SIGNATURE, startTestApp } from './test-support/test-app';
 import type { TestApp } from './test-support/test-app';
 
 const VASE = { name_cs: 'Váza', price: 1200 };
+/** Enough reorders at once that rows locked in no fixed order deadlock. */
+const CONCURRENT_REORDERS = 40;
+
+/** A refusal, by its status and by what it says. */
+function expectRefusal(
+  response: { status: number; body: unknown },
+  status: number,
+  message: string
+) {
+  expect(response.status).toBe(status);
+  expect((response.body as { message?: string }).message).toContain(message);
+}
 
 describe('Products and the gallery', () => {
   let app: TestApp;
@@ -139,6 +151,55 @@ describe('Products and the gallery', () => {
     expect((await del()).status).toBe(204);
   });
 
+  it('reorders all categories at once, and only all of them', async () => {
+    await createCategory({ slug: 'razitka', name_cs: 'Razítka' });
+    const listed = async () =>
+      (await app.api().get('/api/categories')).body.data.map(
+        (category: { id: string }) => category.id
+      );
+    const orderAll = (ids: unknown, signedIn = true) => {
+      const request = app.api().put('/api/categories/all/order');
+      if (signedIn) request.set('Authorization', bearer(token));
+      return request.send({ ids });
+    };
+    const reversed = [...(await listed())].reverse();
+
+    expect((await orderAll(reversed)).status).toBe(204);
+    expect(await listed()).toEqual(reversed);
+
+    expectRefusal(await orderAll(reversed, false), 401, 'Authorization token is missing');
+    expectRefusal(await orderAll(reversed.slice(1)), 409, 'Kategorie se mezitím změnily');
+    expectRefusal(
+      await orderAll([...reversed, 'cat_missing']),
+      409,
+      'Kategorie se mezitím změnily'
+    );
+    expectRefusal(await orderAll([...reversed, reversed[0]]), 400, 'Expected { ids }');
+  });
+
+  it('saves many reorders of one list at once without deadlocking', async () => {
+    const ids: string[] = (await app.api().get('/api/categories')).body.data.map(
+      (category: { id: string }) => category.id
+    );
+    const rotations = Array.from({ length: CONCURRENT_REORDERS }, (_, turn) => [
+      ...ids.slice(turn % ids.length),
+      ...ids.slice(0, turn % ids.length),
+    ]);
+    const statuses = await Promise.all(
+      rotations.map(
+        async (order, turn) =>
+          (
+            await app
+              .api()
+              .put('/api/categories/all/order')
+              .set('Authorization', bearer(token))
+              .send({ ids: turn % 2 ? [...order].reverse() : order })
+          ).status
+      )
+    );
+    expect(statuses.filter((status) => status !== 204)).toEqual([]);
+  });
+
   it('attaches photos, and removes them with the product', async () => {
     const product = await createProduct(VASE);
     const upload = await app
@@ -198,12 +259,20 @@ describe('Products and the gallery', () => {
       second,
     ]);
 
-    expect((await orderPhotos(product.id, [third, first, second], false)).status).toBe(401);
-    expect((await orderPhotos(product.id, [first, second])).status).toBe(409);
-    expect((await orderPhotos(product.id, [first, second, elsewhere])).status).toBe(409);
-    expect((await orderPhotos(product.id, [first, first, second])).status).toBe(400);
-    expect((await orderPhotos(product.id, 'nope')).status).toBe(400);
-    expect((await orderPhotos('prod_missing', [first])).status).toBe(404);
+    expectRefusal(
+      await orderPhotos(product.id, [third, first, second], false),
+      401,
+      'Authorization token is missing'
+    );
+    expectRefusal(await orderPhotos(product.id, [first, second]), 409, 'Fotky se mezitím změnily');
+    expectRefusal(
+      await orderPhotos(product.id, [first, second, elsewhere]),
+      409,
+      'Fotky se mezitím změnily'
+    );
+    expectRefusal(await orderPhotos(product.id, [first, first, second]), 400, 'Expected { ids }');
+    expectRefusal(await orderPhotos(product.id, 'nope'), 400, 'Expected { ids }');
+    expectRefusal(await orderPhotos('prod_missing', [first]), 404, 'Product not found');
   });
 
   it('refuses uploads from visitors and outside the shop', async () => {
@@ -290,11 +359,15 @@ describe('Products and the gallery', () => {
     expect((await orderRow(1, reversed)).status).toBe(204);
     expect(await rowOf(1)).toEqual(reversed);
 
-    expect((await orderRow(1, reversed, false)).status).toBe(401);
-    expect((await orderRow(1, row1)).status).toBe(409);
-    expect((await orderRow(1, [...reversed, ...(await rowOf(2))])).status).toBe(409);
-    expect((await orderRow(1, [...reversed, reversed[0]])).status).toBe(400);
-    expect((await orderRow(3, reversed)).status).toBe(404);
-    expect((await orderRow('x', reversed)).status).toBe(404);
+    expectRefusal(await orderRow(1, reversed, false), 401, 'Authorization token is missing');
+    expectRefusal(await orderRow(1, row1), 409, 'Galerie se mezitím změnila');
+    expectRefusal(
+      await orderRow(1, [...reversed, ...(await rowOf(2))]),
+      409,
+      'Galerie se mezitím změnila'
+    );
+    expectRefusal(await orderRow(1, [...reversed, reversed[0]]), 400, 'Expected { ids }');
+    expectRefusal(await orderRow(3, reversed), 404, 'No such gallery row');
+    expectRefusal(await orderRow('x', reversed), 404, 'No such gallery row');
   });
 });
