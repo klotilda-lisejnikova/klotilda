@@ -34,7 +34,8 @@ function changesTheWebsite(method: string, path: string): boolean {
 /**
  * Global middleware: once such a request succeeds, the website is told to rebuild its cached
  * pages, so the admin's changes show at once. Without `revalidation` it does nothing (locally,
- * tests); a failed call is only logged — the pages then catch up on their own within minutes.
+ * tests); a failed call is only logged — the pages then catch up when their own `revalidate`
+ * interval runs out.
  */
 export function createWebRevalidator(revalidation: WebRevalidation | undefined): RequestHandler {
   let timer: ReturnType<typeof setTimeout> | undefined;

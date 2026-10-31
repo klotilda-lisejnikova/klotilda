@@ -7,7 +7,7 @@ import { getProduct, type Product } from "@/services";
 import AddToCartButton from "@/components/shop/AddToCartButton";
 
 /**
- * Price, availability and the add-to-cart button. The page around it is cached for a minute;
+ * Price, availability and the add-to-cart button. The page around it may be served from cache;
  * this part looks at the shop again once the page is open, so a piece sold meanwhile shows as
  * sold out straight away. `children` (the description) sits between the stock and the button.
  */

@@ -128,10 +128,9 @@ html {
 }
 
 /* Hero scroll effects. CSS scroll-driven animations run on the compositor, in step with the
-   scroll itself — the earlier JS-driven (framer-motion) version lagged a frame behind the
-   scroll on phones and the pinned hero judders. `--hero` spans from the hero's top reaching the
-   top of the viewport to its bottom reaching it. Without support (Firefox, older Safari) the hero
-   simply stays still while "O mně" slides over it. */
+   scroll itself, so the pinned hero does not judder on phones. `--hero` spans from the hero's
+   top reaching the top of the viewport to its bottom reaching it. Without support (Firefox,
+   older Safari) the hero simply stays still while "O mně" slides over it. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .hero {
