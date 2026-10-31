@@ -20,7 +20,7 @@ export const productEntity = defineEntity({
   access: { read: 'public', write: 'auth' },
   fields: productFields,
   query: {
-    filter: { categoryId: 'eq', active: 'eq' },
+    filter: { categoryId: 'eq', active: 'eq', stockCount: 'range' },
     sort: ['createdAt', 'price', 'name_cs'],
     defaultSort: '-createdAt',
     search: ['name_cs', 'name_en'],

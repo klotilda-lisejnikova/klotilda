@@ -11,6 +11,7 @@ import PhotoManager from '@/components/PhotoManager.vue';
 import SaveBar from '@/components/SaveBar.vue';
 import { services } from '@/app/api';
 import { describeError } from '@/app/errors';
+import { useListReturn } from '@/app/list-return';
 import { emptyToNull, nullToEmpty, pick } from '@/app/form-values';
 import { NO_CATEGORY, toCategoryChoice, toCategoryId, useCategories } from '@/app/categories';
 import { useUnsavedChanges } from '@/app/unsaved-changes';
@@ -42,6 +43,8 @@ const EMPTY_FORM: ProductForm = {
 
 const toast = useToast();
 const router = useRouter();
+/** The products list as the admin left it (tab, category), or the plain list. */
+const listLink = useListReturn('products');
 const queryClient = useQueryClient();
 const isNew = computed(() => !props.id);
 /** The category is picked from a list that also offers "none", so the form doesn't check it. */
@@ -122,7 +125,7 @@ const remove = useMutation({
     changes.markSaved();
     void queryClient.invalidateQueries({ queryKey: ['products'] });
     toast.add({ title: 'Produkt smazán', color: 'success' });
-    await router.push({ name: 'products' });
+    await router.push(listLink);
   },
   onError: (err) => toast.add({ title: describeError(err), color: 'error' }),
 });
@@ -134,10 +137,7 @@ function photosChanged() {
 </script>
 
 <template>
-  <PageHeader
-    :title="isNew ? 'Nový produkt' : form.name_cs || 'Produkt'"
-    :back="{ name: 'products' }"
-  >
+  <PageHeader :title="isNew ? 'Nový produkt' : form.name_cs || 'Produkt'" :back="listLink">
     <template v-if="product" #actions>
       <ConfirmDelete
         :question="`Smazat produkt ${product.name_cs}?`"
@@ -201,7 +201,7 @@ function photosChanged() {
       <SaveBar
         :dirty="changes.dirty.value"
         :saving="save.isPending.value"
-        :cancel-to="{ name: 'products' }"
+        :cancel-to="listLink"
         :is-new="isNew"
       />
     </UForm>

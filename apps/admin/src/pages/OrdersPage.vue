@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useToast } from '@nuxt/ui/composables';
 import type { TableColumn } from '@nuxt/ui';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
@@ -21,25 +21,37 @@ import {
   ORDER_ACTION_LABELS,
   SHIPPING_LABELS,
 } from '@/app/labels';
-import { daysSince, DEFAULT_STAGE, ORDER_STAGES, UNPAID_WARNING_DAYS } from '@/app/order-stages';
+import { daysSince, ORDER_STAGES, UNPAID_WARNING_DAYS } from '@/app/order-stages';
+import { useQueryTab } from '@/app/query-tabs';
+import { useTableSort } from '@/app/table-sort';
 
 const PAGE_SIZE = 25;
 
-const route = useRoute();
 const router = useRouter();
 
-/** The tab lives in the address, so going back from an order returns to it. */
-const stage = computed({
-  get: () =>
-    ORDER_STAGES.find((candidate) => candidate.value === route.query.stage) ?? ORDER_STAGES[0],
-  set: (value) =>
-    void router.replace({
-      query: { ...route.query, stage: value.value === DEFAULT_STAGE ? undefined : value.value },
-    }),
+/** How many orders wait in the tabs that ask for something to be done. */
+const { data: counts } = useQuery({
+  queryKey: ['orders', 'stage-counts'],
+  queryFn: async () => {
+    const counted = ORDER_STAGES.filter((candidate) => candidate.counted);
+    const totals = await Promise.all(
+      counted.map(async (candidate) => {
+        const { total } = await services.orders.getAll({ filter: candidate.filter, limit: 1 });
+        return [candidate.value, total] as const;
+      })
+    );
+    return Object.fromEntries(totals) as Record<string, number>;
+  },
 });
-const selectStage = (value: string | number) => {
-  stage.value = ORDER_STAGES.find((candidate) => candidate.value === value) ?? ORDER_STAGES[0];
-};
+
+/** The tab lives in the address, so going back from an order returns to it. */
+const {
+  current: stage,
+  select: selectStage,
+  items: tabs,
+  selectItems: stageItems,
+} = useQueryTab(ORDER_STAGES, 'stage', counts);
+
 const search = ref('');
 const page = ref(1);
 
@@ -48,12 +60,8 @@ const page = ref(1);
  * order entity's own list, so a column the entity drops fails the typecheck here.
  */
 const SORT_COLUMNS = ['createdAt', 'totalAmount'] as const;
-type SortColumn = (typeof SORT_COLUMNS)[number];
-const sorting = ref<{ id: SortColumn; desc: boolean }[]>([{ id: 'createdAt', desc: true }]);
-const sortParam = computed(() => {
-  const [first] = sorting.value;
-  return first ? (`${first.desc ? '-' : ''}${first.id}` as const) : undefined;
-});
+const { sorting, sortParam, toggleSort, sortIcon } =
+  useTableSort<(typeof SORT_COLUMNS)[number]>('createdAt');
 
 watch([stage, search, sorting], () => {
   page.value = 1;
@@ -71,36 +79,6 @@ const { data, isPending, isError } = useQuery({
     }),
   placeholderData: keepPreviousData,
 });
-
-/** How many orders wait in the tabs that ask for something to be done. */
-const { data: counts } = useQuery({
-  queryKey: ['orders', 'stage-counts'],
-  queryFn: async () => {
-    const counted = ORDER_STAGES.filter((candidate) => candidate.counted);
-    const totals = await Promise.all(
-      counted.map(async (candidate) => {
-        const { total } = await services.orders.getAll({ filter: candidate.filter, limit: 1 });
-        return [candidate.value, total] as const;
-      })
-    );
-    return Object.fromEntries(totals) as Record<string, number>;
-  },
-});
-
-const tabs = computed(() =>
-  ORDER_STAGES.map((candidate) => ({
-    label: candidate.label,
-    value: candidate.value,
-    badge: counts.value?.[candidate.value] || undefined,
-  }))
-);
-
-const stageItems = computed(() =>
-  tabs.value.map((tab) => ({
-    value: tab.value,
-    label: tab.badge ? `${tab.label} (${tab.badge})` : tab.label,
-  }))
-);
 
 const orders = computed(() => data.value?.data ?? []);
 const total = computed(() => data.value?.total ?? 0);
@@ -142,19 +120,6 @@ const columns: TableColumn<Order>[] = [
     meta: { class: { th: 'text-right', td: 'text-right font-medium tabular-nums' } },
   },
 ];
-
-/** One column sorts at a time; a third click goes back to newest first. */
-function toggleSort(id: SortColumn) {
-  const [current] = sorting.value;
-  if (current?.id !== id) sorting.value = [{ id, desc: id === 'createdAt' }];
-  else if (current.desc === (id === 'createdAt')) sorting.value = [{ id, desc: !current.desc }];
-  else sorting.value = [{ id: 'createdAt', desc: true }];
-}
-function sortIcon(id: SortColumn): string {
-  const [current] = sorting.value;
-  if (current?.id !== id) return 'i-lucide-arrow-up-down';
-  return current.desc ? 'i-lucide-arrow-down-wide-narrow' : 'i-lucide-arrow-up-narrow-wide';
-}
 
 function openOrder(_event: Event, row: { original: Order }) {
   void router.push({ name: 'order', params: { id: row.original.id } });

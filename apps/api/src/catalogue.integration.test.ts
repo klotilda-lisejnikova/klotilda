@@ -84,6 +84,33 @@ describe('Products and the gallery', () => {
     expect(adminList.body.data.map((product: { id: string }) => product.id)).toContain(hidden.id);
   });
 
+  it('lists the products by what is left in stock', async () => {
+    const soldOut = await createProduct({ ...VASE, name_cs: 'Vyprodaná', stockCount: 0 });
+    const inStock = await createProduct({ ...VASE, name_cs: 'Skladem', stockCount: 2 });
+    const listed = async (query: object) => {
+      const response = await app
+        .api()
+        .get('/api/products')
+        .query({ limit: 200, ...query })
+        .set('Authorization', bearer(token));
+      expect(response.status).toBe(200);
+      return response.body.data.map((product: { id: string }) => product.id);
+    };
+
+    const none = await listed({ stockCount: 0 });
+    expect(none).toContain(soldOut.id);
+    expect(none).not.toContain(inStock.id);
+    const some = await listed({ 'stockCount[gte]': 1 });
+    expect(some).toContain(inStock.id);
+    expect(some).not.toContain(soldOut.id);
+  });
+
+  it('refuses a range filter that parses to nothing, for anyone', async () => {
+    for (const query of ['stockCount[__proto__]=1', 'stockCount[__proto__][x]=1']) {
+      expectRefusal(await app.api().get(`/api/products?${query}`), 400, 'stockCount');
+    }
+  });
+
   it('checks fields by the shared rules', async () => {
     const response = await app
       .api()

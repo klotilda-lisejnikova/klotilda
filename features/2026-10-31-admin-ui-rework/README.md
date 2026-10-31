@@ -1,7 +1,7 @@
 # Admin UI rework
 
 **Ticket:** none yet
-**Status:** active — steps 1–7 done, 8–9 open
+**Status:** active — steps 1–8 done, 9 open
 
 The owner wants the admin's UI reworked and improved overall, and suggested shadcn. This plan reviews
 the current admin (`dev` @ b6fc27f), weighs shadcn-vue against staying on Nuxt UI, and splits the work
@@ -99,7 +99,17 @@ Each step is one commit (or a small PR) to `dev`, verified on `admin.test.klotil
    wipes the edits (it used to overwrite the whole form) nor puts back a stock count a sale took
    down. An update sends only the changed fields; an edit typed while a save runs stays unsaved;
    an existing row's form shows a skeleton until it has loaded.
-8. **Products.** A table/cards toggle, filters for hidden and sold-out, inline "in the shop" switch.
+8. **Products.** _(done)_ Tabs All / For sale / Sold out / Hidden (`app/product-statuses.ts`, with
+   counts within the chosen category). The tab and the category live in the address
+   (`app/query-tabs.ts`, shared with the orders tabs); the browser's Back, the page's back arrow,
+   Cancel and a delete return to the list as it was left (`app/list-return.ts`, orders too). The
+   product entity now filters `stockCount` as a range (`stockCount=0`, `stockCount[gte]=1`), a query
+   setting with no migration; the API refuses a query parameter that parses to an empty object
+   (`http/query-guard.ts`). From a tablet up the admin picks a table or cards, remembered in the
+   browser (`app/stored-choice.ts`); phones keep the cards. The table sorts by name, price or date
+   (`app/table-sort.ts`, shared with the orders table) and every row and card has an "in the shop"
+   switch: it moves at once, goes back with a message if the save fails, and the list reloads once
+   no switch is still saving. A page emptied by a switch gives way to the last page left.
 9. **Overview.** Tidy the stat tiles in the new theme; optionally a small paid-revenue chart by month.
 
 Steps 1–2 change the look of everything and are worth doing first; 3–9 are independent and can be
@@ -145,6 +155,19 @@ From the review of step 7:
 - When the session expires the form is left without asking (the way to sign-in must stay open),
   and the edits are lost. A draft kept in `sessionStorage` and offered back after signing in again
   would cover it.
+
+From the review of step 8:
+
+- be-core's range filter passes an empty object (`stockCount[__proto__]=1`) on to the database and
+  answers 500; klotilda refuses such a parameter itself (`http/query-guard.ts`). The fix belongs in
+  `parseRange` in Eleansphere/core, with a 400 for an empty bound list.
+- `Product.active` and `Product.stockCount` allow NULL (the baseline has defaults but no NOT NULL).
+  A NULL row is in no counted tab, and a product form with the stock field emptied saves nothing
+  for it. Marking both `required` with a migration that fills the NULLs fixes both; whether
+  production holds any is unchecked.
+- Sorting by name follows the database's collation: under `C` (the local database) "Čajník" comes
+  after "Zvonek". Production's collation is unchecked; a Czech ICU collation on `name_cs` would fix
+  it.
 - Website revalidation matches paths case-sensitively, Express does not; the admin never sends an
   odd-cased path.
 

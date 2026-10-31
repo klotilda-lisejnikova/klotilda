@@ -30,8 +30,6 @@ export const ORDER_STAGES: OrderStage[] = [
   { value: 'all', label: 'Všechny', filter: {} },
 ];
 
-export const DEFAULT_STAGE = ORDER_STAGES[0].value;
-
 /** Past this many days an unpaid order is flagged in the list. */
 export const UNPAID_WARNING_DAYS = 5;
 

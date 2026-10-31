@@ -15,6 +15,7 @@ import OrderStatusBadges from '@/components/OrderStatusBadges.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { services } from '@/app/api';
 import { describeError } from '@/app/errors';
+import { useListReturn } from '@/app/list-return';
 import { formatCzk, formatDateTime } from '@/app/format';
 import { emailFailed, refreshAfterOrderAction, shouldNotify } from '@/app/order-actions';
 import {
@@ -37,6 +38,8 @@ const SECONDARY_ACTIONS: readonly OrderAction[] = ['cancel'];
 
 const toast = useToast();
 const router = useRouter();
+/** The orders list as the admin left it (its tab), or the plain list. */
+const listLink = useListReturn('orders');
 const queryClient = useQueryClient();
 
 const {
@@ -120,7 +123,7 @@ const remove = useMutation({
   onSuccess: async () => {
     void queryClient.invalidateQueries({ queryKey: ['orders'] });
     toast.add({ title: 'Objednávka smazána', color: 'success' });
-    await router.push({ name: 'orders' });
+    await router.push(listLink);
   },
   onError: (err) => toast.add({ title: describeError(err), color: 'error' }),
 });
@@ -136,10 +139,7 @@ async function copy(text: string, what: string) {
 </script>
 
 <template>
-  <PageHeader
-    :title="order ? `Objednávka ${order.variableSymbol}` : 'Objednávka'"
-    :back="{ name: 'orders' }"
-  >
+  <PageHeader :title="order ? `Objednávka ${order.variableSymbol}` : 'Objednávka'" :back="listLink">
     <template v-if="order" #actions>
       <!-- Beside the title from a tablet up; a phone shows them above the page instead. -->
       <div class="hidden gap-2 sm:flex">
