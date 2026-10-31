@@ -72,13 +72,14 @@ export default function ProductCard({ product, locale, eager = false }: Props) {
             onError={() => markFailed(first.id)}
           />
         )}
+        {/* Only a mouse can hover: hidden (so never downloaded) on touch screens. */}
         {second && inStock && (
           <Image
             src={mediaUrl(second.url)}
             alt=""
             fill
             sizes={CARD_SIZES}
-            className="object-cover opacity-0 transition-opacity duration-500 pointer-fine:group-hover:opacity-100"
+            className="hidden object-cover opacity-0 transition-opacity duration-500 pointer-fine:block pointer-fine:group-hover:opacity-100"
             onError={() => markFailed(second.id)}
           />
         )}
