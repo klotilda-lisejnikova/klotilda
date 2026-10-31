@@ -41,7 +41,7 @@ export default function Step1Contact({ data, onChange, onNext }: Props) {
           value={(data[key] as string) ?? ""}
           onChange={(e) => onChange({ [key]: e.target.value })}
           required={opts.required}
-          className="border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 outline-none focus:border-stone-500"
+          className="border border-stone-200 bg-white px-3 py-2 text-base text-stone-800 outline-none focus:border-stone-500 md:text-sm"
         />
       </div>
     );

@@ -80,7 +80,11 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the
 - E-mail: Resend's HTTP API when `RESEND_API_KEY` is set — Railway blocks outbound SMTP below the
   Pro plan — else SMTP (Mailpit locally); with neither, e-mails are only logged. The klotilda.cz
   mailbox itself is at Zoner (`postmaster@`, alias `info@`). Production refuses to start without
-  an e-mail transport, R2 and `ADMIN_EMAIL`.
+  an e-mail transport, R2, `ADMIN_EMAIL`, `CORS_ORIGINS` and `TRUST_PROXY` (the proxies in front
+  of the API, Railway: `1` — the rate limits count by the client's address), or with a
+  `JWT_SECRET` shorter than 32 characters.
+- Every answer carries `SECURITY_HEADERS` (`src/http/security-headers.ts`): nothing the API serves
+  runs scripts or is framed.
 - Schema: `syncMode: 'migrate'`. `2026-09-27-baseline` is the DDL `sync()` generated, frozen,
   `IF NOT EXISTS` throughout — on production (built by the older be-core's `sync()`) it only adds
   the `Files` indexes and `RefreshTokens`. A model change needs a new migration:
@@ -91,7 +95,10 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the
 
 `apps/web/src/services/index.ts` wraps the domain clients: `listProducts`, `getProduct`,
 `listGallery`, `checkout`. Photos go through `mediaUrl()` (relative `/api/files/:id` without a
-bucket). `NEXT_PUBLIC_SHOP_ENABLED` gates the shop (see `src/lib/features.ts`).
+bucket). `NEXT_PUBLIC_SHOP_ENABLED` gates the shop (see `src/lib/features.ts`). The image
+optimizer takes only the API's host and `NEXT_PUBLIC_MEDIA_URL` (the bucket's public URL, the API's
+`R2_PUBLIC_BASE_URL`), which a Vercel production build requires. `next.config.ts` sets the
+security headers of every page.
 
 Legal pages — `/obchodni-podminky` (terms, complaints under `#reklamace`), `/ochrana-osobnich-udaju`,
 `/odstoupeni-od-smlouvy` (the model withdrawal form, printable) — same path in both languages,
@@ -111,6 +118,8 @@ pictures within a row and categories are reordered by dragging or with arrow but
 that changed, and ask before unsaved changes are dropped (`app/unsaved-changes.ts`: leaving the
 page, signing out, closing the tab). Every `UFormField` keeps a line free for its message
 (`vite.config.ts`), so a message that appears or goes never moves a button from under the pointer.
+`vercel.json` sends a Content-Security-Policy that allows only the admin's own scripts (hence
+`public/color-scheme.js` instead of an inline script) and API calls only to `*.up.railway.app`.
 
 ## Commands
 
@@ -138,10 +147,14 @@ Branches: `main` = production, `dev` = test.
     photos in the R2 bucket `klotilda-media-test` served through the API (no public bucket URL),
     CORS only for the test sites. Admin accounts are seeded separately there.
 
+  Both run with `NODE_ENV=production`, so each needs `TRUST_PROXY=1` and a `JWT_SECRET` of at
+  least 32 characters before it takes a build that checks them, or the API won't start.
+
   After a change to the catalogue, the gallery or the stock the API calls the web's
   `POST /api/revalidate` (`WEB_REVALIDATE_URL`, `WEB_REVALIDATE_SECRET` = the web's
   `REVALIDATE_SECRET`), so admin edits show at once; set for `test` / the `dev` branch, not yet
-  for production. `SITE_URL` (linked from e-mails) is `https://test.klotilda.cz` on `test`.
+  for production — set it there before the shop goes live: without it the shop's pages
+  regenerate only hourly. `SITE_URL` (linked from e-mails) is `https://test.klotilda.cz` on `test`.
 
   `apps/api/Dockerfile`, build context the repository root, `NODE_AUTH_TOKEN` as a build argument
   (the placeholder in `tooling/user.npmrc`; never name the token in a `RUN` line). Migrations run
@@ -150,7 +163,8 @@ Branches: `main` = production, `dev` = test.
 - Web: Vercel project `klotilda-frontend`, root `apps/web` — `klotilda.cz` / `www.klotilda.cz`
   from `main`, `test.klotilda.cz` from `dev`. Preview variables scoped to the `dev` branch point
   it at the test API and turn the shop on (`NEXT_PUBLIC_SHOP_ENABLED=true`); production keeps
-  the shop off.
+  the shop off. A production build needs `NEXT_PUBLIC_MEDIA_URL` (the production bucket's
+  public URL) or it fails.
 - Admin: Vercel project `klotilda-admin`, root `apps/admin` — `admin.klotilda.cz` from `main`,
   `admin.test.klotilda.cz` from `dev` (its `VITE_API_URL` for the `dev` branch is the test API).
   `VITE_API_URL` may end in `/api` (the old admin's setting); `src/app/api.ts` drops it.

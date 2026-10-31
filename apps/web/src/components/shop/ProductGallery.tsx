@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { mediaUrl } from "@/lib/media-url";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ProductImage } from "@/services";
 import Lightbox, { type LightboxSlide } from "@/components/ui/Lightbox";
@@ -16,15 +16,10 @@ export default function ProductGallery({ images, alt }: Props) {
   const tGallery = useTranslations("home.gallery");
   const [activeIndex, setActiveIndex] = useState(0);
   const [failed, setFailed] = useState<Set<string>>(new Set());
-  const [loaded, setLoaded] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const visible = images.filter((img) => !failed.has(img.id));
   const active = visible[activeIndex] ?? visible[0];
-
-  useEffect(() => {
-    setLoaded(false);
-  }, [active?.id]);
 
   if (!active) {
     return <div className="aspect-[3/4] w-full rounded-md bg-stone-100" />;
@@ -52,18 +47,14 @@ export default function ProductGallery({ images, alt }: Props) {
           aria-label={`${tGallery("open")}: ${alt}`}
           className="group focus-visible:outline-moss relative aspect-[3/4] w-full cursor-zoom-in overflow-hidden rounded-md bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-4"
         >
-          {!loaded && (
-            <div className="absolute inset-0 animate-pulse bg-stone-200" />
-          )}
           <Image
             key={active.id}
             src={mediaUrl(active.url)}
             alt={alt}
             fill
             sizes="(max-width: 768px) 100vw, 50vw"
-            className={`object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+            className="object-cover"
             priority
-            onLoad={() => setLoaded(true)}
             onError={() => {
               markFailed(active.id);
               setActiveIndex(0);

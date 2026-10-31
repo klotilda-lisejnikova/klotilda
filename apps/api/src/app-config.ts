@@ -23,6 +23,7 @@ import { CHECKOUT_RATE_LIMIT, createCheckoutPlugin } from './checkout/checkout-p
 import type { Environment, StorageSettings } from './env';
 import { authorizeFileAccess } from './files/authorize-file-access';
 import { createShopImages } from './files/shop-images';
+import { securityHeaders } from './http/security-headers';
 import { createModelRegistry } from './models-registry';
 import { migrations } from './migrations';
 import { createOrderActionsPlugin } from './orders/order-actions-plugin';
@@ -77,7 +78,7 @@ export function buildAppConfig(
     port: environment.port,
     trustProxy: environment.trustProxy,
     cors: { origin: environment.corsOrigins },
-    middleware: [createWebRevalidator(environment.webRevalidation)],
+    middleware: [securityHeaders, createWebRevalidator(environment.webRevalidation)],
     modelConfigs: toModelConfigs(allEntities, { custom: ENTITIES_WITHOUT_CRUD_ROUTES }),
     routes: {
       [categoryEntity.config.name]: {

@@ -8,18 +8,19 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 const apiHostname = new URL(apiUrl).hostname;
 
-// Optional production media domain — a custom R2 domain like media.klotilda.cz (matches the
-// API's R2_PUBLIC_BASE_URL).
+// Where the photos load from when not from the API itself: the R2 bucket's public URL (the API's
+// R2_PUBLIC_BASE_URL). Only these hosts may pass through the image optimizer, so it can't be used
+// to fetch and resize anyone else's pictures. A production build without it would show no photos.
 const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL;
+if (!mediaUrl && process.env.VERCEL_ENV === "production") {
+  throw new Error("Missing NEXT_PUBLIC_MEDIA_URL (the R2 bucket's public URL)");
+}
 
 const remotePatterns: NonNullable<NextConfig["images"]>["remotePatterns"] = [
   {
     protocol: apiUrl.startsWith("https") ? "https" : "http",
     hostname: apiHostname,
   },
-  // Cloudflare R2 public dev buckets (pub-<hash>.r2.dev) — so <Image> works on dev/test
-  // deploys without the exact bucket URL wired into the build env.
-  { protocol: "https", hostname: "**.r2.dev" },
 ];
 
 if (mediaUrl) {
@@ -28,6 +29,21 @@ if (mediaUrl) {
     hostname: new URL(mediaUrl).hostname,
   });
 }
+
+/**
+ * Sent with every page. No script policy: Next.js inlines its own scripts; this keeps the site
+ * out of other sites' frames and limits what a page could be made to load or submit.
+ */
+const SECURITY_HEADERS = [
+  {
+    key: "Content-Security-Policy",
+    value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
+  },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+];
 
 // The project version lives in the root package.json (`pnpm release`). Next runs this file
 // from apps/web, locally and on Vercel.
@@ -49,6 +65,10 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns,
+  },
+  poweredByHeader: false,
+  async headers() {
+    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
 };
 

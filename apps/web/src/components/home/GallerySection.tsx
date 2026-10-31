@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { mediaUrl } from "@/lib/media-url";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { useTranslations, useLocale } from "next-intl";
 import { getGalleryTranslations } from "@/i18n/home";
 import FadeIn from "@/components/ui/FadeIn";
@@ -18,19 +17,6 @@ const SECTION_BG = "#f5efe6";
 
 /** Above this many photos the phone slider shows "3 / 20" instead of a dot per photo. */
 const MAX_DOTS = 12;
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
-      delay: i * 0.1,
-    },
-  }),
-};
 
 interface Props {
   items: GalleryItem[];
@@ -181,14 +167,10 @@ function GalleryRow({
         className="flex snap-x snap-mandatory [scrollbar-width:none] gap-5 overflow-x-auto pb-1 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       >
         {artworks.map((artwork, i) => (
-          <motion.div
+          <FadeIn
             key={artwork.item.id}
             className="w-[calc((100%-1.25rem)/2)] shrink-0 snap-start lg:w-[calc((100%-2.5rem)/3)]"
-            custom={i}
-            variants={cardVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
+            delay={i * 0.1}
           >
             <ArtworkCard
               artwork={artwork}
@@ -196,7 +178,7 @@ function GalleryRow({
               onOpen={onOpen}
               openLabel={labels.open}
             />
-          </motion.div>
+          </FadeIn>
         ))}
       </div>
 

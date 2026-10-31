@@ -8,10 +8,8 @@ import {
   setRequestLocale,
 } from "next-intl/server";
 import { routing } from "@/i18n/routing";
-import "../globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import MotionProvider from "@/components/layout/MotionProvider";
 
 // Absolute links in the page metadata (the share preview image, opengraph-image.jpg next to this
 // file) point here; klotilda.cz redirects to www.
@@ -84,13 +82,11 @@ export default async function LocaleLayout({
     <html lang={locale}>
       <body className={`${geist.variable} font-sans antialiased`}>
         <NextIntlClientProvider messages={messages}>
-          <MotionProvider>
-            <div className="flex min-h-screen flex-col overflow-x-clip">
-              <Header />
-              <main className="flex-1">{children}</main>
-              <Footer />
-            </div>
-          </MotionProvider>
+          <div className="flex min-h-screen flex-col overflow-x-clip">
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -18,7 +18,6 @@ export default function HeroSection() {
             alt=""
             fill
             className="object-cover"
-            style={{ filter: "blur(2px)" }}
             sizes="100vw"
             priority
           />
