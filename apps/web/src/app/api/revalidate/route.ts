@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 /**
  * `POST /api/revalidate` — the API calls it whenever the admin changes products, categories or
  * the gallery (and when an order moves the stock), so the cached pages are rebuilt on the next
- * visit instead of up to a minute (the gallery: ten) later. Guarded by `REVALIDATE_SECRET`.
+ * visit instead of when their `revalidate` interval runs out. Guarded by `REVALIDATE_SECRET`.
  */
 export async function POST(request: NextRequest) {
   const secret = process.env.REVALIDATE_SECRET;

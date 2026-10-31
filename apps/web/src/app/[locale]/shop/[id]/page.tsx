@@ -10,10 +10,11 @@ import ProductGallery from "@/components/shop/ProductGallery";
 import ProductPurchase from "@/components/shop/ProductPurchase";
 
 /**
- * Rendered on the first visit, then served from the cache and regenerated at most every minute.
- * Price and stock are looked up again in the browser (`ProductPurchase`).
+ * Rendered on the first visit, then served from the cache until the API has it rebuilt
+ * (`/api/revalidate`), or at the latest after an hour. Price and stock are looked up again in
+ * the browser (`ProductPurchase`).
  */
-export const revalidate = 60;
+export const revalidate = 3600;
 
 /**
  * Every product on offer is rendered at build time. That matters for Czech: its URLs carry no

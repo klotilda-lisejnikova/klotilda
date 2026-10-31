@@ -7,10 +7,11 @@ import ShopCatalog, { CatalogView } from "@/components/shop/ShopCatalog";
 import { ALL_CATEGORIES } from "@/components/shop/CategoryFilter";
 
 /**
- * Static, regenerated at most every minute. Stock shown here may be that old; the cart and the
- * product page check it live, and the checkout decides.
+ * Static. The API has it rebuilt whenever the catalogue or the stock changes
+ * (`/api/revalidate`); the hourly regeneration only catches a missed call. The cart and the
+ * product page check the stock live, and the checkout decides.
  */
-export const revalidate = 60;
+export const revalidate = 3600;
 
 interface Props {
   params: Promise<{ locale: string }>;

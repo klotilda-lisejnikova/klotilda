@@ -133,7 +133,8 @@ Branches: `main` = production, `dev` = test.
   After a change to the catalogue, the gallery or the stock the API calls the web's
   `POST /api/revalidate` (`WEB_REVALIDATE_URL`, `WEB_REVALIDATE_SECRET` = the web's
   `REVALIDATE_SECRET`), so admin edits show at once; set for `test` / the `dev` branch, not yet
-  for production. `SITE_URL` (linked from e-mails) is `https://test.klotilda.cz` on `test`.
+  for production — set it there before the shop goes live: without it the shop's pages
+  regenerate only hourly. `SITE_URL` (linked from e-mails) is `https://test.klotilda.cz` on `test`.
 
   `apps/api/Dockerfile`, build context the repository root, `NODE_AUTH_TOKEN` as a build argument
   (the placeholder in `tooling/user.npmrc`; never name the token in a `RUN` line). Migrations run
