@@ -224,8 +224,8 @@ describe('Legal documents', () => {
   it('take no order while no terms are published', async () => {
     await app.core.models.LegalDocumentVersion.destroy({ where: { document: 'terms' } });
     const { placed, productId } = await placeOrder();
+    // be-core answers a 5xx with a generic message; the API's own one goes to the log.
     expect(placed.status).toBe(503);
-    expect(placed.body.message).toBe('Obchodní podmínky nejsou zveřejněné');
     const stock = await app.api().get(`/api/products/${productId}`).set(asAdmin());
     expect(stock.body.stockCount).toBe(1);
     expect((await app.api().get(`${TERMS}/current`)).status).toBe(404);

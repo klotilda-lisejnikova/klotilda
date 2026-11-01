@@ -89,7 +89,7 @@ async function resolveAgreedTermsVersion(
   transaction: Transaction
 ): Promise<string> {
   const current = await findCurrentVersion(registry, 'terms', transaction);
-  if (!current) throw new HttpError(UNAVAILABLE, 'Obchodní podmínky nejsou zveřejněné');
+  if (!current) throw new HttpError(UNAVAILABLE, 'No terms are published');
   const version = String(current.get('version'));
   if (shown !== undefined && shown !== version) {
     throw new HttpError(
