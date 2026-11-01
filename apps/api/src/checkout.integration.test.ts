@@ -151,18 +151,26 @@ describe('Checkout', () => {
       .send({
         ...CUSTOMER,
         customerEmail: 'not-an-email',
-        shippingMethod: 'drone',
         items: [{ productId: 'prod_1', quantity: 0 }],
       });
     expect(response.status).toBe(400);
     expect(response.body.issues).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ path: 'customerEmail', code: 'format' }),
-        expect.objectContaining({ path: 'shippingMethod', code: 'enum' }),
         expect.objectContaining({ path: 'items.0.quantity', code: 'min' }),
       ])
     );
     expect((await checkout({ items: [] })).status).toBe(400);
+  });
+
+  it('refuses a shipping method that is not on offer', async () => {
+    const vase = await createProduct({});
+    const response = await checkout({
+      shippingMethod: 'drone',
+      items: [{ productId: vase.id, quantity: 1 }],
+    });
+    expect(response.status).toBe(400);
+    expect(await stockOf(vase.id)).toBe(1);
   });
 });
 
@@ -328,7 +336,11 @@ describe('Order actions', () => {
     expect(paidEmail.text).toContain('> Balím ještě dnes.');
 
     const shipped = await act(orderId, 'ship', { trackingNumber: ' Z 123 ' });
-    expect(shipped.body).toMatchObject({ orderStatus: 'shipped', trackingNumber: 'Z 123' });
+    expect(shipped.body).toMatchObject({
+      orderStatus: 'shipped',
+      trackingNumber: 'Z 123',
+      trackingUrl: 'https://tracking.packeta.com/cs/?id=Z%20123',
+    });
     const shippedEmail = emailsTo(CUSTOMER.customerEmail, before)[1];
     expect(shippedEmail.html).toContain('https://tracking.packeta.com/cs/?id=Z%20123');
 

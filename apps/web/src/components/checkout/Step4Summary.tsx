@@ -74,7 +74,7 @@ export default function Step4Summary({
       <div className="flex flex-col gap-2 border-t border-stone-100 pt-4">
         <div className="flex justify-between text-sm text-stone-500">
           <span>
-            {t("summary.shipping")} — {t(`shipping.${data.shippingMethod}`)}
+            {t("summary.shipping")} — {data.shippingName}
           </span>
           <span>
             {data.shippingPrice === 0

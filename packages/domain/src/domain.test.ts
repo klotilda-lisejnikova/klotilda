@@ -7,9 +7,9 @@ import {
   orderFields,
   parseOrderHistory,
   parseOrderItems,
-  SHIPPING_METHODS,
-  SHIPPING_PRICES,
+  toShippingCode,
   toSlug,
+  trackingUrlFor,
 } from './index';
 import type { OrderState } from './index';
 
@@ -17,7 +17,7 @@ describe('Order actions', () => {
   const placed: OrderState = {
     paymentStatus: 'pending',
     orderStatus: 'new',
-    shippingMethod: 'zasilkovna',
+    shippingKind: 'delivery',
   };
 
   it('follow an order from payment to delivery', () => {
@@ -31,7 +31,7 @@ describe('Order actions', () => {
   });
 
   it('hand a pickup over in person instead of shipping it', () => {
-    const paid: OrderState = { ...placed, shippingMethod: 'osobni_odber', paymentStatus: 'paid' };
+    const paid: OrderState = { ...placed, shippingKind: 'pickup', paymentStatus: 'paid' };
     expect(availableActions(paid)).toEqual(['ready-for-pickup', 'cancel']);
     const ready = { ...paid, ...applyAction(paid, 'ready-for-pickup') };
     expect(ready.orderStatus).toBe('ready');
@@ -63,12 +63,6 @@ describe('Categories', () => {
   });
 });
 
-describe('Shipping', () => {
-  it('has a price for every method the checkout offers, and no other', () => {
-    expect([...SHIPPING_METHODS].sort()).toEqual(Object.keys(SHIPPING_PRICES).sort());
-  });
-});
-
 describe('Orders', () => {
   it('keep what the customer sent and what the server worked out: only the statuses change', () => {
     const writable = Object.entries(orderFields)
@@ -80,14 +74,14 @@ describe('Orders', () => {
   it('check the customer with the same rules the checkout uses', () => {
     const issues = validateFields(
       customerFields,
-      { customerFirstName: 'Jana', customerEmail: 'nope', shippingMethod: 'drone' },
+      { customerFirstName: 'Jana', customerEmail: 'nope', shippingMethod: 'x'.repeat(41) },
       { mode: 'create' }
     );
     expect(issues.map(({ path, code }) => `${path}:${code}`)).toEqual(
       expect.arrayContaining([
         'customerLastName:required',
         'customerEmail:format',
-        'shippingMethod:enum',
+        'shippingMethod:maxLength',
         'street:required',
       ])
     );
@@ -96,5 +90,21 @@ describe('Orders', () => {
   it('read their stored items back', () => {
     const items = [{ productId: 'prod1', name: 'Váza', price: 1200, quantity: 1 }];
     expect(parseOrderItems({ items: JSON.stringify(items) })).toEqual(items);
+  });
+});
+
+describe('Shipping methods', () => {
+  it('link a parcel by the method’s template', () => {
+    expect(trackingUrlFor('https://tracking.packeta.com/cs/?id={number}', 'Z 123')).toBe(
+      'https://tracking.packeta.com/cs/?id=Z%20123'
+    );
+    expect(trackingUrlFor(null, 'Z 123')).toBeUndefined();
+    expect(trackingUrlFor('  ', 'Z 123')).toBeUndefined();
+  });
+
+  it('make plain codes, keeping underscores', () => {
+    expect(toShippingCode('Osobní odběr – Brno')).toBe('osobni-odber-brno');
+    expect(toShippingCode('osobni_odber')).toBe('osobni_odber');
+    expect(toShippingCode(' ** ')).toBe('');
   });
 });

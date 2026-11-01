@@ -131,6 +131,21 @@ describe('Migrations', () => {
       ]);
       const order = await core.models.Order.findByPk('ord1');
       expect(order?.get('paymentStatus')).toBe('paid');
+      // The fixed shipping list became rows; the order keeps the name and kind it had.
+      expect(order?.get('shippingName')).toBe('Zásilkovna');
+      expect(order?.get('shippingKind')).toBe('delivery');
+      const methods = await request(core.app).get('/api/shipping-methods');
+      expect(
+        methods.body.data.map((method: { code: string; price: number; kind: string }) => [
+          method.code,
+          method.price,
+          method.kind,
+        ])
+      ).toEqual([
+        ['zasilkovna', 99, 'delivery'],
+        ['ceska_posta', 129, 'delivery'],
+        ['osobni_odber', 0, 'pickup'],
+      ]);
     } finally {
       await core.close();
     }

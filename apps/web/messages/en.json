@@ -43,10 +43,9 @@
       "zip": "ZIP code"
     },
     "shipping": {
-      "zasilkovna": "Zásilkovna",
-      "ceska_posta": "Czech Post",
-      "osobni_odber": "Personal pickup in Prague",
-      "free": "Free"
+      "free": "Free",
+      "loading": "Loading shipping options…",
+      "unavailable": "Shipping options could not be loaded. Please try again in a moment."
     },
     "payment": {
       "qr": "QR code payment",

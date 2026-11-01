@@ -4,6 +4,7 @@ import type {
   CheckoutResponse,
   GalleryItemWithImages,
   ProductWithImages,
+  ShippingMethod,
 } from "@klotilda/domain";
 import type { PaginatedResponse } from "@eleansphere/entity-core";
 
@@ -52,6 +53,11 @@ export function listGallery(): Promise<GalleryItemWithImages[]> {
         PaginatedResponse<GalleryItemWithImages>
       >,
   );
+}
+
+/** The shipping methods the shop offers (the API answers only the active ones), in its order. */
+export async function listShippingMethods(): Promise<ShippingMethod[]> {
+  return (await services.shippingMethods.getAll({ limit: 100 })).data;
 }
 
 /** Places the order; the API charges its own prices and answers how to pay. */

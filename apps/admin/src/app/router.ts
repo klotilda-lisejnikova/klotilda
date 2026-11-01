@@ -53,6 +53,11 @@ export const router = createRouter({
           component: () => import('@/pages/CategoriesPage.vue'),
         },
         {
+          path: 'shipping',
+          name: 'shipping-methods',
+          component: () => import('@/pages/ShippingMethodsPage.vue'),
+        },
+        {
           path: 'gallery',
           name: 'gallery',
           component: () => import('@/pages/GalleryPage.vue'),

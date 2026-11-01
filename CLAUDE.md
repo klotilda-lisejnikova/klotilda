@@ -57,10 +57,18 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the
   are writable (everything else is `readOnly`). **An order is only ever created by
   `POST /api/checkout`** (`src/checkout/`), public and rate-limited: it takes the customer's
   details and `{ productId, quantity }` lines, charges the products' **own prices** and the
-  shipping from `SHIPPING_PRICES`, and takes the stock down inside one transaction with the product
-  rows locked (`FOR UPDATE`), so the last piece sells once. It answers the bank account, a random
+  price of the chosen **active** shipping method (400 otherwise), and takes the stock down
+  inside one transaction with the product rows locked (`FOR UPDATE`), so the last piece sells once. It answers the bank account, a random
   variable symbol and a QR Platba code, and e-mails the customer and `ADMIN_EMAIL` (a failed
   e-mail is only logged).
+- Shipping methods (`ShippingMethod`, `/api/shipping-methods`): auto CRUD, rows the admin manages
+  (code, names, description, price, `kind` `delivery` | `pickup`, an optional `trackingUrl` with
+  `{number}`, `active`, `sortOrder`); visitors read only the active ones. The code is stored
+  normalized (`toShippingCode`, `src/shipping/`). An order keeps the method's code and snapshots
+  `shippingName`, `shippingKind` and `shippingPrice`, so editing or deleting a method changes no
+  order; the workflow decides ship vs ready-for-pickup by `shippingKind`, and shipping an order
+  stores its `trackingUrl`. The first three methods come from the `2026-11-01-shipping-methods`
+  migration.
 - Order actions: `POST /api/orders/:id/actions/:action` (`src/orders/`), signed-in admin only. The
   steps and when each is allowed are in the domain (`availableActions`, `applyAction` in
   `entities/order/workflow.ts`): mark-paid, ship (parcel number), ready-for-pickup, mark-delivered,
@@ -72,9 +80,9 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the
   are public.
 - Ordering (`src/catalogue/reorder-plugin.ts`, signed-in admin): `PUT /api/products/:id/images/order`
   (a product's photos, `File.sortOrder`; the first is the main one) and
-  `PUT /api/gallery/rows/:row/order` (one gallery row) and `PUT /api/categories/all/order` (every
-  category). Each takes `{ ids }`, every row of the list once (else 409), and saves the order in one
-  transaction.
+  `PUT /api/gallery/rows/:row/order` (one gallery row), `PUT /api/categories/all/order` (every
+  category) and `PUT /api/shipping-methods/all/order` (every shipping method). Each takes
+  `{ ids }`, every row of the list once (else 409), and saves the order in one transaction.
 - Auth: be-core's login with rotating refresh tokens; accounts come from `seed:admin`
   (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`). There is no registration.
 - E-mail: Resend's HTTP API when `RESEND_API_KEY` is set — Railway blocks outbound SMTP below the
@@ -96,8 +104,9 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the
 ## Website
 
 `apps/web/src/services/index.ts` wraps the domain clients: `listProducts`, `getProduct`,
-`listGallery`, `checkout`. Photos go through `mediaUrl()` (relative `/api/files/:id` without a
-bucket). `NEXT_PUBLIC_SHOP_ENABLED` gates the shop (see `src/lib/features.ts`). The image
+`listGallery`, `listShippingMethods`, `checkout`. The checkout reads the shipping methods live;
+the terms list their prices (`{{shippingPrices}}`, rebuilt on revalidation). Photos go through
+`mediaUrl()` (relative `/api/files/:id` without a bucket). `NEXT_PUBLIC_SHOP_ENABLED` gates the shop (see `src/lib/features.ts`). The image
 optimizer takes only the API's host and `NEXT_PUBLIC_MEDIA_URL` (the bucket's public URL, the API's
 `R2_PUBLIC_BASE_URL`), which a Vercel production build requires. `next.config.ts` sets the
 security headers of every page.
@@ -122,7 +131,8 @@ page, signing out, closing the tab). The products list is a table or cards (reme
 with an "in the shop" switch on every product. The overview counts through the API and charts the
 paid revenue of the last 12 months by the month of the order (`app/revenue.ts`). Every `UFormField`
 keeps a line free for its message (`vite.config.ts`), so a message that appears or goes never moves
-a button from under the pointer.
+a button from under the pointer. The sidebar's "Nastavení" group holds the shop's settings
+(Doprava: the shipping methods); it is not on the phone's bottom bar, only in the slide-over.
 `vercel.json` sends a Content-Security-Policy that allows only the admin's own scripts (hence
 `public/color-scheme.js` instead of an inline script) and API calls only to `*.up.railway.app`.
 
@@ -174,7 +184,6 @@ Branches: `main` = production, `dev` = test.
   `admin.test.klotilda.cz` from `dev` (its `VITE_API_URL` for the `dev` branch is the test API).
   `VITE_API_URL` may end in `/api` (the old admin's setting); `src/app/api.ts` drops it.
 
-
 ## Working rules
 
 - **Language:** code, comments, commit messages and agent-facing documentation (this file,
@@ -194,7 +203,7 @@ Branches: `main` = production, `dev` = test.
 - **Make the smallest coherent change;** fix nearby debt only when you are already touching it and
   it does not grow into an unrelated refactor.
 - **Never hand-edit generated files:** `pnpm-lock.yaml` (run `pnpm install`), and nothing derived
-  from an entity by hand where `defineEntity` already derives it (see *The one rule*).
+  from an entity by hand where `defineEntity` already derives it (see _The one rule_).
 - **pnpm, not npm or yarn;** run `pnpm install` after changing a `package.json`.
 - **Credentials:** `.env` files, `~/.npmrc`, the Railway and Vercel variables and the R2 keys hold
   live secrets. Never open a `.env` file whole or print a value; grep key names only. Refer to a
@@ -214,13 +223,13 @@ With the repository's own scripts, in this order:
 3. `pnpm typecheck`;
 4. `pnpm lint` — check-only first; `lint:fix` deliberately, not as a reflex.
 
-A documentation-only change needs only its formatting checked. Then apply the *Self-review gates*.
+A documentation-only change needs only its formatting checked. Then apply the _Self-review gates_.
 Green tests are not verification: exercise the change end to end (`pnpm dev`, or the test sites
 after a push to `dev`) and say so when that is blocked.
 
 ## Git and commits
 
-Branches: `main` = production, `dev` = test (see *Deploy*). Work lands on `dev` first and reaches
+Branches: `main` = production, `dev` = test (see _Deploy_). Work lands on `dev` first and reaches
 `main` only by a merge the owner asks for.
 
 - Finished, verified work may be committed and pushed to `dev` (the test sites) without asking;
@@ -254,17 +263,17 @@ unattached ones in a root `reviews/`. `./features.sh` lists the plans and checks
 Fresh context is the point: the reviewer starts from the artifacts, not from this conversation.
 **Every gate is applied without being asked.**
 
-| Gate | When | Who |
-|---|---|---|
-| Design closure | before presenting a design as ready to approve | `architecture-reviewer` over the written plan |
-| Pre-commit | tests green, before `git commit` | `convention-reviewer` and an adversarial reviewer in parallel (skills `convention-review`, `adversarial-review`) |
-| Epic survey | a workstream's `**Status:**` reaches `shipped` | `architecture-reviewer` over the epic, into `features/<epic>/review/<YYYY-MM-DD>-<subject>.md` |
-| Epic closure | the epic's own `README.md` Status flips to `shipped` | `architecture-reviewer` over the finished epic, same output |
+| Gate           | When                                                 | Who                                                                                                              |
+| -------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Design closure | before presenting a design as ready to approve       | `architecture-reviewer` over the written plan                                                                    |
+| Pre-commit     | tests green, before `git commit`                     | `convention-reviewer` and an adversarial reviewer in parallel (skills `convention-review`, `adversarial-review`) |
+| Epic survey    | a workstream's `**Status:**` reaches `shipped`       | `architecture-reviewer` over the epic, into `features/<epic>/review/<YYYY-MM-DD>-<subject>.md`                   |
+| Epic closure   | the epic's own `README.md` Status flips to `shipped` | `architecture-reviewer` over the finished epic, same output                                                      |
 
 - Read the skill, don't improvise the prompt, and run the `adversarial-review` attack list against
   the plan before writing the code. Tell the adversarial reviewer to run code, not just read it.
 - The adversarial reviewer treats the repository as read-only (no git command that changes it;
-  mutable copies go to the scratchpad) and follows the credentials rule of *Working rules*.
+  mutable copies go to the scratchpad) and follows the credentials rule of _Working rules_.
 - Triage each finding as right, wrong or already solved, fix what is confirmed, re-run the tests,
   then commit.
 - Prove every new guard red, for the reason you claim (`prove-red`).

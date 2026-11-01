@@ -15,6 +15,8 @@ interface NavItem {
   label: string;
   icon: string;
   exact?: boolean;
+  /** Under "Nastavení" in the sidebar; not on the phone's bottom bar, which holds five. */
+  settings?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -29,7 +31,9 @@ const NAV_ITEMS: NavItem[] = [
   { to: { name: 'products' }, label: 'Produkty', icon: 'i-lucide-package' },
   { to: { name: 'categories' }, label: 'Kategorie', icon: 'i-lucide-tags' },
   { to: { name: 'gallery' }, label: 'Galerie', icon: 'i-lucide-images' },
+  { to: { name: 'shipping-methods' }, label: 'Doprava', icon: 'i-lucide-truck', settings: true },
 ];
+const BOTTOM_BAR_ITEMS = NAV_ITEMS.filter((item) => !item.settings);
 
 const session = useSession();
 const router = useRouter();
@@ -44,8 +48,8 @@ function isCurrent(item: NavItem): boolean {
 /** The sidebar as a slide-over on phones and tablets. */
 const sidebarOpen = ref(false);
 
-const navigation = computed<NavigationMenuItem[]>(() =>
-  NAV_ITEMS.map((item) => ({
+function toNavigationItem(item: NavItem): NavigationMenuItem {
+  return {
     label: item.label,
     icon: item.icon,
     to: item.to,
@@ -54,8 +58,17 @@ const navigation = computed<NavigationMenuItem[]>(() =>
     onSelect: () => {
       sidebarOpen.value = false;
     },
-  }))
-);
+  };
+}
+
+/** The sections, then the shop's settings under their own heading. */
+const navigation = computed<NavigationMenuItem[][]>(() => [
+  NAV_ITEMS.filter((item) => !item.settings).map(toNavigationItem),
+  [
+    { label: 'Nastavení', type: 'label' },
+    ...NAV_ITEMS.filter((item) => item.settings).map(toNavigationItem),
+  ],
+]);
 
 /** The sections in the search palette: plain links, without the nav's active state. */
 const searchPages = NAV_ITEMS.map((item) => ({ label: item.label, icon: item.icon, to: item.to }));
@@ -179,7 +192,7 @@ const accountMenu = computed<DropdownMenuItem[][]>(() => [
       aria-label="Hlavní"
     >
       <RouterLink
-        v-for="item in NAV_ITEMS"
+        v-for="item in BOTTOM_BAR_ITEMS"
         :key="item.label"
         v-slot="{ href, navigate }"
         :to="item.to"

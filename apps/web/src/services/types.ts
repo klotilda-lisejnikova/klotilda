@@ -12,7 +12,6 @@ export type {
   PaymentStatus,
   ShippingMethod,
 } from "@klotilda/domain";
-export { SHIPPING_PRICES } from "@klotilda/domain";
 
 /** Read shape — includes the `images` and `category` the API attaches. */
 export type Product = ProductWithImages;

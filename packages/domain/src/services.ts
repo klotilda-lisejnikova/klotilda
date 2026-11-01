@@ -5,6 +5,7 @@ import { categoryEntity } from './entities/category';
 import { galleryItemEntity } from './entities/gallery-item';
 import { orderEntity } from './entities/order';
 import { productEntity } from './entities/product';
+import { shippingMethodEntity } from './entities/shipping-method';
 
 /** Admin accounts sign in and out; there is no registration or profile. */
 export class KlotildaAuthService extends AuthService<AdminUser> {}
@@ -21,6 +22,7 @@ export function createServices(baseUrl: string, tokenSource: AccessTokenSource) 
       products: productEntity,
       gallery: galleryItemEntity,
       orders: orderEntity,
+      shippingMethods: shippingMethodEntity,
     },
     baseUrl,
     tokenSource

@@ -22,6 +22,8 @@ slug), `name_cs`, `name_en`, `description_cs/en`, `price` (CZK), `kind` (`delive
   columns and backfill them (`osobni_odber` → `pickup`, the rest → `delivery`).
 - Web: step 2 of the checkout lists the active methods from the API instead of the constant; the
   terms page's prices come from the same data.
+- Shipping an order stores its `trackingUrl` (from the method's template), so the link survives
+  the method being edited; the migration backfills it for orders already shipped.
 
 ## Payment methods
 
@@ -49,13 +51,14 @@ admin renders the same HTML as the API (decision 2 is how much is editable).
 
 ## Admin
 
-A new sidebar group "Nastavení" with three pages: Doprava, Platby, E-maily — lists in the reworked
-style (`UTable` from a tablet up, cards on phones, drag to reorder like categories), a slide-over
-form with `formSchema` validation, the active switch inline.
+A new sidebar group "Nastavení" with three pages: Doprava, Platby, E-maily — lists like the
+categories page (drag or arrows to reorder), a dialog form with `formSchema` validation, the
+"V nabídce" switch inline. The group is not on the phone's bottom bar (five slots), only in the
+slide-over menu.
 
 ## Steps
 
-1. Shipping methods: entity, migration, checkout, workflow by kind, admin page, web step 2.
+1. Shipping methods: entity, migration, checkout, workflow by kind, admin page, web step 2. _(in review)_
 2. Payment methods: entity, migration, checkout + QR only for bank transfer, workflow, admin, web step 3.
 3. E-mail templates: entity, migration with the defaults, renderer with placeholders, admin with preview.
 

@@ -43,10 +43,9 @@
       "zip": "PSČ"
     },
     "shipping": {
-      "zasilkovna": "Zásilkovna",
-      "ceska_posta": "Česká pošta",
-      "osobni_odber": "Osobní odběr v Praze",
-      "free": "Zdarma"
+      "free": "Zdarma",
+      "loading": "Načítám způsoby dopravy…",
+      "unavailable": "Způsoby dopravy se nepodařilo načíst. Zkuste to prosím za chvíli znovu."
     },
     "payment": {
       "qr": "Platba QR kódem",

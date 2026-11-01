@@ -3,12 +3,7 @@ import { computed, reactive, ref } from 'vue';
 import { useToast } from '@nuxt/ui/composables';
 import { useRouter } from 'vue-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
-import {
-  availableActions,
-  parseOrderHistory,
-  parseOrderItems,
-  TRACKING_URLS,
-} from '@klotilda/domain';
+import { availableActions, parseOrderHistory, parseOrderItems } from '@klotilda/domain';
 import type { Order, OrderAction, OrderStatus, PaymentStatus } from '@klotilda/domain';
 import ConfirmDelete from '@/components/ConfirmDelete.vue';
 import OrderStatusBadges from '@/components/OrderStatusBadges.vue';
@@ -27,7 +22,6 @@ import {
   ORDER_EVENT_LABELS,
   ORDER_STATUS_LABELS,
   PAYMENT_STATUS_LABELS,
-  SHIPPING_LABELS,
   toSelectItems,
 } from '@/app/labels';
 
@@ -57,11 +51,7 @@ const actions = computed(() => (order.value ? availableActions(order.value) : []
 const forwardActions = computed(() =>
   actions.value.filter((action) => !SECONDARY_ACTIONS.includes(action))
 );
-const trackingUrl = computed(() =>
-  order.value?.trackingNumber
-    ? TRACKING_URLS[order.value.shippingMethod]?.(order.value.trackingNumber)
-    : undefined
-);
+const trackingUrl = computed(() => order.value?.trackingUrl ?? undefined);
 const address = computed(() =>
   order.value
     ? `${order.value.customerFirstName} ${order.value.customerLastName}\n${order.value.street}\n${order.value.zip} ${order.value.city}`
@@ -194,7 +184,7 @@ async function copy(text: string, what: string) {
             }}</span>
           </li>
           <li class="flex gap-3 py-2 text-muted">
-            <span class="mr-auto">Doprava — {{ SHIPPING_LABELS[order.shippingMethod] }}</span>
+            <span class="mr-auto">Doprava — {{ order.shippingName }}</span>
             <span class="w-24 text-right tabular-nums">{{ formatCzk(order.shippingPrice) }}</span>
           </li>
           <li class="flex gap-3 pt-2 font-semibold">
@@ -376,11 +366,7 @@ async function copy(text: string, what: string) {
         <UFormField
           v-if="pending === 'ship'"
           label="Číslo zásilky"
-          :help="
-            TRACKING_URLS[order.shippingMethod]
-              ? 'Zákazník dostane odkaz na sledování.'
-              : 'Nepovinné.'
-          "
+          help="Nepovinné. Má-li doprava odkaz na sledování, zákazník ho dostane."
         >
           <UInput v-model="details.trackingNumber" class="w-full" autofocus />
         </UFormField>

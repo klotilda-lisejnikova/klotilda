@@ -1,10 +1,15 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ApiError } from "@eleansphere/entity-core";
 import { Link } from "@/i18n/navigation";
-import { checkout, CheckoutResponse } from "@/services";
+import {
+  checkout,
+  CheckoutResponse,
+  listShippingMethods,
+  ShippingMethod,
+} from "@/services";
 import {
   isBlocked,
   useCart,
@@ -40,6 +45,20 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<SubmitError | null>(null);
   const [result, setResult] = useState<CheckoutResponse | null>(null);
+  const [shippingMethods, setShippingMethods] = useState<
+    ShippingMethod[] | null | "error"
+  >(null);
+
+  // Read live, not baked into the page: the admin may change a price or hide a method any time.
+  useEffect(() => {
+    let current = true;
+    listShippingMethods()
+      .then((methods) => current && setShippingMethods(methods))
+      .catch(() => current && setShippingMethods("error"));
+    return () => {
+      current = false;
+    };
+  }, []);
 
   const changed = items.filter((item) => item.issue);
 
@@ -136,6 +155,7 @@ export default function CheckoutPage() {
       {step === 1 && (
         <Step2Shipping
           data={data}
+          methods={shippingMethods}
           onChange={update}
           onNext={() => setStep(2)}
           onBack={() => setStep(0)}

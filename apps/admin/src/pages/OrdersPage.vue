@@ -19,7 +19,6 @@ import {
   ORDER_ACTION_HINTS,
   ORDER_ACTION_ICONS,
   ORDER_ACTION_LABELS,
-  SHIPPING_LABELS,
 } from '@/app/labels';
 import { daysSince, isPaymentOverdue, ORDER_STAGES } from '@/app/order-stages';
 import { useQueryTab } from '@/app/query-tabs';
@@ -103,7 +102,7 @@ const columns: TableColumn<Order>[] = [
   },
   { accessorKey: 'createdAt', header: 'Přijato', enableSorting: true },
   {
-    accessorKey: 'shippingMethod',
+    accessorKey: 'shippingName',
     header: 'Doprava',
     meta: { class: { th: 'hidden xl:table-cell', td: 'hidden xl:table-cell' } },
   },
@@ -246,7 +245,7 @@ function reportBulkOutcome({ done, failed, emailFailed }: BulkOutcome) {
           </p>
           <p class="text-xs text-muted">
             {{ formatDateTime(order.createdAt) }} · VS {{ order.variableSymbol }} ·
-            {{ SHIPPING_LABELS[order.shippingMethod] }}
+            {{ order.shippingName }}
           </p>
         </div>
         <UBadge
@@ -352,9 +351,6 @@ function reportBulkOutcome({ done, failed, emailFailed }: BulkOutcome) {
           size="sm"
           class="ml-2"
         />
-      </template>
-      <template #shippingMethod-cell="{ row }">
-        {{ SHIPPING_LABELS[(row.original as Order).shippingMethod] }}
       </template>
       <template #status-cell="{ row }">
         <div class="flex flex-wrap gap-1">
