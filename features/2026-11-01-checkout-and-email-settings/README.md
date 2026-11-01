@@ -1,7 +1,7 @@
 # Payment, shipping and e-mail settings in the admin
 
 **Ticket:** none yet
-**Status:** design — waiting on the owner's two decisions below
+**Status:** active — step 1 (shipping methods) in progress
 
 The owner wants the admin to define (1) which payment methods and which shipping options the shop
 offers, and (2) the e-mails the API sends automatically. Today all three are code: `SHIPPING_PRICES`
@@ -28,11 +28,10 @@ slug), `name_cs`, `name_en`, `description_cs/en`, `price` (CZK), `kind` (`delive
 A new entity `PaymentMethod`: `code`, `name_cs/en`, `description_cs/en`, `kind`, `fee` (CZK, added
 to the total), `active`, `sortOrder`, and which shipping kinds it may combine with.
 
-`kind` decides what the code does, so only these exist (the owner picks which, decision 1):
+`kind` decides what the code does, so only these exist (decided 2026-11-01: bank transfer and cash at pickup; no dobírka):
 
 - `bank_transfer` — today's flow: variable symbol, QR Platba, ships after payment.
 - `cash` — paid in person when picking up (pickup only); no QR, `ready-for-pickup` before payment.
-- `cash_on_delivery` (dobírka) — the carrier collects; ships before payment, a fee.
 
 The order stores `paymentMethod`, `paymentName`, `paymentKind` and `paymentFee`; old orders are
 backfilled as `bank_transfer`. The checkout refuses a payment method that doesn't fit the shipping.
@@ -62,8 +61,11 @@ form with `formSchema` validation, the active switch inline.
 
 Each step is its own PR into `dev`, verified on the test sites.
 
+## Decided
+
+- 2026-11-01: payment by bank transfer and cash at pickup; no cash on delivery for now.
+
 ## Open questions for the owner
 
-1. Which payment methods besides bank transfer: cash at pickup, dobírka, both, or none for now?
-2. E-mails: edit subject, heading and text (recommended), or also switch individual parts (item
+1. E-mails: edit subject, heading and text (recommended), or also switch individual parts (item
    table, legal links) on and off?
