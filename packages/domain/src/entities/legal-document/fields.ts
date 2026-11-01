@@ -3,7 +3,11 @@ import { LEGAL_DOCUMENT_STATUSES, LEGAL_DOCUMENTS } from './keys';
 
 /** Long enough for `YYYY-MM-DD-N`, and the order's `termsVersion`. */
 export const LEGAL_VERSION_MAX_LENGTH = 20;
-const BODY_MAX_LENGTH = 100_000;
+/**
+ * Twice today's longest text; both texts of a draft, at up to three bytes a character, stay
+ * within the API's JSON body limit (100 kB).
+ */
+const BODY_MAX_LENGTH = 15_000;
 
 /**
  * One version of a legal page. Every field but the texts is set by the API's own routes

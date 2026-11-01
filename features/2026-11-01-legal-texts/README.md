@@ -1,7 +1,7 @@
 # Legal texts and seller details in the admin
 
 **Ticket:** none yet
-**Status:** active — steps 1–3 on `dev`, step 4 in review
+**Status:** active — steps 1–4 on `dev`, step 5 in review
 
 The owner wants the shop's texts editable in the admin, the terms (obchodní podmínky) first ("dále
 co by mělo být konfigurovatelné jsou texty obchodní podmínky atd."). Today they are code:
@@ -127,8 +127,8 @@ souhlasí s touto verzí; zveřejněnou verzi už nejde změnit").
 3. Legal versions in the API: entity, migration with today's texts, routes, publish rules, the
    checkout's version check. _(done)_
 4. The web reads them and the seller: legal pages, version pages, the footer, checkout link and
-   412 handling, e-mail link; the admin's "údaje jsou úplné" switch. _(in review)_
-5. Admin "Právní texty": versions, draft editor with preview, publish.
+   412 handling, e-mail link; the admin's "údaje jsou úplné" switch. _(done)_
+5. Admin "Právní texty": versions, draft editor with preview, publish. _(in review)_
 6. The website's own texts (home page, "o mně", contact) in the admin; planned once 1–5 are on
    `dev`.
 
@@ -148,6 +148,15 @@ reads it.
 - The confirmation e-mail only links the terms. Consumer law likely wants them on a durable medium
   (the text itself, e.g. as a plain-text attachment, not just a link); ask whoever checks the
   texts. Once versions are in the API this is cheap.
+
+- The Zásilkovna additions (terms "Dodání", privacy's carriers; see
+  `2026-11-01-packeta-pickup-points`) become a draft in "Právní texty" and are published when that
+  shipping method goes live, not before: the terms would promise a delivery the shop doesn't offer.
+
+- Two tabs saving one draft: the last save wins (publishing, though, refuses a draft that differs
+  from what the admin saw). Add the draft's `updatedAt` to the save if that ever bites.
+- The admin's list reads every version with its texts; once there are dozens, list the versions
+  without `body_cs` / `body_en` and read the texts only for the draft and the version shown.
 
 ## Decided
 

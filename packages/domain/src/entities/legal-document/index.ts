@@ -1,5 +1,6 @@
 import { defineEntity } from '@eleansphere/entity-core';
-import { COMPLAINTS_ANCHOR, LEGAL_PATHS } from '../../seller';
+import type { InferDto } from '@eleansphere/entity-core';
+import { COMPLAINTS_ANCHOR, LEGAL_PATHS, SELLER } from '../../seller';
 import { parseLegalText } from '../../legal-text';
 import { hasBrokenPlaceholder, unknownPlaceholders, fillPlaceholders } from '../../placeholders';
 import type { Seller } from '../seller';
@@ -27,7 +28,7 @@ export const legalDocumentVersionEntity = defineEntity({
     sort: ['publishedAt', 'createdAt'],
     defaultSort: '-createdAt',
     defaultLimit: 50,
-    maxLimit: 100,
+    maxLimit: 200,
   },
   extend: (Base) =>
     class extends Base {
@@ -45,10 +46,39 @@ export const legalDocumentVersionEntity = defineEntity({
       version(document: LegalDocumentKey, version: string) {
         return this.get<PublishedLegalVersion>(legalVersionsRoute(document, version));
       }
+
+      /** The document's draft (signed in); a 404 while there is none. */
+      draft(document: LegalDocumentKey) {
+        return this.get<LegalDocumentVersion>(legalDraftRoute(document));
+      }
+
+      /** Starts a draft from the current text, or answers the one there is (signed in). */
+      startDraft(document: LegalDocumentKey) {
+        return this.post<LegalDocumentVersion>(legalDraftRoute(document), {});
+      }
+
+      /** Saves the draft's texts (signed in). */
+      saveDraft(document: LegalDocumentKey, texts: LegalDraftRequest) {
+        return this.put<LegalDocumentVersion>(legalDraftRoute(document), texts);
+      }
+
+      /** Drops the draft (signed in). */
+      deleteDraft(document: LegalDocumentKey) {
+        return this.httpDelete(legalDraftRoute(document));
+      }
+
+      /**
+       * The draft becomes the version in force (signed in), if it still holds `texts`, the ones the
+       * admin saw (409 otherwise). Can't be undone.
+       */
+      publishDraft(document: LegalDocumentKey, texts: LegalDraftRequest) {
+        return this.post<PublishedLegalVersion>(legalPublishRoute(document), texts);
+      }
     },
 });
 
-export type LegalDocumentVersion = InstanceType<typeof legalDocumentVersionEntity.Dto>;
+/** A version as the API answers it; from the fields, since the client's own methods return it too. */
+export type LegalDocumentVersion = InferDto<typeof legalDocumentVersionFields>;
 
 /** The seller's details a version was published with (the `Seller` row's, at that moment). */
 export interface LegalSellerSnapshot extends Pick<Seller, 'name' | 'ico' | 'address' | 'email'> {
@@ -56,6 +86,36 @@ export interface LegalSellerSnapshot extends Pick<Seller, 'name' | 'ico' | 'addr
   registration: string | null;
   /** Whether the admin had marked the details complete; the page of a version without says draft. */
   complete?: boolean;
+}
+
+/** The seller's row as a version keeps it; an empty optional detail is none. */
+export function legalSellerSnapshot(
+  seller: Pick<Seller, 'name' | 'ico' | 'address' | 'email' | 'phone' | 'registration' | 'complete'>
+): LegalSellerSnapshot {
+  return {
+    name: seller.name,
+    ico: seller.ico,
+    address: seller.address,
+    email: seller.email,
+    phone: seller.phone || null,
+    registration: seller.registration || null,
+    complete: seller.complete === true,
+  };
+}
+
+/** The seller as a version names it while the `Seller` row is missing: the defaults, not complete. */
+export const DEFAULT_LEGAL_SELLER: LegalSellerSnapshot = legalSellerSnapshot({
+  ...SELLER,
+  complete: false,
+});
+
+/** A version's text for a page in `locale`: the English page shows the Czech text while it has none. */
+export function legalTextFor(
+  texts: { body_cs: string; body_en?: string | null },
+  locale: string
+): { text: string; czechOnly: boolean } {
+  const english = locale === 'en' && texts.body_en?.trim() ? texts.body_en : null;
+  return { text: english ?? texts.body_cs, czechOnly: locale === 'en' && english === null };
 }
 
 /** A published version as the website shows it. */

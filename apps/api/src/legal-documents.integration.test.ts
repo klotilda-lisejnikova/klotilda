@@ -132,7 +132,11 @@ describe('Legal documents', () => {
     ];
     for (const [body_cs, problem] of texts) {
       await app.api().put(`${TERMS}/draft`).set(asAdmin()).send({ body_cs });
-      const refused = await app.api().post(`${TERMS}/draft/publish`).set(asAdmin());
+      const refused = await app
+        .api()
+        .post(`${TERMS}/draft/publish`)
+        .set(asAdmin())
+        .send({ body_cs });
       expect(refused.status).toBe(400);
       expect(refused.body.message).toContain(problem);
     }
@@ -142,7 +146,11 @@ describe('Legal documents', () => {
       .set(asAdmin())
       .send({ body_cs: NEW_TERMS, body_en: 'Terms {{sellerNam}}' });
     expect(english.status).toBe(200);
-    const refused = await app.api().post(`${TERMS}/draft/publish`).set(asAdmin());
+    const refused = await app
+      .api()
+      .post(`${TERMS}/draft/publish`)
+      .set(asAdmin())
+      .send({ body_cs: NEW_TERMS, body_en: 'Terms {{sellerNam}}' });
     expect(refused.status).toBe(400);
     expect(refused.body.message).toContain('{{sellerNam}}');
     expect((await app.api().get(`${TERMS}/current`)).body.version).toBe(FIRST_VERSION);
@@ -157,12 +165,27 @@ describe('Legal documents', () => {
       .set(asAdmin())
       .send({ name: 'Klotilda', complete: true });
     await app.api().post(`${TERMS}/draft`).set(asAdmin());
+    await app
+      .api()
+      .put(`${TERMS}/draft`)
+      .set(asAdmin())
+      .send({ body_cs: `${NEW_TERMS}\n\nDodatek z jiné karty.` });
+
+    // Another tab saved since this one read the draft: it publishes nothing it didn't see.
+    const stale = await app
+      .api()
+      .post(`${TERMS}/draft/publish`)
+      .set(asAdmin())
+      .send({ body_cs: NEW_TERMS });
+    expect(stale.status).toBe(409);
+    expect(stale.body.message).toContain('Koncept mezitím změnil');
     await app.api().put(`${TERMS}/draft`).set(asAdmin()).send({ body_cs: NEW_TERMS, body_en: '' });
 
     // Two publishes at once: the first takes the draft, the second finds none.
+    const seen = { body_cs: NEW_TERMS, body_en: '' };
     const answers = await Promise.all([
-      app.api().post(`${TERMS}/draft/publish`).set(asAdmin()),
-      app.api().post(`${TERMS}/draft/publish`).set(asAdmin()),
+      app.api().post(`${TERMS}/draft/publish`).set(asAdmin()).send(seen),
+      app.api().post(`${TERMS}/draft/publish`).set(asAdmin()).send(seen),
     ]);
     expect(answers.map((answer) => answer.status).sort()).toEqual([200, 404]);
     const published = answers.find((answer) => answer.status === 200)!;
@@ -187,7 +210,8 @@ describe('Legal documents', () => {
       FIRST_VERSION,
     ]);
     expect((await app.api().get(`${TERMS}/draft`).set(asAdmin())).status).toBe(404);
-    expect((await app.api().post(`${TERMS}/draft/publish`).set(asAdmin())).status).toBe(404);
+    const noDraft = await app.api().post(`${TERMS}/draft/publish`).set(asAdmin()).send(seen);
+    expect(noDraft.status).toBe(404);
     // The other documents keep their own versions.
     expect((await app.api().get('/api/legal-documents/privacy/current')).body.version).toBe(
       FIRST_VERSION
