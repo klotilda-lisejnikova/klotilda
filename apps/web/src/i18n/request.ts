@@ -1,4 +1,6 @@
 import { getRequestConfig } from "next-intl/server";
+import { withSiteTexts } from "@klotilda/domain";
+import { loadSiteTexts } from "@/lib/site-texts";
 import { routing } from "./routing";
 
 export default getRequestConfig(async ({ requestLocale }) => {
@@ -8,8 +10,10 @@ export default getRequestConfig(async ({ requestLocale }) => {
     locale = routing.defaultLocale;
   }
 
+  // The translation files, with the texts the admin words (`SiteText`) laid over them.
+  const files = (await import(`../../messages/${locale}.json`)).default;
   return {
     locale,
-    messages: (await import(`../../messages/${locale}.json`)).default,
+    messages: withSiteTexts(files, await loadSiteTexts(), locale),
   };
 });

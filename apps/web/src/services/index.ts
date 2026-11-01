@@ -10,6 +10,7 @@ import type {
   PublishedLegalVersion,
   Seller,
   ShippingMethod,
+  SiteText,
 } from "@klotilda/domain";
 import type { PaginatedResponse } from "@eleansphere/entity-core";
 
@@ -95,4 +96,9 @@ export function listLegalVersions(
   document: LegalDocumentKey,
 ): Promise<LegalVersionSummary[]> {
   return services.legalDocuments.published(document);
+}
+
+/** The texts the admin words for the website (`SITE_TEXT_KEYS`), one row each. */
+export async function listSiteTexts(): Promise<SiteText[]> {
+  return (await services.siteTexts.getAll({ limit: 50 })).data;
 }

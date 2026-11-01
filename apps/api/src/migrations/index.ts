@@ -8,6 +8,7 @@ import { legalDocuments } from './2026-11-01-legal-documents';
 import { paymentMethods } from './2026-11-01-payment-methods';
 import { seller } from './2026-11-01-seller';
 import { shippingMethods } from './2026-11-01-shipping-methods';
+import { siteTexts } from './2026-11-01-site-texts';
 
 /**
  * Every change to the database schema, in the order it was made; the API applies the pending ones
@@ -24,4 +25,5 @@ export const migrations: Migration[] = [
   emailTemplates,
   seller,
   legalDocuments,
+  siteTexts,
 ];

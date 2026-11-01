@@ -7,6 +7,7 @@ import {
   ORDERS_PATH,
   PRODUCTS_PATH,
   SELLER_PATH,
+  SITE_TEXTS_PATH,
 } from '@klotilda/domain';
 
 /** The website's `POST /api/revalidate` and the secret it checks. */
@@ -21,15 +22,22 @@ const FILES_PATH = '/api/files';
 
 /**
  * Requests that change what the website shows: the catalogue and the gallery, their photos, the
- * seller's details, a published legal text, a placed order (stock goes down) and order actions (a
- * cancelled order's stock comes back). A legal draft's saves don't: the website never shows one.
+ * seller's details, the site's texts, a published legal text, a placed order (stock goes down) and
+ * order actions (a cancelled order's stock comes back). A legal draft's saves don't: the website
+ * never shows one.
  */
 function changesTheWebsite(method: string, path: string): boolean {
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false;
   return (
-    [PRODUCTS_PATH, CATEGORIES_PATH, GALLERY_PATH, FILES_PATH, CHECKOUT_PATH, SELLER_PATH].some(
-      (prefix) => path === prefix || path.startsWith(`${prefix}/`)
-    ) ||
+    [
+      PRODUCTS_PATH,
+      CATEGORIES_PATH,
+      GALLERY_PATH,
+      FILES_PATH,
+      CHECKOUT_PATH,
+      SELLER_PATH,
+      SITE_TEXTS_PATH,
+    ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`)) ||
     (path.startsWith(`${ORDERS_PATH}/`) && path.includes('/actions/')) ||
     (path.startsWith(`${LEGAL_DOCUMENTS_PATH}/`) && path.endsWith('/draft/publish'))
   );

@@ -8,6 +8,7 @@ import { paymentMethodEntity } from './entities/payment-method';
 import { productEntity } from './entities/product';
 import { sellerEntity } from './entities/seller';
 import { shippingMethodEntity } from './entities/shipping-method';
+import { siteTextEntity } from './entities/site-text';
 
 export * from './codes';
 export * from './constants';
@@ -52,6 +53,8 @@ export {
   type SellerDetails,
 } from './entities/seller';
 export { sellerFields } from './entities/seller/fields';
+export * from './entities/site-text';
+export { siteTextFields } from './entities/site-text/fields';
 export * from './entities/legal-document';
 export {
   LEGAL_VERSION_MAX_LENGTH,
@@ -132,6 +135,7 @@ export const allEntities = {
   emailTemplate: emailTemplateEntity,
   seller: sellerEntity,
   legalDocumentVersion: legalDocumentVersionEntity,
+  siteText: siteTextEntity,
 };
 
 /** Accounts are made by the seed script and signed in to through `/api/auth` only. */
