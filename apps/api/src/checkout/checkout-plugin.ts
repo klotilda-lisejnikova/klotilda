@@ -16,6 +16,7 @@ import type {
   PaymentStatus,
 } from '@klotilda/domain';
 import { resolveEmailText } from '../emails/email-templates';
+import { resolveSellerLine } from '../seller/seller';
 import { newOrderEmail, orderReceivedEmail } from '../emails/order-emails';
 import type { PlacedOrder } from '../emails/order-emails';
 import { sendEmail } from '../emails/send-email';
@@ -97,20 +98,22 @@ async function announceOrder(
     siteUrl: string;
   }
 ): Promise<void> {
-  const [received, announced] = await Promise.all([
+  const [received, announced, sellerLine] = await Promise.all([
     resolveEmailText(registry, 'order-received'),
     resolveEmailText(registry, 'new-order'),
+    resolveSellerLine(registry),
   ]);
+  const footer = { siteUrl, sellerLine };
   const [email] = await Promise.all([
     sendEmail(
       emailService,
       order.customerEmail,
       orderReceivedEmail(order, bankAccount.display, received.text),
-      siteUrl
+      footer
     ),
     adminEmail &&
       announced.enabled &&
-      sendEmail(emailService, adminEmail, newOrderEmail(order, announced.text), siteUrl),
+      sendEmail(emailService, adminEmail, newOrderEmail(order, announced.text), footer),
   ]);
   await registry
     .get(orderEntity.config.name)

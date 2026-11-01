@@ -34,6 +34,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: { name: 'shipping-methods' }, label: 'Doprava', icon: 'i-lucide-truck', settings: true },
   { to: { name: 'payment-methods' }, label: 'Platby', icon: 'i-lucide-wallet', settings: true },
   { to: { name: 'email-templates' }, label: 'E-maily', icon: 'i-lucide-mail', settings: true },
+  { to: { name: 'seller' }, label: 'Prodávající', icon: 'i-lucide-store', settings: true },
 ];
 const BOTTOM_BAR_ITEMS = NAV_ITEMS.filter((item) => !item.settings);
 

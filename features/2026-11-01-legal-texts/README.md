@@ -1,7 +1,7 @@
 # Legal texts and seller details in the admin
 
 **Ticket:** none yet
-**Status:** active — step 1 in review
+**Status:** active — step 1 in review, step 2 (the API and admin half) in progress
 
 The owner wants the shop's texts editable in the admin, the terms (obchodní podmínky) first ("dále
 co by mělo být konfigurovatelné jsou texty obchodní podmínky atd."). Today they are code:
@@ -120,7 +120,8 @@ souhlasí s touto verzí; zveřejněnou verzi už nejde změnit").
 ## Steps
 
 1. One placeholder engine and the Markdown parser in the domain (no behaviour change). _(in review)_
-2. Seller details: entity, migration, admin page "Prodávající"; then the web and e-mails read it.
+2. Seller details: entity, migration, the e-mails' footer and the admin page "Prodávající"; then,
+   in its own PR once the API has deployed, the web reads it.
 3. Legal versions in the API: entity, migration with today's texts, routes, publish rules, the
    checkout's version check.
 4. The web reads them: legal pages, version pages, checkout link and 409 handling, e-mail link.

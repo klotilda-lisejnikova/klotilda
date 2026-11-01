@@ -5,6 +5,7 @@ import { galleryItemEntity } from './entities/gallery-item';
 import { orderEntity } from './entities/order';
 import { paymentMethodEntity } from './entities/payment-method';
 import { productEntity } from './entities/product';
+import { sellerEntity } from './entities/seller';
 import { shippingMethodEntity } from './entities/shipping-method';
 
 export * from './codes';
@@ -42,6 +43,14 @@ export {
   type EmailText,
 } from './entities/email-template';
 export { emailTemplateFields } from './entities/email-template/fields';
+export {
+  SELLER_PATH,
+  sellerEntity,
+  sellerLine,
+  type Seller,
+  type SellerDetails,
+} from './entities/seller';
+export { sellerFields } from './entities/seller/fields';
 export {
   PRODUCT_IMAGE_ORDER_ROUTE,
   productEntity,
@@ -114,6 +123,7 @@ export const allEntities = {
   shippingMethod: shippingMethodEntity,
   paymentMethod: paymentMethodEntity,
   emailTemplate: emailTemplateEntity,
+  seller: sellerEntity,
 };
 
 /** Accounts are made by the seed script and signed in to through `/api/auth` only. */

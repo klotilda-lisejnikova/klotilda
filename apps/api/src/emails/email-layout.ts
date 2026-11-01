@@ -1,4 +1,3 @@
-import { SELLER_LINE } from '@klotilda/domain';
 import { escapeHtml } from './escape-html';
 
 /**
@@ -128,8 +127,17 @@ function blockText(block: EmailBlock, siteUrl: string): string {
   }
 }
 
-/** The message in both forms; `siteUrl` is linked in the footer. */
-export function renderEmail(content: EmailContent, siteUrl: string): RenderedEmail {
+/** What closes every e-mail: the site, linked, and who sells (`resolveSellerLine`). */
+export interface EmailFooter {
+  siteUrl: string;
+  sellerLine: string;
+}
+
+/** The message in both forms, the footer below it. */
+export function renderEmail(
+  content: EmailContent,
+  { siteUrl, sellerLine }: EmailFooter
+): RenderedEmail {
   const site = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
   const html = `<!doctype html>
 <html lang="cs"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><title>${escapeHtml(content.subject)}</title></head>
@@ -145,7 +153,7 @@ export function renderEmail(content: EmailContent, siteUrl: string): RenderedEma
         <tr><td style="padding:20px 0 0;text-align:center;font-family:${SANS};font-size:12px;line-height:1.6;color:${COLORS.muted}">
           Na tento e-mail můžete rovnou odpovědět.<br />
           <a href="${escapeHtml(siteUrl)}" style="color:${COLORS.muted}">${escapeHtml(site)}</a><br />
-          Prodávající: ${escapeHtml(SELLER_LINE)}
+          Prodávající: ${escapeHtml(sellerLine)}
         </td></tr>
       </table>
     </td></tr>
@@ -160,7 +168,7 @@ export function renderEmail(content: EmailContent, siteUrl: string): RenderedEma
     '—',
     'Na tento e-mail můžete rovnou odpovědět.',
     siteUrl,
-    `Prodávající: ${SELLER_LINE}`,
+    `Prodávající: ${sellerLine}`,
   ].join('\n');
   return { subject: content.subject, html, text };
 }

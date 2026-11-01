@@ -1,7 +1,7 @@
 import type { EmailService } from '@eleansphere/be-core';
 import type { EmailOutcome } from '@klotilda/domain';
 import { renderEmail } from './email-layout';
-import type { EmailContent } from './email-layout';
+import type { EmailContent, EmailFooter } from './email-layout';
 
 /**
  * Sends one message, in HTML and plain text. Never throws: a failure is logged and reported as
@@ -11,11 +11,11 @@ export async function sendEmail(
   emailService: EmailService | undefined,
   to: string,
   content: EmailContent,
-  siteUrl: string
+  footer: EmailFooter
 ): Promise<EmailOutcome> {
   if (!emailService) return 'skipped';
   try {
-    await emailService.send({ to, ...renderEmail(content, siteUrl) });
+    await emailService.send({ to, ...renderEmail(content, footer) });
     return 'sent';
   } catch (err) {
     console.error(`E-mail "${content.subject}" to ${to} failed:`, err);

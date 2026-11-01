@@ -7,6 +7,7 @@ import { galleryItemEntity } from './entities/gallery-item';
 import { orderEntity } from './entities/order';
 import { paymentMethodEntity } from './entities/payment-method';
 import { productEntity } from './entities/product';
+import { sellerEntity } from './entities/seller';
 import { shippingMethodEntity } from './entities/shipping-method';
 
 /** Admin accounts sign in and out; there is no registration or profile. */
@@ -27,6 +28,7 @@ export function createServices(baseUrl: string, tokenSource: AccessTokenSource) 
       shippingMethods: shippingMethodEntity,
       paymentMethods: paymentMethodEntity,
       emailTemplates: emailTemplateEntity,
+      seller: sellerEntity,
     },
     baseUrl,
     tokenSource

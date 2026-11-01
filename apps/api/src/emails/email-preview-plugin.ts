@@ -8,12 +8,15 @@ import {
 import type { EmailPreview, EmailPreviewRequest, EmailTemplateKey } from '@klotilda/domain';
 import type { BankAccount } from '../env';
 import { asyncHandler } from '../http/async-handler';
+import type { ModelRegistry } from '../models-registry';
+import { resolveSellerLine } from '../seller/seller';
 import { renderEmail } from './email-layout';
 import type { EmailContent } from './email-layout';
 import { newOrderEmail, orderActionEmail, orderReceivedEmail } from './order-emails';
 import type { ActionDetails, PlacedOrder } from './order-emails';
 
 export interface EmailPreviewPluginOptions {
+  registry: ModelRegistry;
   jwtSecret: string;
   bankAccount: BankAccount;
   siteUrl: string;
@@ -85,6 +88,7 @@ function previewContent(
  * worded as in the form (not yet saved), on a sample order. Rendered by the same code that sends.
  */
 export function createEmailPreviewPlugin({
+  registry,
   jwtSecret,
   bankAccount,
   siteUrl,
@@ -96,7 +100,8 @@ export function createEmailPreviewPlugin({
         createVerifyToken(jwtSecret),
         asyncHandler(async (req, res) => {
           const content = previewContent(readPreviewRequest(req.body), bankAccount);
-          const answer: EmailPreview = renderEmail(content, siteUrl);
+          const sellerLine = await resolveSellerLine(registry);
+          const answer: EmailPreview = renderEmail(content, { siteUrl, sellerLine });
           res.json(answer);
         })
       );

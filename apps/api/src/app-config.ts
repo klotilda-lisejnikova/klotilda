@@ -18,6 +18,7 @@ import {
   orderEntity,
   paymentMethodEntity,
   productEntity,
+  sellerEntity,
   shippingMethodEntity,
 } from '@klotilda/domain';
 import { normalizeSlug, withCategory } from './catalogue/categories';
@@ -51,7 +52,7 @@ export interface AppConfigOverrides {
 /** Visitors see what is on offer; the signed-in admin sees everything, hidden rows too. */
 const activeUnlessSignedIn: AccessDecider = (req) => (req.user ? true : { active: true });
 
-/** The e-mail templates are a fixed set of rows: the admin edits them, never adds or removes one. */
+/** The e-mail templates and the seller are fixed rows: the admin edits them, never adds or removes one. */
 const signedInEditingOnly: AccessDecider = (req) =>
   req.user !== undefined && req.method !== CREATE_METHOD && req.method !== DELETE_METHOD;
 
@@ -123,6 +124,9 @@ export function buildAppConfig(
       [emailTemplateEntity.config.name]: {
         access: { write: signedInEditingOnly },
       },
+      [sellerEntity.config.name]: {
+        access: { write: signedInEditingOnly },
+      },
     },
     plugins: [
       models.plugin,
@@ -140,6 +144,7 @@ export function buildAppConfig(
       }),
       createReorderPlugin({ registry: models, jwtSecret: environment.jwtSecret }),
       createEmailPreviewPlugin({
+        registry: models,
         jwtSecret: environment.jwtSecret,
         bankAccount: environment.bankAccount,
         siteUrl: environment.siteUrl,
