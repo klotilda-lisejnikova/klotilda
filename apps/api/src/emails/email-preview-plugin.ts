@@ -22,7 +22,10 @@ export interface EmailPreviewPluginOptions {
   siteUrl: string;
 }
 
-/** An order to show the e-mails on: delivered and paid by transfer, or picked up for cash. */
+/**
+ * An order to show the e-mails on: sent to a Zásilkovna pickup point and paid by transfer, or
+ * picked up for cash.
+ */
 function sampleOrder(key: EmailTemplateKey): PlacedOrder {
   const pickup = key === 'ready-for-pickup';
   return {
@@ -36,6 +39,12 @@ function sampleOrder(key: EmailTemplateKey): PlacedOrder {
     shippingName: pickup ? 'Osobní odběr v Praze' : 'Zásilkovna',
     shippingKind: pickup ? 'pickup' : 'delivery',
     shippingPrice: pickup ? 0 : 99,
+    ...(!pickup && {
+      pickupPointId: '1234',
+      pickupPointName: 'Praha 1, Dlouhá 12 (Papírnictví U Mostu)',
+      pickupPointAddress: 'Dlouhá 12, 110 00 Praha',
+      pickupPointType: 'point',
+    }),
     paymentName: pickup ? 'Hotově při převzetí' : 'Bankovní převod',
     paymentKind: pickup ? 'cash' : 'bank_transfer',
     paymentFee: 0,

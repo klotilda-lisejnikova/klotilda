@@ -12,6 +12,7 @@ export * from './codes';
 export * from './constants';
 export * from './legal-text';
 export * from './ordering';
+export * from './pickup-points';
 export * from './placeholders';
 export * from './seller';
 export { adminUserEntity, type AdminUser } from './entities/admin-user';

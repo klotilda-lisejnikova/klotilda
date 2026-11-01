@@ -5,6 +5,7 @@ import { orderHistory } from './2026-09-29-order-history';
 import { orderTerms } from './2026-09-29-order-terms';
 import { emailTemplates } from './2026-11-01-email-templates';
 import { paymentMethods } from './2026-11-01-payment-methods';
+import { pickupPoints } from './2026-11-01-pickup-points';
 import { seller } from './2026-11-01-seller';
 import { shippingMethods } from './2026-11-01-shipping-methods';
 
@@ -22,4 +23,5 @@ export const migrations: Migration[] = [
   paymentMethods,
   emailTemplates,
   seller,
+  pickupPoints,
 ];

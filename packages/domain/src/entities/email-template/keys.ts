@@ -24,6 +24,7 @@ export const EMAIL_PLACEHOLDERS = [
   'prijmeni',
   'castka',
   'doprava',
+  'vydejni_misto',
   'platba',
   'cislo_zasilky',
 ] as const;

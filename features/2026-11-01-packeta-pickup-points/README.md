@@ -1,7 +1,7 @@
 # Zásilkovna pickup points at checkout
 
 **Ticket:** none yet
-**Status:** design
+**Status:** active — step 1 (API, admin) in review
 
 The owner (2026-11-01): "krok zásilkovna má chybu — musí si dotyčný vybrat místo k vyzvednutí v
 blízkosti bydliště" and "projdi si i co musíme splnit u zásilkovny, musíme i přidat jejich banner
@@ -69,12 +69,12 @@ enum value and one more widget.
 
 New order columns, snapshots like `shippingName`, so the order never changes:
 
-| field | what |
-|---|---|
-| `pickupPointId` | Packeta's point id; what the parcel is addressed to in Packeta |
-| `pickupPointName` | e.g. "Praha 4, Budějovická 1667/64 (Albert)" |
-| `pickupPointAddress` | street, zip and city of the point, one line |
-| `pickupPointType` | `zbox` or empty (a staffed point) — the e-mail says how to collect |
+| field                | what                                                                |
+| -------------------- | ------------------------------------------------------------------- |
+| `pickupPointId`      | Packeta's point id; what the parcel is addressed to in Packeta      |
+| `pickupPointName`    | e.g. "Praha 4, Budějovická 1667/64 (Albert)"                        |
+| `pickupPointAddress` | street, zip and city of the point, one line                         |
+| `pickupPointType`    | `box` (Z-BOX) or `point` (staffed) — the e-mail says how to collect |
 
 The checkout request carries only `pickupPointId` (`customerFields`, optional there). The API:
 
@@ -144,8 +144,8 @@ the pack's rules decide; otherwise shown as delivered.
 ## Admin
 
 - Order detail: a "Výdejní místo" block next to the address: name, address, Z-BOX mark, the id with
-  a copy button (what she enters in Packeta's client section). The address-label text uses the point.
-- Orders list: the point's town under "Zásilkovna" (small, secondary).
+  a copy button (what she enters in Packeta's client section). "Kopírovat adresu" copies the name, the point and its id instead of the home address.
+- Orders list: the point's name under "Zásilkovna" (small, secondary), on the cards in brackets.
 
 ## Migration
 
@@ -160,6 +160,11 @@ as usual.
 2. Web: widget in step 2, summary, error handling, `Permissions-Policy`, footer logo. PR into `dev`.
 3. Legal texts, with the legal-texts work (above).
 
+Steps 1 and 2 reach `dev` together: the migration turns pickup points on for `zasilkovna`, so with
+the API alone (or without `PACKETA_API_KEY` on Railway) the test site can't order Zásilkovna — a
+400 on a field it doesn't show, or a 503. The other methods are unaffected. On production the shop
+is off; there the key must be set before it goes on.
+
 The legal-texts work also touches the checkout (terms version, step 4); these steps branch from the
 latest `dev` and keep their checkout edits small.
 
@@ -170,8 +175,7 @@ latest `dev` and keep their checkout edits small.
    (`PACKETA_API_KEY`) and Vercel (`NEXT_PUBLIC_PACKETA_API_KEY`), test first.
 3. Download the banner pack (`bannery_eshop_CZ.zip`, linked from `zasilkovna.cz/jak-zacit`) and
    upload it, or let the logo be taken from it.
-4. Decide: Z-BOX too (recommended yes), Slovakia (recommended no), and whether the price stays 99 Kč
-   (edited in Doprava).
+4. Set Zásilkovna's price in the admin (Doprava).
 5. Per order afterwards: enter the parcel in the client section with the point id from the admin,
    print the label, drop it off at any point, then "Odeslat" in the admin with the `Z …` number.
 
@@ -180,3 +184,11 @@ latest `dev` and keep their checkout edits small.
 - Creating the parcel in Packeta from the admin (API password, `createPacket`, label PDF, number
   filled in automatically). Worth it once orders are regular.
 - A `/zasilkovna` info page or a homepage banner (Packeta's other recommendations).
+
+## Decided
+
+- 2026-11-01: Z-BOXes yes, Slovakia no; the owner sets Zásilkovna's price in the admin. The
+  implementation goes ahead before the Packeta account exists; the key is added later.
+- 2026-11-01 (implementation): the method's switch is a boolean in the admin ("Na výdejní místo
+  Zásilkovny") over `pickupNetwork`, as there is one network; a `pickup` method never has one (the
+  API ignores it there). A 503 answer carries be-core's generic message (it replaces every 5xx message), so the web words it itself.

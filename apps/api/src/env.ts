@@ -30,6 +30,11 @@ export interface Environment {
   webRevalidation: WebRevalidation | undefined;
   storage: StorageSettings;
   bankAccount: BankAccount;
+  /**
+   * Zásilkovna's API key (the account's public 16-character key, not the API password), for
+   * checking the pickup point chosen at checkout; unset, such a method can't be ordered.
+   */
+  packetaApiKey: string | undefined;
 }
 
 type Variables = NodeJS.ProcessEnv;
@@ -176,6 +181,7 @@ export function readEnvironment(variables: Variables = process.env): Environment
     webRevalidation: readWebRevalidation(variables),
     storage: readStorage(variables),
     bankAccount: readBankAccount(variables),
+    packetaApiKey: variables.PACKETA_API_KEY || undefined,
   };
   assertProductionReady(environment);
   return environment;

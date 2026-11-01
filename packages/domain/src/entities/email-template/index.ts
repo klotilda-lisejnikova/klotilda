@@ -62,6 +62,7 @@ const ORDER_PLACEHOLDERS = [
   'prijmeni',
   'castka',
   'doprava',
+  'vydejni_misto',
   'platba',
 ] as const satisfies readonly EmailPlaceholder[];
 

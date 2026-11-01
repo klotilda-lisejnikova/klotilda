@@ -16,7 +16,7 @@ import { services } from '@/app/api';
 import { describeError } from '@/app/errors';
 import { emptyToNull } from '@/app/form-values';
 import { formatCzk } from '@/app/format';
-import { SHIPPING_KIND_LABELS } from '@/app/labels';
+import { PICKUP_NETWORK_LABELS, SHIPPING_KIND_LABELS } from '@/app/labels';
 import { moveButtonKey, useDragReorder, useListReorder } from '@/app/reorder';
 import { SHIPPING_METHODS_QUERY_KEY, useShippingMethods } from '@/app/shipping-methods';
 import { formSchema, VALIDATE_ON } from '@/app/validation';
@@ -29,6 +29,8 @@ interface MethodForm {
   description_en: string;
   price: number | undefined;
   kind: ShippingKind;
+  /** The customer chooses a Zásilkovna point (`pickupNetwork: 'packeta'`), else gives an address. */
+  packetaPoints: boolean;
   trackingUrl: string;
   active: boolean;
 }
@@ -43,6 +45,7 @@ const EMPTY_FORM: MethodForm = {
   description_en: '',
   price: undefined,
   kind: 'delivery',
+  packetaPoints: false,
   trackingUrl: '',
   active: true,
 };
@@ -78,6 +81,7 @@ function openDialog(method: ShippingMethod | null) {
     description_en: method?.description_en ?? '',
     price: method?.price ?? undefined,
     kind: method?.kind ?? EMPTY_FORM.kind,
+    packetaPoints: method?.pickupNetwork === 'packeta',
     trackingUrl: method?.trackingUrl ?? '',
     active: method?.active ?? true,
   });
@@ -98,11 +102,13 @@ const nextSortOrder = computed(
 
 const save = useMutation({
   mutationFn: () => {
+    const { packetaPoints, ...fields } = form;
     const values = emptyToNull({
-      ...form,
+      ...fields,
       price: form.price ?? 0,
-      // A pickup has no parcel to follow.
+      // A pickup has no parcel to follow, nor a carrier's point to send it to.
       trackingUrl: form.kind === 'pickup' ? '' : form.trackingUrl,
+      pickupNetwork: form.kind === 'delivery' && packetaPoints ? ('packeta' as const) : null,
     });
     return editing.value
       ? services.shippingMethods.update(editing.value.id, values)
@@ -244,6 +250,9 @@ const remove = useMutation({
           </p>
           <p class="text-xs break-words text-muted">
             {{ SHIPPING_KIND_LABELS[method.kind] }} · <code>{{ method.code }}</code>
+            <template v-if="method.pickupNetwork && method.kind === 'delivery'">
+              · výdejní místa {{ PICKUP_NETWORK_LABELS[method.pickupNetwork] }}
+            </template>
             <template v-if="method.trackingUrl"> · se sledováním zásilky</template>
           </p>
         </div>
@@ -310,6 +319,12 @@ const remove = useMutation({
         <UFormField label="Popis anglicky" name="description_en">
           <UTextarea v-model="form.description_en" :rows="2" autoresize class="w-full" />
         </UFormField>
+        <USwitch
+          v-if="form.kind === 'delivery'"
+          v-model="form.packetaPoints"
+          label="Na výdejní místo Zásilkovny"
+          description="Zákazník si v pokladně vybere na mapě výdejní místo nebo Z-BOX a zásilka jde tam, ne na adresu."
+        />
         <UFormField
           v-if="form.kind === 'delivery'"
           label="Odkaz na sledování zásilky"

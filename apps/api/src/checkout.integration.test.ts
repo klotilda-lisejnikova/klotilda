@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { TERMS_VERSION } from '@klotilda/domain';
-import { ARTIST_EMAIL, bearer, startTestApp } from './test-support/test-app';
+import { ARTIST_EMAIL, bearer, startTestApp, TEST_PICKUP_POINT_ID } from './test-support/test-app';
 import type { TestApp } from './test-support/test-app';
 
 const CUSTOMER = {
@@ -10,6 +10,7 @@ const CUSTOMER = {
   street: 'Dlouhá 1',
   city: 'Praha',
   zip: '11000',
+  pickupPointId: TEST_PICKUP_POINT_ID,
   shippingMethod: 'zasilkovna',
   paymentMethod: 'prevod',
   termsAccepted: true,

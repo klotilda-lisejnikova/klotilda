@@ -166,6 +166,11 @@ describe('Migrations', () => {
       expect(await core.models.EmailTemplate.count()).toBe(7);
       // The seller's details became one row.
       expect(await core.models.Seller.count()).toBe(1);
+      // Zásilkovna sends to the pickup point the customer chooses; older orders have none.
+      expect(
+        methods.body.data.map((method: { pickupNetwork: string | null }) => method.pickupNetwork)
+      ).toEqual(['packeta', null, null]);
+      expect(order?.get('pickupPointId')).toBeNull();
     } finally {
       await core.close();
     }

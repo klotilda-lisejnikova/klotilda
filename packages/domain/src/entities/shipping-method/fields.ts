@@ -1,6 +1,6 @@
 import type { Fields } from '@eleansphere/entity-core';
 import { CODE_MAX_LENGTH } from '../../codes';
-import { SHIPPING_KINDS } from '../../constants';
+import { PICKUP_NETWORKS, SHIPPING_KINDS } from '../../constants';
 
 const SHIPPING_NAME_MAX_LENGTH = 100;
 const SHIPPING_DESCRIPTION_MAX_LENGTH = 500;
@@ -18,6 +18,11 @@ export const shippingMethodFields = {
   price: { type: 'FLOAT', required: true, min: 0 },
   /** Decides what the admin does with a paid order: ship it, or have it ready for pickup. */
   kind: { type: 'ENUM', values: SHIPPING_KINDS, required: true },
+  /**
+   * The carrier whose pickup point the customer chooses at checkout; empty, the parcel goes to the
+   * customer's address. Only for a `delivery`.
+   */
+  pickupNetwork: { type: 'ENUM', values: PICKUP_NETWORKS },
   /** Where the customer follows a parcel, `{number}` standing for the parcel number. */
   trackingUrl: { type: 'STRING', maxLength: TRACKING_URL_MAX_LENGTH },
   /** Offered at checkout while true. */

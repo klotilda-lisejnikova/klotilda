@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { bearer, startTestApp } from './test-support/test-app';
+import { bearer, startTestApp, TEST_PICKUP_POINT_ID } from './test-support/test-app';
 import type { TestApp } from './test-support/test-app';
 
 const CUSTOMER = {
@@ -9,6 +9,7 @@ const CUSTOMER = {
   street: 'Dlouhá 1',
   city: 'Praha',
   zip: '11000',
+  pickupPointId: TEST_PICKUP_POINT_ID,
   termsAccepted: true,
 };
 
