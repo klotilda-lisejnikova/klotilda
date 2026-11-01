@@ -19,6 +19,8 @@ import {
   parseOrderHistory,
   parseOrderItems,
   parseReviewedItems,
+  PUBLIC_REVIEWS_DEFAULT_LIMIT,
+  PUBLIC_REVIEWS_MAX_LIMIT,
   PUBLIC_REVIEWS_ROUTE,
   REVIEW_BODY_MIN_LENGTH,
   REVIEW_INVITATION_ROUTE,
@@ -45,23 +47,28 @@ import { sendEmail } from '../emails/send-email';
 import { asyncHandler } from '../http/async-handler';
 import type { ModelRegistry } from '../models-registry';
 import { resolveSellerLine } from '../seller/seller';
-import { hasReview, reviewInvitationDetails } from './review-invitation';
+import { hasReview, resolveReviewInvitation } from './review-invitation';
 import { readReviewToken } from './review-link';
 
 const CREATED = 201;
 const NOT_FOUND = 404;
 const CONFLICT = 409;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
-/** A customer retrying the form gets through; a script guessing tokens doesn't. */
+/**
+ * Per route and client address: a customer reloading the form or retrying it gets through, a
+ * script guessing tokens doesn't. The website calls these routes from the visitor's browser (like
+ * the checkout), so each customer counts on their own address, never the website's server.
+ */
 export const REVIEW_RATE_LIMIT: RateLimitConfig = { windowMs: RATE_LIMIT_WINDOW_MS, max: 10 };
-const DEFAULT_PAGE_LIMIT = 20;
-const MAX_PAGE_LIMIT = 50;
 const DELIVERED = 'delivered';
 const PUBLISHED = 'published';
 
 const LINK_INVALID = 'Odkaz na recenzi neplatí nebo už vypršel.';
 const ALREADY_REVIEWED = 'Tuhle objednávku už jste ohodnotili. Děkujeme!';
 const NOT_DELIVERED = 'Objednávku půjde ohodnotit, až bude doručená.';
+const ORDER_HAS_REVIEW = 'Objednávka má recenzi. Smažte nejdřív ji (v Recenzích).';
+const REQUEST_NOT_DELIVERED = 'O recenzi jde požádat jen u doručené objednávky.';
+const REQUEST_ALREADY_REVIEWED = 'Objednávka už recenzi má.';
 
 type BeforeDelete = NonNullable<ModelRouteOverrides['beforeDelete']>;
 type Transaction = Awaited<ReturnType<Sequelize['transaction']>>;
@@ -93,7 +100,7 @@ function reviewedItems(order: Order): ReviewedItem[] {
  * The delivered order a link stands for, its row locked inside `transaction`. Refused (404) when
  * the link is forged, expired or its order gone, and (409) when the order isn't delivered.
  */
-async function findInvitedOrder(
+async function resolveInvitedOrder(
   options: ReviewsPluginOptions,
   token: unknown,
   transaction?: Transaction
@@ -200,9 +207,116 @@ const averageOf = (reviews: PublicReview[]) =>
 export function refuseDeletingReviewedOrder(registry: ModelRegistry): BeforeDelete {
   return async (row) => {
     if (await hasReview(registry, String(row.get('id')))) {
-      throw new HttpError(CONFLICT, 'Objednávka má recenzi. Smažte nejdřív ji (v Recenzích).');
+      throw new HttpError(CONFLICT, ORDER_HAS_REVIEW);
     }
   };
+}
+
+/** `GET REVIEW_INVITATION_ROUTE`: what the link invites to review, unless it has its review. */
+async function readInvitation(options: ReviewsPluginOptions, token: unknown) {
+  const { order, expiresAt } = await resolveInvitedOrder(options, token);
+  if (await hasReview(options.registry, order.id)) throw new HttpError(CONFLICT, ALREADY_REVIEWED);
+  const invitation: ReviewInvitation = {
+    authorName: suggestedAuthorName(order.customerFirstName, order.customerLastName),
+    items: reviewedItems(order),
+    expiresAt: expiresAt.toISOString(),
+  };
+  return invitation;
+}
+
+/**
+ * `POST REVIEW_INVITATION_ROUTE`: the review, saved `pending`. The order row is locked, so the
+ * same link sent twice at once makes one review.
+ */
+function writeReview(
+  options: ReviewsPluginOptions,
+  sequelize: Sequelize,
+  { token, consent: _consent, ...written }: ReviewSubmission
+): Promise<{ order: Order; id: string }> {
+  const reviews = options.registry.get(reviewEntity.config.name);
+  return sequelize.transaction(async (transaction) => {
+    const { order } = await resolveInvitedOrder(options, token, transaction);
+    if (await reviews.findOne({ where: { orderId: order.id }, transaction })) {
+      throw new HttpError(CONFLICT, ALREADY_REVIEWED);
+    }
+    const created = await reviews.create(
+      {
+        id: generateId(reviewEntity.config.prefix),
+        orderId: order.id,
+        ...written,
+        items: JSON.stringify(reviewedItems(order)),
+      },
+      { transaction }
+    );
+    return { order, id: String(created.get('id')) };
+  });
+}
+
+/**
+ * `GET PUBLIC_REVIEWS_ROUTE`: one page of the published reviews (naming `productId`, when given),
+ * newest first. A small shop's reviews are read whole, so the average covers every one of them.
+ */
+async function listPublicReviews(
+  registry: ModelRegistry,
+  query: Record<string, unknown>
+): Promise<PublicReviewsPage> {
+  const page = queryNumber(query.page, 1);
+  const limit = queryNumber(query.limit, PUBLIC_REVIEWS_DEFAULT_LIMIT, PUBLIC_REVIEWS_MAX_LIMIT);
+  const productId = typeof query.productId === 'string' ? query.productId : '';
+  const rows = await registry.get(reviewEntity.config.name).findAll({
+    where: { status: PUBLISHED },
+    order: [
+      ['createdAt', 'DESC'],
+      ['id', 'DESC'],
+    ],
+  });
+  const published = rows.map((row) => toPublicReview(row.toJSON() as Review));
+  const listed = productId
+    ? published.filter((review) => review.items.some((item) => item.productId === productId))
+    : published;
+  return {
+    data: listed.slice((page - 1) * limit, page * limit),
+    total: listed.length,
+    page,
+    limit,
+    averageRating: averageOf(published),
+  };
+}
+
+/**
+ * `POST REVIEW_REQUEST_ROUTE`: the delivery e-mail with the link once more — asked for on purpose,
+ * so it goes even while that e-mail is turned off. The line in the order's history is added to the
+ * row as it is after sending, locked, so two requests at once both stay in it.
+ */
+async function sendReviewRequest(
+  { registry, jwtSecret, siteUrl }: ReviewsPluginOptions,
+  sequelize: Sequelize,
+  emailService: EmailService | undefined,
+  orderId: string
+): Promise<Order> {
+  const orders = registry.get(orderEntity.config.name);
+  const row = await orders.findByPk(orderId);
+  if (!row) throw new HttpError(NOT_FOUND, 'Order not found');
+  const order = row.toJSON() as Order;
+  if (order.orderStatus !== DELIVERED) throw new HttpError(CONFLICT, REQUEST_NOT_DELIVERED);
+  const details = await resolveReviewInvitation(registry, { jwtSecret, siteUrl }, order.id);
+  if (!details.reviewUrl) throw new HttpError(CONFLICT, REQUEST_ALREADY_REVIEWED);
+
+  const { text } = await resolveEmailText(registry, 'mark-delivered');
+  const footer = { siteUrl, sellerLine: await resolveSellerLine(registry) };
+  const content = orderActionEmail('mark-delivered', asPlaced(order), details, text);
+  const event: OrderEvent = {
+    type: 'review-request',
+    at: new Date().toISOString(),
+    email: await sendEmail(emailService, order.customerEmail, content, footer),
+  };
+  return sequelize.transaction(async (transaction) => {
+    const locked = await orders.findByPk(orderId, { lock: transaction.LOCK.UPDATE, transaction });
+    if (!locked) throw new HttpError(NOT_FOUND, 'Order not found');
+    const history = parseOrderHistory(locked.toJSON() as Order);
+    await locked.update({ history: JSON.stringify([...history, event]) }, { transaction });
+    return locked.toJSON() as Order;
+  });
 }
 
 /**
@@ -212,60 +326,32 @@ export function refuseDeletingReviewedOrder(registry: ModelRegistry): BeforeDele
  *   link the e-mail about the delivered order carries: what to review, and writing it (one per
  *   order, `pending` until the admin publishes it; the artist is e-mailed).
  * - `GET PUBLIC_REVIEWS_ROUTE` — public: the published reviews, newest first, with the average.
+ *   Not rate-limited: the website's server reads it for its cached pages.
  * - `POST REVIEW_REQUEST_ROUTE` — the signed-in admin e-mails the link again.
  *
  * Publishing, hiding, answering and deleting go through the CRUD routes, signed in.
  */
 export function createReviewsPlugin(options: ReviewsPluginOptions): ProjectPlugin {
-  const { registry, jwtSecret, siteUrl, rateLimit } = options;
+  const { registry, jwtSecret, rateLimit } = options;
+  const limiter = () => (rateLimit === 'off' ? [] : [createRateLimiter(rateLimit)]);
   return {
     registerRoutes(app, sequelize, _models, emailService) {
-      const limits = rateLimit === 'off' ? [] : [createRateLimiter(rateLimit)];
-
       app.get(
         REVIEW_INVITATION_ROUTE,
-        ...limits,
+        ...limiter(),
         asyncHandler(async (req, res) => {
-          const { order, expiresAt } = await findInvitedOrder(options, req.query.token);
-          if (await hasReview(registry, order.id)) throw new HttpError(CONFLICT, ALREADY_REVIEWED);
-          const answer: ReviewInvitation = {
-            authorName: suggestedAuthorName(order.customerFirstName, order.customerLastName),
-            items: reviewedItems(order),
-            expiresAt: expiresAt.toISOString(),
-          };
-          res.json(answer);
+          res.json(await readInvitation(options, req.query.token));
         })
       );
 
       app.post(
         REVIEW_INVITATION_ROUTE,
-        ...limits,
+        ...limiter(),
         asyncHandler(async (req, res) => {
-          const { token, consent: _consent, ...written } = readSubmission(req.body);
-          const reviews = registry.get(reviewEntity.config.name);
-
-          // The order row is locked, so the same link sent twice at once makes one review.
-          const { order, id } = await sequelize.transaction(async (transaction) => {
-            const invited = await findInvitedOrder(options, token, transaction);
-            const existing = await reviews.findOne({
-              where: { orderId: invited.order.id },
-              transaction,
-            });
-            if (existing) throw new HttpError(CONFLICT, ALREADY_REVIEWED);
-            const created = await reviews.create(
-              {
-                id: generateId(reviewEntity.config.prefix),
-                orderId: invited.order.id,
-                ...written,
-                items: JSON.stringify(reviewedItems(invited.order)),
-              },
-              { transaction }
-            );
-            return { order: invited.order, id: String(created.get('id')) };
-          });
-
+          const submission = readSubmission(req.body);
+          const { order, id } = await writeReview(options, sequelize, submission);
           res.status(CREATED).json({ id });
-          announceReview(options, emailService, order, written).catch((err: unknown) =>
+          announceReview(options, emailService, order, submission).catch((err: unknown) =>
             console.error(`Announcing review ${id} failed:`, err)
           );
         })
@@ -274,31 +360,7 @@ export function createReviewsPlugin(options: ReviewsPluginOptions): ProjectPlugi
       app.get(
         PUBLIC_REVIEWS_ROUTE,
         asyncHandler(async (req, res) => {
-          const page = queryNumber(req.query.page, 1);
-          const limit = queryNumber(req.query.limit, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT);
-          const productId = typeof req.query.productId === 'string' ? req.query.productId : '';
-          // A small shop's reviews: read whole, so the average covers every one of them.
-          const rows = await registry.get(reviewEntity.config.name).findAll({
-            where: { status: PUBLISHED },
-            order: [
-              ['createdAt', 'DESC'],
-              ['id', 'DESC'],
-            ],
-          });
-          const published = rows.map((row) => toPublicReview(row.toJSON() as Review));
-          const listed = productId
-            ? published.filter((review) =>
-                review.items.some((item) => item.productId === productId)
-              )
-            : published;
-          const answer: PublicReviewsPage = {
-            data: listed.slice((page - 1) * limit, page * limit),
-            total: listed.length,
-            page,
-            limit,
-            averageRating: averageOf(published),
-          };
-          res.json(answer);
+          res.json(await listPublicReviews(registry, req.query));
         })
       );
 
@@ -306,27 +368,7 @@ export function createReviewsPlugin(options: ReviewsPluginOptions): ProjectPlugi
         REVIEW_REQUEST_ROUTE,
         createVerifyToken(jwtSecret),
         asyncHandler(async (req, res) => {
-          const row = await registry.get(orderEntity.config.name).findByPk(req.params.id);
-          if (!row) throw new HttpError(NOT_FOUND, 'Order not found');
-          const order = row.toJSON() as Order;
-          if (order.orderStatus !== DELIVERED) {
-            throw new HttpError(CONFLICT, 'O recenzi jde požádat jen u doručené objednávky.');
-          }
-          const details = await reviewInvitationDetails(registry, { jwtSecret, siteUrl }, order.id);
-          if (!details.reviewUrl) throw new HttpError(CONFLICT, 'Objednávka už recenzi má.');
-
-          // Asked for on purpose, so it goes even while the delivery e-mail is turned off.
-          const { text } = await resolveEmailText(registry, 'mark-delivered');
-          const footer = { siteUrl, sellerLine: await resolveSellerLine(registry) };
-          const event: OrderEvent = { type: 'review-request', at: new Date().toISOString() };
-          event.email = await sendEmail(
-            emailService,
-            order.customerEmail,
-            orderActionEmail('mark-delivered', asPlaced(order), details, text),
-            footer
-          );
-          await row.update({ history: JSON.stringify([...parseOrderHistory(order), event]) });
-          res.json(row.toJSON());
+          res.json(await sendReviewRequest(options, sequelize, emailService, req.params.id));
         })
       );
     },

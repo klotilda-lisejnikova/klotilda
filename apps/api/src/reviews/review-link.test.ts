@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { REVIEW_LINK_LIFETIME_DAYS } from '@klotilda/domain';
-import { createReviewToken, readReviewToken, reviewUrl } from './review-link';
+import { createReviewLink, createReviewToken, readReviewToken } from './review-link';
 
 const SECRET = 'integration-test-secret-of-sufficient-length';
 const ORDER_ID = 'ord0123456789abcdef0123456789abcdef';
@@ -40,10 +40,20 @@ describe('Review links', () => {
   });
 
   it("point at the website's review page", () => {
-    const url = new URL(reviewUrl('https://klotilda.test/', SECRET, ORDER_ID, NOW));
+    const link = createReviewLink('https://klotilda.test/', SECRET, ORDER_ID, NOW);
+    expect(link.expiresAt).toEqual(later(REVIEW_LINK_LIFETIME_DAYS));
+    const url = new URL(link.url);
     expect(`${url.origin}${url.pathname}`).toBe('https://klotilda.test/recenze/napsat');
     expect(readReviewToken(SECRET, url.searchParams.get('token') ?? '', NOW)?.orderId).toBe(
       ORDER_ID
     );
+  });
+
+  it('carry any order id an e-mail could offer, and refuse to make one it could not', () => {
+    for (const orderId of ['ord1', 'ord_0123abc', '550e8400-e29b-41d4-a716-446655440000']) {
+      const token = createReviewToken(SECRET, orderId, NOW);
+      expect(readReviewToken(SECRET, token, NOW)?.orderId).toBe(orderId);
+    }
+    expect(() => createReviewToken(SECRET, 'ord.1', NOW)).toThrow();
   });
 });

@@ -3,8 +3,13 @@
 **Ticket:** none yet
 **Status:** active — approved 2026-11-01; step 1 (API) in review
 
-The owner asked for a way for customers to leave a review in the e-shop ("navrhni možnost zanechat
-recenzi v eshopu, jak to provedeš"). This is the design; nothing is implemented yet.
+The owner asked for a way for customers to leave a review in the e-shop:
+
+> **Provenance.** The owner's request, verbatim (Czech), 2026-11-01:
+>
+> navrhni moznost zanechat recenzi v eshopu, jak to provedes
+
+Approved as designed on 2026-11-01. Step 1 (the API) is built; steps 2 and 3 are to come.
 
 ## What shapes it
 
@@ -117,6 +122,10 @@ A new entity `Review` (table `Reviews`), declared in `packages/domain/src/entiti
   `POST /api/reviews/all/invitation` (pending, invisible) rebuilds nothing.
 
 ## Website
+
+The review form calls the invitation routes **from the visitor's browser**, like the checkout: they
+are rate-limited per client address, so a call from the website's server would make every customer
+share one limit.
 
 - **`/recenze`** (in the menu next to the shop, gated with the shop by `NEXT_PUBLIC_SHOP_ENABLED`):
   the average and the count, the reviews newest first (stars, text, name, the pieces as links,

@@ -76,5 +76,10 @@ describe('Website revalidation', () => {
 
     send('PATCH', '/api/reviews/rev1');
     await vi.waitFor(() => expect(calls).toHaveLength(1), { timeout: 3000 });
+
+    await quiet();
+    calls.length = 0;
+    send('DELETE', '/api/reviews/rev1/');
+    await vi.waitFor(() => expect(calls).toHaveLength(1), { timeout: 3000 });
   });
 });

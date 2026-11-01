@@ -224,7 +224,6 @@ Branches: `main` = production, `dev` = test.
   (the placeholder in `tooling/user.npmrc`; never name the token in a `RUN` line). Migrations run
   on start. In Railway a live source change applies to every environment — stage it per
   environment.
-
 - Web: Vercel project `klotilda-frontend`, root `apps/web` — `klotilda.cz` / `www.klotilda.cz`
   from `main`, `test.klotilda.cz` from `dev`. Preview variables scoped to the `dev` branch point
   it at the test API and turn the shop on (`NEXT_PUBLIC_SHOP_ENABLED=true`); production keeps

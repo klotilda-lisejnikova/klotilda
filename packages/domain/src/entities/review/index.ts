@@ -14,6 +14,9 @@ export const REVIEWS_PATH = '/api/reviews';
 export const REVIEW_INVITATION_ROUTE = '/api/reviews/all/invitation';
 /** `GET ?page=&limit=&productId=` — the published reviews, newest first. Public. */
 export const PUBLIC_REVIEWS_ROUTE = '/api/reviews/all/public';
+/** A page of `PUBLIC_REVIEWS_ROUTE` when `limit` isn't given, and the most it answers. */
+export const PUBLIC_REVIEWS_DEFAULT_LIMIT = 20;
+export const PUBLIC_REVIEWS_MAX_LIMIT = 50;
 /** `POST` — the signed-in admin sends the customer of a delivered order the link again. */
 export const REVIEW_REQUEST_ROUTE = '/api/orders/:id/review-request';
 
@@ -68,7 +71,10 @@ export interface PublicReviewsPage {
   total: number;
   page: number;
   limit: number;
-  /** The average stars of every published review, to one decimal; `null` with none. */
+  /**
+   * The average stars of every published review — the shop's, even when the list names one
+   * product — to one decimal; `null` with none.
+   */
   averageRating: number | null;
 }
 
@@ -108,7 +114,11 @@ export const reviewEntity = defineEntity({
         return this.post<{ id: string }>(REVIEW_INVITATION_ROUTE, request);
       }
 
-      listPublic({ page = 1, limit = 20, productId }: PublicReviewsQuery = {}) {
+      listPublic({
+        page = 1,
+        limit = PUBLIC_REVIEWS_DEFAULT_LIMIT,
+        productId,
+      }: PublicReviewsQuery = {}) {
         return this.get<PublicReviewsPage, PublicReviewsQuery>(PUBLIC_REVIEWS_ROUTE, {
           page,
           limit,

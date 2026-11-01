@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { REVIEW_LINK_LIFETIME_DAYS } from '@klotilda/domain';
 import { ARTIST_EMAIL, bearer, startTestApp, testEnvironment } from './test-support/test-app';
 import type { TestApp } from './test-support/test-app';
 import { createReviewToken } from './reviews/review-link';
@@ -21,6 +22,15 @@ const REVIEW = {
   locale: 'cs',
   consent: true,
 };
+const DAY_MS = 24 * 60 * 60 * 1000;
+const LINK_INVALID = 'Odkaz na recenzi neplatí nebo už vypršel.';
+const NOT_DELIVERED = 'Objednávku půjde ohodnotit, až bude doručená.';
+const ALREADY_REVIEWED = 'Tuhle objednávku už jste ohodnotili. Děkujeme!';
+/** A refusal, by its status and its message. */
+const refused = (status: number, message: string) => ({
+  status,
+  body: expect.objectContaining({ message }),
+});
 const tokenFor = (orderId: string, now = new Date()) =>
   createReviewToken(testEnvironment.jwtSecret, orderId, now);
 
@@ -91,20 +101,30 @@ describe('Reviews', () => {
   it('take one review per delivered order, through its own link only', async () => {
     const { orderId } = await placeOrder();
     const other = await placeOrder();
-    expect((await invitation('nonsense')).status).toBe(404);
-    expect((await invitation(`${tokenFor(other.orderId)}x`)).status).toBe(404);
-    const expired = tokenFor(orderId, new Date(Date.now() - 181 * 24 * 60 * 60 * 1000));
-    expect((await invitation(expired)).status).toBe(404);
+    expect(await invitation('nonsense')).toMatchObject(refused(404, LINK_INVALID));
+    expect(await invitation(`${tokenFor(other.orderId)}x`)).toMatchObject(
+      refused(404, LINK_INVALID)
+    );
+    const sentLongAgo = new Date(Date.now() - (REVIEW_LINK_LIFETIME_DAYS + 1) * DAY_MS);
+    expect(await invitation(tokenFor(orderId, sentLongAgo))).toMatchObject(
+      refused(404, LINK_INVALID)
+    );
 
     const undelivered = await placeOrder('new');
-    expect((await invitation(tokenFor(undelivered.orderId))).status).toBe(409);
-    expect((await submit({ ...REVIEW, token: tokenFor(undelivered.orderId) })).status).toBe(409);
+    expect(await invitation(tokenFor(undelivered.orderId))).toMatchObject(
+      refused(409, NOT_DELIVERED)
+    );
+    expect(await submit({ ...REVIEW, token: tokenFor(undelivered.orderId) })).toMatchObject(
+      refused(409, NOT_DELIVERED)
+    );
 
     const before = app.outbox.sent.length;
     const written = await submit({ ...REVIEW, token: tokenFor(orderId) });
     expect(written.status).toBe(201);
-    expect((await submit({ ...REVIEW, token: tokenFor(orderId) })).status).toBe(409);
-    expect((await invitation(tokenFor(orderId))).status).toBe(409);
+    expect(await submit({ ...REVIEW, token: tokenFor(orderId) })).toMatchObject(
+      refused(409, ALREADY_REVIEWED)
+    );
+    expect(await invitation(tokenFor(orderId))).toMatchObject(refused(409, ALREADY_REVIEWED));
 
     await settle();
     const [notice] = app.outbox.sent.slice(before).filter((email) => email.to === ARTIST_EMAIL);
@@ -183,15 +203,17 @@ describe('Reviews', () => {
       .post('/api/reviews')
       .set(signedIn())
       .send({ ...REVIEW, orderId, items: '[]' });
-    expect([403, 405]).toContain(created.status);
+    expect(created.status).toBe(403);
     expect((await app.api().get('/api/reviews')).status).toBe(401);
   });
 
   it('keep an order with a review until its review is deleted', async () => {
     const { orderId } = await placeOrder();
     const id = (await submit({ ...REVIEW, token: tokenFor(orderId) })).body.id as string;
-    const refused = await app.api().delete(`/api/orders/${orderId}`).set(signedIn());
-    expect(refused.status).toBe(409);
+    const refusedDelete = await app.api().delete(`/api/orders/${orderId}`).set(signedIn());
+    expect(refusedDelete).toMatchObject(
+      refused(409, 'Objednávka má recenzi. Smažte nejdřív ji (v Recenzích).')
+    );
     expect((await app.api().delete(`/api/reviews/${id}`).set(signedIn())).status).toBeLessThan(300);
     expect((await app.api().delete(`/api/orders/${orderId}`).set(signedIn())).status).toBeLessThan(
       300
@@ -212,11 +234,20 @@ describe('Reviews', () => {
     expect(history.at(-1)).toMatchObject({ type: 'review-request', email: 'sent' });
 
     await submit({ ...REVIEW, token: tokenFor(orderId) });
-    expect((await request()).status).toBe(409);
+    expect(await request()).toMatchObject(refused(409, 'Objednávka už recenzi má.'));
     const fresh = await placeOrder('new');
     expect(
-      (await app.api().post(`/api/orders/${fresh.orderId}/review-request`).set(signedIn()).send({}))
-        .status
-    ).toBe(409);
+      await app.api().post(`/api/orders/${fresh.orderId}/review-request`).set(signedIn()).send({})
+    ).toMatchObject(refused(409, 'O recenzi jde požádat jen u doručené objednávky.'));
+  });
+
+  it('keep both lines of two requests sent at once in the history', async () => {
+    const { orderId } = await placeOrder();
+    const request = () =>
+      app.api().post(`/api/orders/${orderId}/review-request`).set(signedIn()).send({});
+    await Promise.all([request(), request()]);
+    const order = (await app.api().get(`/api/orders/${orderId}`).set(signedIn())).body;
+    const types = (JSON.parse(order.history) as { type: string }[]).map((event) => event.type);
+    expect(types.filter((type) => type === 'review-request')).toHaveLength(2);
   });
 });

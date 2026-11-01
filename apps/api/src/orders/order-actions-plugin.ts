@@ -35,7 +35,7 @@ import { sendEmail } from '../emails/send-email';
 import { resolveSellerLine } from '../seller/seller';
 import { asyncHandler } from '../http/async-handler';
 import type { ModelRegistry } from '../models-registry';
-import { reviewInvitationDetails } from '../reviews/review-invitation';
+import { resolveReviewInvitation } from '../reviews/review-invitation';
 
 const NOT_FOUND = 404;
 const CONFLICT = 409;
@@ -104,7 +104,7 @@ async function findActionEmail(
     ...event,
     trackingUrl: saved.trackingUrl ?? undefined,
     ...(action === 'mark-delivered' &&
-      (await reviewInvitationDetails(registry, { jwtSecret, siteUrl }, saved.id))),
+      (await resolveReviewInvitation(registry, { jwtSecret, siteUrl }, saved.id))),
   };
   const content = orderActionEmail(action, placed, details, text);
   return { enabled, to: saved.customerEmail, content };

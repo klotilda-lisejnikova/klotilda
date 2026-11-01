@@ -19,18 +19,20 @@ export interface WebRevalidation {
 const DEBOUNCE_MS = 1000;
 const FILES_PATH = '/api/files';
 
+/** One review's CRUD route, `/api/reviews/:id` (a trailing slash allowed, as Express allows it). */
+const REVIEW_ROW = new RegExp(`^${REVIEWS_PATH}/(?!all/?$)[^/]+/?$`);
+
+/** The admin publishing, hiding, answering or deleting a review. */
+function isReviewDecision(method: string, path: string): boolean {
+  return (method === 'PATCH' || method === 'PUT' || method === 'DELETE') && REVIEW_ROW.test(path);
+}
+
 /**
  * Requests that change what the website shows: the catalogue and the gallery, their photos, the
  * seller's details, a placed order (stock goes down), order actions (a cancelled order's stock
  * comes back) and the admin's decisions on a review (`PATCH` / `DELETE /api/reviews/:id`; a review
  * just written waits unseen, and the routes under `/all/` change nothing shown).
  */
-const REVIEW_ROW = new RegExp(`^${REVIEWS_PATH}/(?!all$)[^/]+$`);
-
-function isReviewDecision(method: string, path: string): boolean {
-  return (method === 'PATCH' || method === 'PUT' || method === 'DELETE') && REVIEW_ROW.test(path);
-}
-
 function changesTheWebsite(method: string, path: string): boolean {
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false;
   return (

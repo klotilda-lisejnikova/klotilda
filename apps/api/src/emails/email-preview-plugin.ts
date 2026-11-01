@@ -4,13 +4,12 @@ import {
   EMAIL_TEMPLATE_KEYS,
   EMAIL_TEMPLATE_PREVIEW_ROUTE,
   emailTemplateFields,
-  REVIEW_LINK_LIFETIME_DAYS,
-  REVIEW_WRITE_PATH,
 } from '@klotilda/domain';
 import type { EmailPreview, EmailPreviewRequest, EmailTemplateKey } from '@klotilda/domain';
 import type { BankAccount } from '../env';
 import { asyncHandler } from '../http/async-handler';
 import type { ModelRegistry } from '../models-registry';
+import { reviewLinkExpiry, reviewPageUrl } from '../reviews/review-link';
 import { resolveSellerLine } from '../seller/seller';
 import { renderEmail } from './email-layout';
 import type { EmailContent } from './email-layout';
@@ -53,15 +52,13 @@ function sampleOrder(key: EmailTemplateKey): PlacedOrder {
   };
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 /** What an action adds to the sample order; the review link leads nowhere real. */
 function sampleDetails(siteUrl: string): ActionDetails {
   return {
     trackingNumber: 'Z 1234567890',
     trackingUrl: 'https://tracking.packeta.com/cs/?id=Z%201234567890',
-    reviewUrl: `${siteUrl.replace(/\/$/, '')}${REVIEW_WRITE_PATH}?token=ukazka`,
-    reviewUrlExpiresAt: new Date(Date.now() + REVIEW_LINK_LIFETIME_DAYS * DAY_MS),
+    reviewUrl: reviewPageUrl(siteUrl, 'ukazka'),
+    reviewUrlExpiresAt: reviewLinkExpiry(new Date()),
   };
 }
 
