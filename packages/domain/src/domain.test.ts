@@ -6,8 +6,6 @@ import {
   customerFields,
   EMAIL_TEMPLATE_KEYS,
   EMAIL_TEMPLATES,
-  fillPlaceholders,
-  hasBrokenPlaceholder,
   isEmailTemplateKey,
   orderFields,
   parseOrderHistory,
@@ -18,7 +16,7 @@ import {
   trackingUrlFor,
   unknownPlaceholders,
 } from './index';
-import type { OrderState } from './index';
+import type { EmailTemplateKey, OrderState } from './index';
 
 describe('Order actions', () => {
   const placed: OrderState = {
@@ -154,35 +152,19 @@ describe('Shipping methods', () => {
 });
 
 describe('E-mail templates', () => {
-  it('fill the placeholders they know, and leave the rest as written', () => {
-    expect(
-      fillPlaceholders('Objednávka {{vs}} pro {{ jmeno }}, {{cena}}, {{cislo_zasilky}}', {
-        vs: '1234567890',
-        jmeno: 'Jana',
-      })
-    ).toBe('Objednávka 1234567890 pro Jana, {{cena}}, {{cislo_zasilky}}');
-  });
-
   it('name the placeholders an e-mail does not know', () => {
-    expect(unknownPlaceholders('{{vs}} {{cena}} {{cena}} {{cislo_zasilky}}', 'mark-paid')).toEqual([
-      'cena',
-      'cislo_zasilky',
-    ]);
-    expect(unknownPlaceholders('{{vs}} {{cislo_zasilky}}', 'ship')).toEqual([]);
+    const known = (key: EmailTemplateKey) => EMAIL_TEMPLATES[key].placeholders;
+    expect(
+      unknownPlaceholders('{{vs}} {{cena}} {{cena}} {{cislo_zasilky}}', known('mark-paid'))
+    ).toEqual(['cena', 'cislo_zasilky']);
+    expect(unknownPlaceholders('{{vs}} {{cislo_zasilky}}', known('ship'))).toEqual([]);
   });
 
   it('start every e-mail with a text that uses only its own placeholders', () => {
     for (const key of EMAIL_TEMPLATE_KEYS) {
-      const { subject, heading, body } = EMAIL_TEMPLATES[key];
-      expect(unknownPlaceholders(`${subject} ${heading} ${body}`, key)).toEqual([]);
+      const { subject, heading, body, placeholders } = EMAIL_TEMPLATES[key];
+      expect(unknownPlaceholders(`${subject} ${heading} ${body}`, placeholders)).toEqual([]);
     }
-  });
-
-  it('spot braces that are not a whole placeholder', () => {
-    expect(hasBrokenPlaceholder('Objednávka {{vs}} pro {{ jmeno }}')).toBe(false);
-    expect(hasBrokenPlaceholder('Objednávka {{vs}')).toBe(true);
-    expect(hasBrokenPlaceholder('Balík {{cislo zasilky}}')).toBe(true);
-    expect(hasBrokenPlaceholder('Hotovo }}')).toBe(true);
   });
 
   it('know their keys, and nothing else', () => {

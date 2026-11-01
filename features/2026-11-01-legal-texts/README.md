@@ -1,7 +1,7 @@
 # Legal texts and seller details in the admin
 
 **Ticket:** none yet
-**Status:** design — architecture review done, awaiting the owner's word on scope
+**Status:** active — step 1 in review
 
 The owner wants the shop's texts editable in the admin, the terms (obchodní podmínky) first ("dále
 co by mělo být konfigurovatelné jsou texty obchodní podmínky atd."). Today they are code:
@@ -119,12 +119,14 @@ souhlasí s touto verzí; zveřejněnou verzi už nejde změnit").
 
 ## Steps
 
-1. One placeholder engine and the Markdown parser in the domain (no behaviour change).
+1. One placeholder engine and the Markdown parser in the domain (no behaviour change). _(in review)_
 2. Seller details: entity, migration, admin page "Prodávající"; then the web and e-mails read it.
 3. Legal versions in the API: entity, migration with today's texts, routes, publish rules, the
    checkout's version check.
 4. The web reads them: legal pages, version pages, checkout link and 409 handling, e-mail link.
 5. Admin "Právní texty": versions, draft editor with preview, publish.
+6. The website's own texts (home page, "o mně", contact) in the admin; planned once 1–5 are on
+   `dev`.
 
 Each a PR into `dev`, verified on the test sites; the API side of a step deploys before the web
 reads it.
@@ -135,9 +137,8 @@ reads it.
   (the text itself, e.g. as a plain-text attachment, not just a link); ask whoever checks the
   texts. Once versions are in the API this is cheap.
 
-## Open questions for the owner
-
-1. Scope: the legal pages and the seller's details (recommended), or also the website's own texts
-   (home page, "o mně", contact), which live in the translation files today?
-
 ## Decided
+
+- 2026-11-01: the owner asked for all of it: the legal pages, the seller's
+  details and, as a later step after these five, the website's own texts (home page, "o mně",
+  contact), today in the translation files.
