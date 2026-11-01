@@ -3,6 +3,7 @@ import type {
   CheckoutRequest,
   CheckoutResponse,
   GalleryItemWithImages,
+  PaymentMethod,
   ProductWithImages,
   ShippingMethod,
 } from "@klotilda/domain";
@@ -58,6 +59,11 @@ export function listGallery(): Promise<GalleryItemWithImages[]> {
 /** The shipping methods the shop offers (the API answers only the active ones), in its order. */
 export async function listShippingMethods(): Promise<ShippingMethod[]> {
   return (await services.shippingMethods.getAll({ limit: 100 })).data;
+}
+
+/** The payment methods the shop offers (the API answers only the active ones), in its order. */
+export async function listPaymentMethods(): Promise<PaymentMethod[]> {
+  return (await services.paymentMethods.getAll({ limit: 100 })).data;
 }
 
 /** Places the order; the API charges its own prices and answers how to pay. */

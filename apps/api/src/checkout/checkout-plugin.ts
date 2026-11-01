@@ -22,6 +22,7 @@ import type { BankAccount } from '../env';
 import { asyncHandler } from '../http/async-handler';
 import type { ModelRegistry } from '../models-registry';
 import { createQrPaymentDataUrl, createVariableSymbol } from './qr-payment';
+import { resolveOfferedPayment } from '../payments/payment-methods';
 import { resolveOfferedShipping } from '../shipping/shipping-methods';
 import { readCheckoutRequest } from './read-checkout-request';
 
@@ -109,11 +110,35 @@ async function announceOrder(
     .update({ history: JSON.stringify([{ ...placedEvent, email }]) }, { where: { id: order.id } });
 }
 
+/** How the customer pays: the account and a QR code for a transfer, nothing more for cash. */
+async function paymentAnswer(
+  order: PlacedOrder,
+  bankAccount: BankAccount
+): Promise<CheckoutResponse> {
+  const placed = {
+    orderId: order.id,
+    variableSymbol: order.variableSymbol,
+    amount: order.totalAmount,
+  };
+  if (order.paymentKind === 'cash') return { ...placed, paymentKind: 'cash' };
+  return {
+    ...placed,
+    paymentKind: 'bank_transfer',
+    bankAccount: bankAccount.display,
+    qrCodeDataUrl: await createQrPaymentDataUrl(bankAccount, {
+      amount: order.totalAmount,
+      variableSymbol: order.variableSymbol,
+      message: `Objednavka ${order.id}`,
+    }),
+  };
+}
+
 /**
  * `POST /api/checkout` — public. Places an order from the cart: prices come from the products
- * and the chosen active shipping method, never from the client; the stock is taken down at once
- * (payment is a bank transfer the admin confirms later, matched by the variable symbol). Answers how to pay, QR code included, then
- * e-mails the customer and the artist; a failed e-mail is logged and noted in the order's history.
+ * and the chosen active shipping and payment methods, never from the client; the stock is taken
+ * down at once (a bank transfer the admin confirms later, matched by the variable symbol, or cash
+ * at pickup). Answers how to pay, then e-mails the customer and the artist; a failed e-mail is
+ * logged and noted in the order's history.
  */
 export function createCheckoutPlugin({
   registry,
@@ -138,6 +163,12 @@ export function createCheckoutPlugin({
               customer.shippingMethod,
               transaction
             );
+            const payment = await resolveOfferedPayment(
+              registry,
+              customer.paymentMethod,
+              shipping.shippingKind,
+              transaction
+            );
             const orderItems = await reserveStock(registry, items, transaction);
             const itemsTotal = orderItems.reduce(
               (sum, item) => sum + item.price * item.quantity,
@@ -147,7 +178,8 @@ export function createCheckoutPlugin({
               id: generateId(orderEntity.config.prefix),
               ...customer,
               ...shipping,
-              totalAmount: itemsTotal + shipping.shippingPrice,
+              ...payment,
+              totalAmount: itemsTotal + shipping.shippingPrice + payment.paymentFee,
               variableSymbol: createVariableSymbol(),
               paymentStatus: DEFAULT_PAYMENT_STATUS as PaymentStatus,
               orderStatus: DEFAULT_ORDER_STATUS,
@@ -165,19 +197,7 @@ export function createCheckoutPlugin({
             return { ...placed, items: orderItems };
           });
 
-          const answer: CheckoutResponse = {
-            orderId: order.id,
-            variableSymbol: order.variableSymbol,
-            amount: order.totalAmount,
-            bankAccount: bankAccount.display,
-            qrCodeDataUrl: await createQrPaymentDataUrl(bankAccount, {
-              amount: order.totalAmount,
-              variableSymbol: order.variableSymbol,
-              message: `Objednavka ${order.id}`,
-            }),
-          };
-
-          res.status(CREATED).json(answer);
+          res.status(CREATED).json(await paymentAnswer(order, bankAccount));
           announceOrder(registry, emailService, {
             order,
             placedEvent,

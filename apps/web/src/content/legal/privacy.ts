@@ -11,7 +11,7 @@ Správcem osobních údajů je {{sellerName}}, IČO {{sellerIco}}, se sídlem {{
 
 ## Jaké údaje a proč
 
-Když nakoupíte v e-shopu, zpracováváme údaje, které vyplníte v objednávce: jméno a příjmení, e-mail, telefon (pokud ho uvedete), doručovací adresu, obsah objednávky, poznámku k ní a údaje o platbě (částku a variabilní symbol).
+Když nakoupíte v e-shopu, zpracováváme údaje, které vyplníte v objednávce: jméno a příjmení, e-mail, telefon (pokud ho uvedete), doručovací adresu, obsah objednávky, poznámku k ní a údaje o platbě (způsob platby, částku a variabilní symbol).
 
 - **Vyřízení objednávky** — uzavření a splnění kupní smlouvy, doručení, komunikace o objednávce, odstoupení a reklamace (čl. 6 odst. 1 písm. b) GDPR).
 - **Účetní a daňové povinnosti** — doklady o prodeji (čl. 6 odst. 1 písm. c) GDPR).
@@ -58,7 +58,7 @@ The controller of your personal data is {{sellerName}}, company ID (IČO) {{sell
 
 ## What data and why
 
-When you buy in the shop, we process what you fill in the order: first and last name, e-mail, phone (if given), delivery address, the order's content and note, and payment details (the amount and variable symbol).
+When you buy in the shop, we process what you fill in the order: first and last name, e-mail, phone (if given), delivery address, the order's content and note, and payment details (the payment method, the amount and variable symbol).
 
 - **Handling the order** — making and performing the purchase contract, delivery, communication about the order, withdrawals and complaints (Art. 6(1)(b) GDPR).
 - **Accounting and tax duties** — records of the sale (Art. 6(1)(c) GDPR).

@@ -17,9 +17,9 @@ those documents disagree, this file wins.
 ## What this is
 
 **Klotilda** — the website and e-shop of an artist (klotilda.cz): ceramics, embroidery and linocuts,
-originals sold one piece at a time, paid by bank transfer (QR Platba). Rebuilt as one monorepo on
-the new Eleansphere core in 2026-09; the four earlier repositories are archived in
-`projekty/_archiv/klotilda-legacy/`.
+originals sold one piece at a time, paid by bank transfer (QR Platba) or in cash at pickup.
+Rebuilt as one monorepo on the new Eleansphere core in 2026-09; the four earlier repositories are
+archived in `projekty/_archiv/klotilda-legacy/`.
 
 | Package | What it holds |
 |---|---|
@@ -39,8 +39,8 @@ access, the DTO types, the typed clients and the admin's form schema (`formSchem
 `apps/admin/src/app/validation.ts`, the server's own rules with Czech messages). Changing the data
 model means changing `fields.ts` — plus a migration (below).
 
-Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `ShippingMethod`) are the
-production table names (`Products`, …) — never rename them.
+Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `ShippingMethod`,
+`PaymentMethod`) are the production table names (`Products`, …) — never rename them.
 
 ## Backend
 
@@ -56,21 +56,30 @@ production table names (`Products`, …) — never rename them.
 - Orders: the admin lists, reads, PATCHes and deletes them; only `paymentStatus` and `orderStatus`
   are writable (everything else is `readOnly`). **An order is only ever created by
   `POST /api/checkout`** (`src/checkout/`), public and rate-limited: it takes the customer's
-  details and `{ productId, quantity }` lines, charges the products' **own prices** and the
-  price of the chosen **active** shipping method (400 otherwise), and takes the stock down
-  inside one transaction with the product and shipping method rows locked (`FOR UPDATE`), so the
-  last piece sells once. It answers the bank account, a random variable symbol and a QR Platba
+  details and `{ productId, quantity }` lines, charges the products' **own prices**, the
+  price of the chosen **active** shipping method and the fee of the chosen **active** payment
+  method that fits it (400 otherwise), and takes the stock down inside one transaction with the
+  product, shipping and payment method rows locked (`FOR UPDATE`), so the last piece sells once.
+  It answers a random variable symbol and, for a bank transfer, the bank account and a QR Platba
   code, and e-mails the customer and `ADMIN_EMAIL` (a failed e-mail is only logged).
 - Shipping methods (`ShippingMethod`, `/api/shipping-methods`): auto CRUD, rows the admin manages
   (code, names, description, price, `kind` `delivery` | `pickup`, an optional `trackingUrl` with
   `{number}`, `active`, `sortOrder`); visitors read only the active ones. The code is stored
-  normalized (`toShippingCode`, `src/shipping/`). An order keeps the method's code and snapshots
-  `shippingName`, `shippingKind` and `shippingPrice`, so editing or deleting a method changes no
-  placed order's price or name; the workflow decides ship vs ready-for-pickup by `shippingKind`.
-  The tracking link comes from the method as it is when the order is shipped (stored on the order
-  as `trackingUrl`): an order not yet shipped follows an edit of the method's template, and gets
-  no link once its method is deleted. The first three methods come from the `2026-11-01-shipping-methods`
-  migration.
+  normalized (`toCode`, `src/http/normalize-code.ts`). An order keeps the method's code and
+  snapshots `shippingName`, `shippingKind` and `shippingPrice`, so editing or deleting a method
+  changes no placed order's price or name; the workflow decides ship vs ready-for-pickup by
+  `shippingKind`. The tracking link comes from the method as it is when the order is shipped (stored
+  on the order as `trackingUrl`): an order not yet shipped follows an edit of the method's template,
+  and gets no link once its method is deleted. The first three methods come from the
+  `2026-11-01-shipping-methods` migration.
+- Payment methods (`PaymentMethod`, `/api/payment-methods`): the same kind of rows (code, names,
+  description, `fee`, `active`, `sortOrder`) with a `kind` the code acts on: `bank_transfer`
+  (variable symbol, QR code, ships once paid) or `cash` (only with a `pickup` shipping method,
+  `paymentFitsShipping`; made ready before it is paid, paid as it is handed over). An order keeps
+  the code and snapshots `paymentName`, `paymentKind` and `paymentFee`; the admin's "awaiting
+  payment" leaves cash orders out (they have their own tab). The first two methods (`prevod`,
+  `hotove`) come from the `2026-11-01-payment-methods` migration, which marks every older order
+  as a bank transfer.
 - Order actions: `POST /api/orders/:id/actions/:action` (`src/orders/`), signed-in admin only. The
   steps and when each is allowed are in the domain (`availableActions`, `applyAction` in
   `entities/order/workflow.ts`): mark-paid, ship (parcel number), ready-for-pickup, mark-delivered,
@@ -83,8 +92,9 @@ production table names (`Products`, …) — never rename them.
 - Ordering (`src/catalogue/reorder-plugin.ts`, signed-in admin): `PUT /api/products/:id/images/order`
   (a product's photos, `File.sortOrder`; the first is the main one) and
   `PUT /api/gallery/rows/:row/order` (one gallery row), `PUT /api/categories/all/order` (every
-  category) and `PUT /api/shipping-methods/all/order` (every shipping method). Each takes
-  `{ ids }`, every row of the list once (else 409), and saves the order in one transaction.
+  category), `PUT /api/shipping-methods/all/order` and `PUT /api/payment-methods/all/order`
+  (every shipping or payment method). Each takes `{ ids }`, every row of the list once (else 409),
+  and saves the order in one transaction.
 - Auth: be-core's login with rotating refresh tokens; accounts come from `seed:admin`
   (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`). There is no registration.
 - E-mail: Resend's HTTP API when `RESEND_API_KEY` is set — Railway blocks outbound SMTP below the
@@ -106,8 +116,9 @@ production table names (`Products`, …) — never rename them.
 ## Website
 
 `apps/web/src/services/index.ts` wraps the domain clients: `listProducts`, `getProduct`,
-`listGallery`, `listShippingMethods`, `checkout`. The checkout reads the shipping methods live;
-the terms name no shipping prices (the checkout shows them, the order states the one agreed).
+`listGallery`, `listShippingMethods`, `listPaymentMethods`, `checkout`. The checkout reads the
+shipping and payment methods live and offers only the payment methods that fit the chosen shipping;
+the terms name no prices of either (the checkout shows them, the order states the ones agreed).
 Photos go through `mediaUrl()` (relative `/api/files/:id` without a bucket).
 `NEXT_PUBLIC_SHOP_ENABLED` gates the shop (see `src/lib/features.ts`). The image
 optimizer takes only the API's host and `NEXT_PUBLIC_MEDIA_URL` (the bucket's public URL, the API's
@@ -126,16 +137,17 @@ the terms box (`termsAccepted: true`, else 400) and each order stores `termsVers
 ## Admin
 
 `src/app/api.ts` (session + services), `src/app/session.ts`, `src/pages/*`. Photos are scaled down
-to WebP (2048 px) in the browser before upload (`resize-image.ts`); product photos, gallery
-pictures within a row and categories are reordered by dragging or with arrow buttons
-(`app/reorder.ts`). The product and gallery forms keep a save bar in view, send only the fields
-that changed, and ask before unsaved changes are dropped (`app/unsaved-changes.ts`: leaving the
-page, signing out, closing the tab). The products list is a table or cards (remembered per browser)
-with an "in the shop" switch on every product. The overview counts through the API and charts the
-paid revenue of the last 12 months by the month of the order (`app/revenue.ts`). Every `UFormField`
-keeps a line free for its message (`vite.config.ts`), so a message that appears or goes never moves
-a button from under the pointer. The sidebar's "Nastavení" group holds the shop's settings
-(Doprava: the shipping methods); it is not on the phone's bottom bar, only in the slide-over.
+to WebP (2048 px) in the browser before upload (`resize-image.ts`); product photos, gallery pictures
+within a row, categories and the shipping and payment methods are reordered by dragging or with
+arrow buttons (`app/reorder.ts`; `useListReorder` saves a whole list optimistically). The product
+and gallery forms keep a save bar in view, send only the fields that changed, and ask before unsaved
+changes are dropped (`app/unsaved-changes.ts`: leaving the page, signing out, closing the tab). The
+products list is a table or cards (remembered per browser) with an "in the shop" switch on every
+product. The overview counts through the API and charts the paid revenue of the last 12 months by
+the month of the order (`app/revenue.ts`). Every `UFormField` keeps a line free for its message
+(`vite.config.ts`), so a message that appears or goes never moves a button from under the pointer.
+The sidebar's "Nastavení" group holds the shop's settings (Doprava, Platby: the shipping and payment
+methods); it is not on the phone's bottom bar, only in the slide-over.
 `vercel.json` sends a Content-Security-Policy that allows only the admin's own scripts (hence
 `public/color-scheme.js` instead of an inline script) and API calls only to `*.up.railway.app`.
 

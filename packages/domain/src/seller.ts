@@ -23,9 +23,9 @@ export const SELLER = {
  * The terms the customer agrees to at checkout. A change to the terms (the complaints section in
  * them included) gets a new version; every order stores the version it was placed under.
  */
-export const TERMS_VERSION = '2026-11-01';
+export const TERMS_VERSION = '2026-11-02';
 /** From when the terms apply, as the pages show it. */
-export const TERMS_EFFECTIVE_FROM = '1. 11. 2026';
+export const TERMS_EFFECTIVE_FROM = '2. 11. 2026';
 
 /** The website's legal pages, the same path in both languages. */
 export const LEGAL_PATHS = {

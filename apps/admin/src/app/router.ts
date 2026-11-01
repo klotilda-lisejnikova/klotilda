@@ -58,6 +58,11 @@ export const router = createRouter({
           component: () => import('@/pages/ShippingMethodsPage.vue'),
         },
         {
+          path: 'payments',
+          name: 'payment-methods',
+          component: () => import('@/pages/PaymentMethodsPage.vue'),
+        },
+        {
           path: 'gallery',
           name: 'gallery',
           component: () => import('@/pages/GalleryPage.vue'),

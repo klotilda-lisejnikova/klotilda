@@ -9,6 +9,7 @@ const CUSTOMER = {
   street: 'Dlouhá 1',
   city: 'Praha',
   zip: '11000',
+  paymentMethod: 'prevod',
   termsAccepted: true,
 };
 

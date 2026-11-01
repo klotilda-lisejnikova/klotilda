@@ -4,6 +4,7 @@ import type { AdminUser } from './entities/admin-user';
 import { categoryEntity } from './entities/category';
 import { galleryItemEntity } from './entities/gallery-item';
 import { orderEntity } from './entities/order';
+import { paymentMethodEntity } from './entities/payment-method';
 import { productEntity } from './entities/product';
 import { shippingMethodEntity } from './entities/shipping-method';
 
@@ -23,6 +24,7 @@ export function createServices(baseUrl: string, tokenSource: AccessTokenSource) 
       gallery: galleryItemEntity,
       orders: orderEntity,
       shippingMethods: shippingMethodEntity,
+      paymentMethods: paymentMethodEntity,
     },
     baseUrl,
     tokenSource

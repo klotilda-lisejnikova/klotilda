@@ -6,7 +6,15 @@
 export const SHIPPING_KINDS = ['delivery', 'pickup'] as const;
 export type ShippingKind = (typeof SHIPPING_KINDS)[number];
 
-/** Payments arrive by bank transfer; the admin records what reached the account. */
+/**
+ * How an order is paid, which decides what the shop and the admin do: a bank transfer before the
+ * order goes out (variable symbol, QR code), or cash when the customer picks it up (only with a
+ * `pickup` shipping method). The methods themselves are rows the admin manages (`PaymentMethod`).
+ */
+export const PAYMENT_KINDS = ['bank_transfer', 'cash'] as const;
+export type PaymentKind = (typeof PAYMENT_KINDS)[number];
+
+/** The admin records a payment once it reached the account, or the cash was handed over. */
 export const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'refunded'] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 export const DEFAULT_PAYMENT_STATUS = 'pending' satisfies PaymentStatus;

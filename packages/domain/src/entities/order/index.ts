@@ -1,5 +1,6 @@
 import { defineEntity } from '@eleansphere/entity-core';
 import type { InferCreateDto } from '@eleansphere/entity-core';
+import type { PaymentKind } from '../../constants';
 import { orderFields } from './fields';
 import type { customerFields } from './fields';
 import { ORDER_ACTION_ROUTE } from './workflow';
@@ -38,16 +39,23 @@ export type CheckoutRequest = InferCreateDto<typeof customerFields> & {
   termsAccepted: true;
 };
 
-/** What the shop shows after checkout: how to pay. */
-export interface CheckoutResponse {
+interface PlacedOrderAnswer {
   orderId: string;
   variableSymbol: string;
-  /** CZK, shipping included. */
+  /** CZK, shipping and the payment fee included. */
   amount: number;
-  bankAccount: string;
-  /** A QR payment code (SPD) as a PNG data URL. */
-  qrCodeDataUrl: string;
+  paymentKind: PaymentKind;
 }
+
+/** What the shop shows after checkout: how to pay — the account and a QR code for a transfer. */
+export type CheckoutResponse =
+  | (PlacedOrderAnswer & {
+      paymentKind: 'bank_transfer';
+      bankAccount: string;
+      /** A QR payment code (SPD) as a PNG data URL. */
+      qrCodeDataUrl: string;
+    })
+  | (PlacedOrderAnswer & { paymentKind: 'cash' });
 
 /**
  * Orders from the shop. They are placed through `POST /api/checkout`; the admin lists them and
@@ -60,9 +68,10 @@ export const orderEntity = defineEntity({
   access: { read: 'auth', write: 'auth' },
   fields: orderFields,
   query: {
-    // Lists of values: the admin's tabs each cover a few statuses. `createdAt` as a range: the
-    // overview reads the paid orders of its months and counts unpaid orders past their days.
-    filter: { paymentStatus: 'in', orderStatus: 'in', createdAt: 'range' },
+    // Lists of values: the admin's tabs each cover a few statuses (and keep cash orders, paid
+    // only at pickup, out of "awaiting payment"). `createdAt` as a range: the overview reads the
+    // paid orders of its months and counts unpaid orders past their days.
+    filter: { paymentStatus: 'in', orderStatus: 'in', paymentKind: 'in', createdAt: 'range' },
     sort: ['createdAt', 'totalAmount'],
     defaultSort: '-createdAt',
     search: ['customerLastName', 'customerEmail', 'variableSymbol'],

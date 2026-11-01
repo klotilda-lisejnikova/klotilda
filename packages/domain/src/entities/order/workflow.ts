@@ -1,4 +1,4 @@
-import type { OrderStatus, PaymentStatus, ShippingKind } from '../../constants';
+import type { OrderStatus, PaymentKind, PaymentStatus, ShippingKind } from '../../constants';
 
 /**
  * What the admin does with an order, one step at a time. Each action checks the order is in a
@@ -30,9 +30,14 @@ export interface OrderState {
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
   shippingKind: ShippingKind;
+  paymentKind: PaymentKind;
 }
 
 const PICKUP: ShippingKind = 'pickup';
+/** Paid in cash when picked up, so it is made ready before the money comes. */
+const paysAtPickup = (order: OrderState) =>
+  order.paymentKind === 'cash' &&
+  (order.paymentStatus === 'pending' || order.paymentStatus === 'failed');
 /** Paid for, not yet handed over. */
 const BEING_PREPARED: readonly OrderStatus[] = ['new', 'processing'];
 const HANDED_OVER: readonly OrderStatus[] = ['shipped', 'ready'];
@@ -47,17 +52,26 @@ const ALLOWED: Record<OrderAction, (order: OrderState) => boolean> = {
     order.shippingKind !== PICKUP &&
     BEING_PREPARED.includes(order.orderStatus),
   'ready-for-pickup': (order) =>
-    order.paymentStatus === 'paid' &&
+    (order.paymentStatus === 'paid' || paysAtPickup(order)) &&
     order.shippingKind === PICKUP &&
     BEING_PREPARED.includes(order.orderStatus),
-  'mark-delivered': (order) => HANDED_OVER.includes(order.orderStatus),
+  // Cash is taken ("Platba dorazila") before the pieces count as handed over.
+  'mark-delivered': (order) => HANDED_OVER.includes(order.orderStatus) && !paysAtPickup(order),
   cancel: (order) => CANCELLABLE.includes(order.orderStatus),
   'mark-refunded': (order) => order.paymentStatus === 'paid' && order.orderStatus === 'cancelled',
 };
 
-/** The actions the order allows now, in the order the admin usually takes them. */
+/**
+ * The actions the order allows now, in the order the admin usually takes them: a cash order is
+ * made ready before its payment is taken.
+ */
 export function availableActions(order: OrderState): OrderAction[] {
-  return ORDER_ACTIONS.filter((action) => ALLOWED[action](order));
+  const allowed = ORDER_ACTIONS.filter((action) => ALLOWED[action](order));
+  if (!paysAtPickup(order)) return allowed;
+  const first: OrderAction = 'ready-for-pickup';
+  return allowed.includes(first)
+    ? [first, ...allowed.filter((action) => action !== first)]
+    : allowed;
 }
 
 /** The statuses an action leaves the order in. */

@@ -1,14 +1,14 @@
 import type { Fields } from '@eleansphere/entity-core';
+import { CODE_MAX_LENGTH } from '../../codes';
 import { SHIPPING_KINDS } from '../../constants';
 
-export const SHIPPING_CODE_MAX_LENGTH = 40;
 const SHIPPING_NAME_MAX_LENGTH = 100;
 const SHIPPING_DESCRIPTION_MAX_LENGTH = 500;
 export const TRACKING_URL_MAX_LENGTH = 180;
 
 export const shippingMethodFields = {
-  /** What an order names the method by (`zasilkovna`). The API normalizes it with `toShippingCode`. */
-  code: { type: 'STRING', required: true, unique: true, maxLength: SHIPPING_CODE_MAX_LENGTH },
+  /** What an order names the method by (`zasilkovna`). The API normalizes it with `toCode`. */
+  code: { type: 'STRING', required: true, unique: true, maxLength: CODE_MAX_LENGTH },
   name_cs: { type: 'STRING', required: true, maxLength: SHIPPING_NAME_MAX_LENGTH },
   name_en: { type: 'STRING', maxLength: SHIPPING_NAME_MAX_LENGTH },
   /** A line under the name at checkout, e.g. how long delivery takes. */

@@ -7,7 +7,7 @@ import {
   SHIPPING_KINDS,
   shippingMethodFields,
   TRACKING_NUMBER_PLACEHOLDER,
-  toShippingCode,
+  toCode,
 } from '@klotilda/domain';
 import type { ShippingKind, ShippingMethod } from '@klotilda/domain';
 import ConfirmDelete from '@/components/ConfirmDelete.vue';
@@ -17,8 +17,7 @@ import { describeError } from '@/app/errors';
 import { emptyToNull } from '@/app/form-values';
 import { formatCzk } from '@/app/format';
 import { SHIPPING_KIND_LABELS } from '@/app/labels';
-import { focusMoveButton, moveButtonKey, moveItem, useDragReorder } from '@/app/reorder';
-import type { MoveDirection } from '@/app/reorder';
+import { moveButtonKey, useDragReorder, useListReorder } from '@/app/reorder';
 import { SHIPPING_METHODS_QUERY_KEY, useShippingMethods } from '@/app/shipping-methods';
 import { formSchema, VALIDATE_ON } from '@/app/validation';
 
@@ -89,7 +88,7 @@ function openDialog(method: ShippingMethod | null) {
 watch(
   () => form.name_cs,
   (name) => {
-    if (!codeTouched.value) form.code = toShippingCode(name);
+    if (!codeTouched.value) form.code = toCode(name);
   }
 );
 
@@ -143,40 +142,13 @@ const setActive = useMutation({
 });
 
 // ── Order and deleting ──────────────────────────────────────────────
-interface Reorder {
-  ordered: ShippingMethod[];
-  /** An arrow's move: its button gets the focus back. */
-  arrow?: { id: string; direction: MoveDirection };
-}
-
-/** The new order, saved at once: shown before the answer, rolled back if the save fails. */
-const reorder = useMutation({
-  mutationFn: ({ ordered }: Reorder) =>
-    services.shippingMethods.reorder(ordered.map((method) => method.id)),
-  onMutate: async ({ ordered, arrow }) => {
-    await queryClient.cancelQueries({ queryKey: SHIPPING_METHODS_QUERY_KEY });
-    const previous = queryClient.getQueryData<ShippingMethod[]>(SHIPPING_METHODS_QUERY_KEY);
-    queryClient.setQueryData<ShippingMethod[]>(SHIPPING_METHODS_QUERY_KEY, ordered);
-    if (arrow) void focusMoveButton(arrow.id, arrow.direction);
-    return { previous };
-  },
-  onError: (err, _reorder, context) => {
-    queryClient.setQueryData(SHIPPING_METHODS_QUERY_KEY, context?.previous);
-    toast.add({ title: describeError(err), color: 'error' });
-  },
+const { move, moveByArrow } = useListReorder({
+  queryKey: SHIPPING_METHODS_QUERY_KEY,
+  items: () => methods.value,
+  save: (ids) => services.shippingMethods.reorder(ids),
+  onError: (err) => toast.add({ title: describeError(err), color: 'error' }),
   onSettled: refresh,
 });
-
-function move(from: number, to: number, arrow?: Reorder['arrow']) {
-  if (reorder.isPending.value) return;
-  reorder.mutate({ ordered: moveItem(methods.value, from, to), arrow });
-}
-
-function moveByArrow(index: number, direction: MoveDirection) {
-  const method = methods.value[index];
-  if (!method) return;
-  move(index, direction === 'back' ? index - 1 : index + 1, { id: method.id, direction });
-}
 
 const drag = useDragReorder<'methods'>((_group, from, to) => move(from, to));
 

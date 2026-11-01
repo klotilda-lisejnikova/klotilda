@@ -19,12 +19,15 @@
   "checkoutResult": {
     "successTitle": "Objednávka přijata",
     "successBody": "Objednávku jsme přijali a snížili sklad. Dokončete prosím platbu naskenováním QR kódu níže — potvrzení s platebními údaji jsme vám poslali i na e-mail.",
+    "successBodyCash": "Objednávku jsme přijali a snížili sklad. Zaplatíte ji hotově při převzetí; až bude připravená, ozveme se, kde a kdy si ji vyzvednete. Potvrzení jsme vám poslali i na e-mail.",
     "backHome": "Zpět na úvod",
     "qrAlt": "QR kód pro platbu",
     "qrHint": "Naskenujte v mobilním bankovnictví",
     "account": "Číslo účtu",
     "variableSymbol": "Variabilní symbol",
-    "amount": "Částka"
+    "orderNumber": "Číslo objednávky",
+    "amount": "Částka",
+    "amountAtPickup": "Zaplatíte při převzetí"
   },
   "checkout": {
     "steps": {
@@ -50,12 +53,15 @@
       "none": "Momentálně nelze vybrat žádný způsob dopravy. Zkuste to prosím později."
     },
     "payment": {
-      "qr": "Platba QR kódem",
-      "qrDesc": "Po odeslání objednávky naskenujte QR kód v mobilním bankovnictví, nebo zadejte platbu ručně podle zobrazených údajů."
+      "loading": "Načítám způsoby platby…",
+      "unavailable": "Způsoby platby se nepodařilo načíst. Zkuste to prosím za chvíli znovu.",
+      "gone": "Zvolený způsob platby už není v nabídce nebo nejde s vybranou dopravou. Vyberte prosím jiný.",
+      "none": "K vybrané dopravě teď nelze vybrat žádný způsob platby. Zkuste prosím jinou dopravu."
     },
     "summary": {
       "items": "Položky",
       "shipping": "Doprava",
+      "payment": "Platba",
       "total": "Celkem",
       "notes": "Poznámka k objednávce (volitelné)",
       "confirm": "Objednat s povinností platby",

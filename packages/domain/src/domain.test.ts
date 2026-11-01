@@ -7,7 +7,8 @@ import {
   orderFields,
   parseOrderHistory,
   parseOrderItems,
-  toShippingCode,
+  paymentFitsShipping,
+  toCode,
   toSlug,
   trackingUrlFor,
 } from './index';
@@ -18,6 +19,7 @@ describe('Order actions', () => {
     paymentStatus: 'pending',
     orderStatus: 'new',
     shippingKind: 'delivery',
+    paymentKind: 'bank_transfer',
   };
 
   it('follow an order from payment to delivery', () => {
@@ -36,6 +38,32 @@ describe('Order actions', () => {
     const ready = { ...paid, ...applyAction(paid, 'ready-for-pickup') };
     expect(ready.orderStatus).toBe('ready');
     expect(availableActions(ready)).toEqual(['mark-delivered', 'cancel']);
+  });
+
+  it('make a cash order ready before it is paid, and hand it over once paid', () => {
+    const placedForCash: OrderState = { ...placed, shippingKind: 'pickup', paymentKind: 'cash' };
+    expect(availableActions(placedForCash)).toEqual(['ready-for-pickup', 'mark-paid', 'cancel']);
+    const ready = { ...placedForCash, ...applyAction(placedForCash, 'ready-for-pickup') };
+    expect(availableActions(ready)).toEqual(['mark-paid', 'cancel']);
+    const paid = { ...ready, ...applyAction(ready, 'mark-paid') };
+    expect(paid).toMatchObject({ paymentStatus: 'paid', orderStatus: 'ready' });
+    expect(availableActions(paid)).toEqual(['mark-delivered', 'cancel']);
+  });
+
+  it('treat a cash order marked failed as still to be paid at the pickup', () => {
+    const failed: OrderState = {
+      ...placed,
+      shippingKind: 'pickup',
+      paymentKind: 'cash',
+      paymentStatus: 'failed',
+    };
+    expect(availableActions(failed)).toEqual(['ready-for-pickup', 'mark-paid', 'cancel']);
+    expect(availableActions({ ...failed, orderStatus: 'ready' })).toEqual(['mark-paid', 'cancel']);
+  });
+
+  it('keep a bank transfer for pickup waiting for the money', () => {
+    const pickup: OrderState = { ...placed, shippingKind: 'pickup' };
+    expect(availableActions(pickup)).toEqual(['mark-paid', 'cancel']);
   });
 
   it('refund a paid order only once it is cancelled', () => {
@@ -82,6 +110,7 @@ describe('Orders', () => {
         'customerLastName:required',
         'customerEmail:format',
         'shippingMethod:maxLength',
+        'paymentMethod:required',
         'street:required',
       ])
     );
@@ -90,6 +119,15 @@ describe('Orders', () => {
   it('read their stored items back', () => {
     const items = [{ productId: 'prod1', name: 'Váza', price: 1200, quantity: 1 }];
     expect(parseOrderItems({ items: JSON.stringify(items) })).toEqual(items);
+  });
+});
+
+describe('Payment methods', () => {
+  it('take cash only at a pickup', () => {
+    expect(paymentFitsShipping('cash', 'pickup')).toBe(true);
+    expect(paymentFitsShipping('cash', 'delivery')).toBe(false);
+    expect(paymentFitsShipping('bank_transfer', 'delivery')).toBe(true);
+    expect(paymentFitsShipping('bank_transfer', 'pickup')).toBe(true);
   });
 });
 
@@ -103,8 +141,8 @@ describe('Shipping methods', () => {
   });
 
   it('make plain codes, keeping underscores', () => {
-    expect(toShippingCode('Osobní odběr – Brno')).toBe('osobni-odber-brno');
-    expect(toShippingCode('osobni_odber')).toBe('osobni_odber');
-    expect(toShippingCode(' ** ')).toBe('');
+    expect(toCode('Osobní odběr – Brno')).toBe('osobni-odber-brno');
+    expect(toCode('osobni_odber')).toBe('osobni_odber');
+    expect(toCode(' ** ')).toBe('');
   });
 });
