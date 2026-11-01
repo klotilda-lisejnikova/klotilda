@@ -1,33 +1,77 @@
+import { notFound } from "next/navigation";
+import { ApiError } from "@eleansphere/entity-core";
 import {
-  COMPLAINTS_ANCHOR,
-  fillPlaceholders,
-  LEGAL_PATHS,
-  SELLER,
-  TERMS_EFFECTIVE_FROM,
-  unknownPlaceholders,
+  fillLegalText,
+  formatCzechDate,
+  isLegalVersion,
 } from "@klotilda/domain";
+import type {
+  LegalDocumentKey,
+  LegalVersionSummary,
+  PublishedLegalVersion,
+} from "@klotilda/domain";
+import { getLegalVersion, listLegalVersions } from "@/services";
+import { loadStaticData } from "./static-data";
 
-/** What the legal texts may name as `{{key}}`: the seller, the dates and the pages' paths. */
-const VALUES: Record<string, string> = {
-  sellerName: SELLER.name,
-  sellerIco: SELLER.ico,
-  sellerAddress: SELLER.address,
-  sellerEmail: SELLER.email,
-  sellerPhone: SELLER.phone,
-  sellerRegistration: SELLER.registration,
-  effectiveFrom: TERMS_EFFECTIVE_FROM,
-  termsPath: LEGAL_PATHS.terms,
-  privacyPath: LEGAL_PATHS.privacy,
-  withdrawalPath: LEGAL_PATHS.withdrawal,
-  complaintsAnchor: COMPLAINTS_ANCHOR,
-};
+const NOT_FOUND = 404;
 
-/** The text with every `{{key}}` filled in; an unknown key is a mistake in the text. */
-export function fillLegalText(text: string): string {
-  const [unknown] = unknownPlaceholders(text, Object.keys(VALUES));
-  if (unknown !== undefined)
-    throw new Error(`Unknown {{${unknown}}} in a legal text`);
-  return fillPlaceholders(text, VALUES);
+/** What a legal page shows: the version, the others published, and whether to warn of a draft. */
+export interface LegalPageData {
+  version: PublishedLegalVersion;
+  /** Every published version, newest first; the first is the one in force. */
+  versions: LegalVersionSummary[];
+  /** Published before the seller's details were marked complete: the page says it's a draft. */
+  draft: boolean;
 }
 
-export const SELLER_IS_PLACEHOLDER = SELLER.placeholder;
+async function loadFromApi(
+  document: LegalDocumentKey,
+  version: string | undefined,
+): Promise<LegalPageData> {
+  const [shown, versions] = await Promise.all([
+    getLegalVersion(document, version),
+    listLegalVersions(document),
+  ]);
+  return { version: shown, versions, draft: shown.seller.complete !== true };
+}
+
+/**
+ * A legal page's data: the version in force, or the one `version` names (a page that doesn't
+ * exist for a version never published). `null` only in a build with no API configured.
+ */
+export async function loadLegalPage(
+  document: LegalDocumentKey,
+  version?: string,
+): Promise<LegalPageData | null> {
+  if (version !== undefined && !isLegalVersion(version)) notFound();
+  try {
+    return await loadStaticData(
+      "LegalPage",
+      () => loadFromApi(document, version),
+      null,
+    );
+  } catch (err) {
+    if (err instanceof ApiError && err.status === NOT_FOUND) notFound();
+    throw err;
+  }
+}
+
+/** The version's text in the page's language, its placeholders filled from its own seller. */
+export function legalSource(
+  version: PublishedLegalVersion,
+  locale: string,
+): { text: string; czechOnly: boolean } {
+  const english = locale === "en" ? version.body_en : null;
+  return {
+    text: fillLegalText(
+      english ?? version.body_cs,
+      version.seller,
+      version.effectiveFrom,
+    ),
+    czechOnly: locale === "en" && english === null,
+  };
+}
+
+/** "2. 11. 2026", as the pages name a version's date. */
+export const versionDate = (summary: LegalVersionSummary) =>
+  formatCzechDate(summary.effectiveFrom);

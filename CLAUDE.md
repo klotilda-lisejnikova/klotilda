@@ -103,15 +103,15 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
 - The seller (`Seller`, `/api/seller`): one row (name, IČO, address, e-mail, phone, registration,
   `complete`), anyone reads it, the signed-in admin PATCHes it (`signedInEditingOnly`); seeded
   with placeholders by the `2026-11-01-seller` migration. The e-mails' footer names it
-  (`resolveSellerLine`, the domain's `SELLER` when the row is missing); the website still shows
-  the domain's `SELLER` until it reads the row.
+  (`resolveSellerLine`, the domain's `SELLER` when the row is missing), and so does the website's;
+  a legal version published while `complete` was off says it is a draft.
 - Legal texts (`LegalDocumentVersion`, `/api/legal-documents`, `src/legal/`): versions of the terms,
   the privacy policy and the withdrawal form (`LEGAL_DOCUMENTS`), Czech and optional English text
   in the legal Markdown subset with `LEGAL_PLACEHOLDERS`. Auto CRUD only lists them, signed in; a
   draft is started, saved, deleted and published through `…/:document/draft` (each under the
   document's advisory lock, one draft per document), and publishing — refused while
   `legalTextProblems` finds an unknown placeholder or a missing anchor other pages link to —
-  freezes it as the current version, named by Prague's date (`pragueDate`, `.2` for a second one
+  freezes it as the current version, named by Prague's date (`pragueDate`, `-2` for a second one
   that day, never before an earlier one) with a snapshot of the seller's details. Anyone reads
   `…/:document/current`, `…/versions` and `…/versions/:version`. The
   `2026-11-01-legal-documents` migration published version `2026-11-02` of each with the texts
@@ -146,7 +146,8 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
 ## Website
 
 `apps/web/src/services/index.ts` wraps the domain clients: `listProducts`, `getProduct`,
-`listGallery`, `listShippingMethods`, `listPaymentMethods`, `checkout`. The checkout reads the
+`listGallery`, `listShippingMethods`, `listPaymentMethods`, `getSeller`, `getLegalVersion`,
+`listLegalVersions`, `checkout`. The checkout reads the
 shipping and payment methods live and offers only the payment methods that fit the chosen shipping;
 the terms name no prices of either (the checkout shows them, the order states the ones agreed).
 Photos go through `mediaUrl()` (relative `/api/files/:id` without a bucket).
@@ -157,14 +158,17 @@ security headers of every page.
 
 Legal pages — `/obchodni-podminky` (terms, complaints under `#reklamace`), `/ochrana-osobnich-udaju`,
 `/odstoupeni-od-smlouvy` (the model withdrawal form, printable) — same path in both languages,
-gated with the shop in `src/middleware.ts`; the footer links them and names the seller. The texts
-are drafts in `src/content/legal/*.ts` (a small Markdown subset parsed by the domain's
-`parseLegalText`, rendered by `components/legal/LegalDocument`),
-`{{…}}` filled from `packages/domain/src/seller.ts`: the seller's details (**placeholders** —
-`SELLER.placeholder` shows a draft notice), `TERMS_EFFECTIVE_FROM`, `LEGAL_PATHS` — until it reads
-the versions the API serves (see _Backend_). The checkout requires the terms box
-(`termsAccepted: true`, else 400) and each order stores the API's current `termsVersion` +
-`termsAcceptedAt`; changing what customers agree to means publishing a new version.
+gated with the shop in `src/middleware.ts`; the footer links them and names the seller (the
+`Seller` row, read by `getSeller`). Each page shows the API's version in force
+(`components/legal/LegalPage`, `lib/legal.ts`: the domain's `parseLegalText`, rendered by
+`components/legal/LegalDocument`, `{{…}}` filled from the version's own seller snapshot) and links
+the earlier ones; each version has its own page, `/obchodni-podminky/<version>`, built on its
+first visit. A version published before the seller's details were marked complete says it is a
+draft. The
+checkout requires the terms box (`termsAccepted: true`, else 400), links the exact version in force
+and sends it as `termsVersion`; a 412 (`TERMS_CHANGED`) unticks the box and links the new one.
+Each order stores the version and `termsAcceptedAt`, and the confirmation links that version's
+page. Changing what customers agree to means publishing a new version.
 
 ## Admin
 

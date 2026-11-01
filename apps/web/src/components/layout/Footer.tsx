@@ -1,13 +1,27 @@
-import { useTranslations } from "next-intl";
-import { COMPLAINTS_ANCHOR, LEGAL_PATHS, SELLER_LINE } from "@klotilda/domain";
+import { getTranslations } from "next-intl/server";
+import {
+  COMPLAINTS_ANCHOR,
+  LEGAL_PATHS,
+  SELLER,
+  sellerLine,
+} from "@klotilda/domain";
 import { Link } from "@/i18n/navigation";
 import { SHOP_ENABLED } from "@/lib/features";
+import { loadStaticData } from "@/lib/static-data";
 import { APP_VERSION } from "@/lib/version";
+import { getSeller } from "@/services";
 
-export default function Footer() {
-  const t = useTranslations("footer");
-  const tNav = useTranslations("nav");
-  const tLegal = useTranslations("legal");
+/** Who sells, as the footer names them: the admin's details, the domain's while there are none. */
+async function loadSellerLine(): Promise<string> {
+  const seller = await loadStaticData("Footer", getSeller, undefined);
+  return sellerLine(seller ?? SELLER);
+}
+
+export default async function Footer() {
+  const t = await getTranslations("footer");
+  const tNav = await getTranslations("nav");
+  const tLegal = await getTranslations("legal");
+  const seller = SHOP_ENABLED ? await loadSellerLine() : null;
 
   const links = [
     { href: "/#about", label: tNav("about") },
@@ -47,7 +61,7 @@ export default function Footer() {
         </div>
 
         {/* The shop's legal pages and who sells (§ 435 of the Civil Code). */}
-        {SHOP_ENABLED && (
+        {seller !== null && (
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-stone-100 pt-3 text-xs text-stone-500">
             <nav
               className="flex flex-wrap gap-x-5 gap-y-1"
@@ -64,7 +78,7 @@ export default function Footer() {
               ))}
             </nav>
             <p className="text-stone-400">
-              {t("seller")}: {SELLER_LINE}
+              {t("seller")}: {seller}
             </p>
           </div>
         )}
