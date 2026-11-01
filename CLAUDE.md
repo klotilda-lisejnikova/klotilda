@@ -235,6 +235,7 @@ pnpm dev                  # API :3001, web :3002, admin :5175
 pnpm lint / typecheck / test / build
 pnpm --filter @klotilda/api seed:admin               # create an admin / new password (asks for it)
 pnpm --filter @klotilda/api seed:admin -- --list     # or --remove <e-mail>; only the admin table, no migrations
+pnpm --filter @klotilda/api seed:reviews            # made-up reviews on made-up delivered orders (test DB); -- --remove
 pnpm release patch|minor|major   # bump the version, commit, tag vX.Y.Z; then git push --follow-tags
 ```
 
