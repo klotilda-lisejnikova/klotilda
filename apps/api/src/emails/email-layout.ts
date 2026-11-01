@@ -13,6 +13,8 @@ export type EmailBlock =
       kind: 'items';
       items: { name: string; quantity: number; price: number }[];
       shipping: { label: string; price: number };
+      /** The payment method's fee, when it has one. */
+      payment?: { label: string; price: number };
       total: number;
     }
   /** The admin's own words to the customer, set apart. */
@@ -75,6 +77,8 @@ function blockHtml(block: EmailBlock, siteUrl: string): string {
         .join('')}</table>`;
     case 'items': {
       const cell = `padding:8px 0;border-bottom:1px solid ${COLORS.line}`;
+      const extraRow = (label: string, price: number) =>
+        `<tr><td style="${cell};color:${COLORS.muted}">${escapeHtml(label)}</td><td style="${cell};text-align:right;color:${COLORS.muted}">${formatCzk(price)}</td></tr>`;
       const rows = block.items
         .map(
           (item) =>
@@ -82,7 +86,8 @@ function blockHtml(block: EmailBlock, siteUrl: string): string {
         )
         .join('');
       return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 20px;font-size:14px">${rows}
-        <tr><td style="${cell};color:${COLORS.muted}">Doprava — ${escapeHtml(block.shipping.label)}</td><td style="${cell};text-align:right;color:${COLORS.muted}">${formatCzk(block.shipping.price)}</td></tr>
+        ${extraRow(`Doprava — ${block.shipping.label}`, block.shipping.price)}
+        ${block.payment ? extraRow(`Platba — ${block.payment.label}`, block.payment.price) : ''}
         <tr><td style="padding:10px 0;font-weight:bold">Celkem</td><td style="padding:10px 0;text-align:right;font-weight:bold">${formatCzk(block.total)}</td></tr>
       </table>`;
     }
@@ -108,6 +113,9 @@ function blockText(block: EmailBlock, siteUrl: string): string {
             `${item.name}${item.quantity > 1 ? ` × ${item.quantity}` : ''} — ${formatCzk(item.price * item.quantity)}`
         ),
         `Doprava — ${block.shipping.label}: ${formatCzk(block.shipping.price)}`,
+        ...(block.payment
+          ? [`Platba — ${block.payment.label}: ${formatCzk(block.payment.price)}`]
+          : []),
         `Celkem: ${formatCzk(block.total)}`,
       ].join('\n');
     case 'note':

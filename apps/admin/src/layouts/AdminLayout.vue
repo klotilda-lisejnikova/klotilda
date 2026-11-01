@@ -32,6 +32,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: { name: 'categories' }, label: 'Kategorie', icon: 'i-lucide-tags' },
   { to: { name: 'gallery' }, label: 'Galerie', icon: 'i-lucide-images' },
   { to: { name: 'shipping-methods' }, label: 'Doprava', icon: 'i-lucide-truck', settings: true },
+  { to: { name: 'payment-methods' }, label: 'Platby', icon: 'i-lucide-wallet', settings: true },
 ];
 const BOTTOM_BAR_ITEMS = NAV_ITEMS.filter((item) => !item.settings);
 

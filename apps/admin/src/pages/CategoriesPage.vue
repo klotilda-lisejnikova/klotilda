@@ -12,8 +12,7 @@ import { CATEGORIES_QUERY_KEY, useCategories } from '@/app/categories';
 import { describeError } from '@/app/errors';
 import { emptyToNull } from '@/app/form-values';
 import { plural } from '@/app/format';
-import { focusMoveButton, moveButtonKey, moveItem, useDragReorder } from '@/app/reorder';
-import type { MoveDirection } from '@/app/reorder';
+import { moveButtonKey, useDragReorder, useListReorder } from '@/app/reorder';
 import { formSchema, VALIDATE_ON } from '@/app/validation';
 
 interface CategoryForm {
@@ -129,43 +128,13 @@ const save = useMutation({
 });
 
 // ── Order and deleting ──────────────────────────────────────────────
-interface Reorder {
-  ordered: Category[];
-  /** An arrow's move: its button gets the focus back. */
-  arrow?: { id: string; direction: MoveDirection };
-}
-
-/**
- * The new order, saved at once (`reorder`): the list shows it before the answer and goes back to
- * the saved one if the save fails.
- */
-const reorder = useMutation({
-  mutationFn: ({ ordered }: Reorder) =>
-    services.categories.reorder(ordered.map((category) => category.id)),
-  onMutate: async ({ ordered, arrow }) => {
-    await queryClient.cancelQueries({ queryKey: CATEGORIES_QUERY_KEY });
-    const previous = queryClient.getQueryData<Category[]>(CATEGORIES_QUERY_KEY);
-    queryClient.setQueryData<Category[]>(CATEGORIES_QUERY_KEY, ordered);
-    if (arrow) void focusMoveButton(arrow.id, arrow.direction);
-    return { previous };
-  },
-  onError: (err, _reorder, context) => {
-    queryClient.setQueryData(CATEGORIES_QUERY_KEY, context?.previous);
-    toast.add({ title: describeError(err), color: 'error' });
-  },
+const { move, moveByArrow } = useListReorder({
+  queryKey: CATEGORIES_QUERY_KEY,
+  items: () => categories.value,
+  save: (ids) => services.categories.reorder(ids),
+  onError: (err) => toast.add({ title: describeError(err), color: 'error' }),
   onSettled: () => refresh({ usage: false }),
 });
-
-function move(from: number, to: number, arrow?: Reorder['arrow']) {
-  if (reorder.isPending.value) return;
-  reorder.mutate({ ordered: moveItem(categories.value, from, to), arrow });
-}
-
-function moveByArrow(index: number, direction: MoveDirection) {
-  const category = categories.value[index];
-  if (!category) return;
-  move(index, direction === 'back' ? index - 1 : index + 1, { id: category.id, direction });
-}
 
 const drag = useDragReorder<'categories'>((_group, from, to) => move(from, to));
 

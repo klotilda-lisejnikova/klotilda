@@ -1,18 +1,10 @@
-import { HttpError, ValidationError } from '@eleansphere/be-core';
-import type { CrudHook, Sequelize } from '@eleansphere/be-core';
-import { shippingMethodEntity, toShippingCode } from '@klotilda/domain';
+import { HttpError } from '@eleansphere/be-core';
+import type { Sequelize } from '@eleansphere/be-core';
+import { shippingMethodEntity } from '@klotilda/domain';
 import type { ShippingKind } from '@klotilda/domain';
 import type { ModelRegistry } from '../models-registry';
 
 const BAD_REQUEST = 400;
-
-/** `routes.ShippingMethod.hooks`: the code is stored normalized; one with nothing left is refused. */
-export const normalizeShippingCode: CrudHook = async (data) => {
-  if (data.code === undefined) return data;
-  const code = toShippingCode(String(data.code));
-  if (!code) throw new ValidationError([{ path: 'code', code: 'format' }]);
-  return { ...data, code };
-};
 
 /** What the checkout charges and the order keeps of the method. */
 export interface ChosenShipping {

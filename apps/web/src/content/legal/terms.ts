@@ -38,15 +38,18 @@ Prodávající může objednávku zrušit, pokud ji kupující nezaplatí ve lh�
 
 ## 4. Cena a platba
 
-Ceny v e-shopu jsou konečné. Prodávající není plátcem DPH. Cena dopravy se připočítává podle zvoleného způsobu. Nabízené způsoby dopravy a jejich ceny jsou uvedeny v pokladně; platí cena dopravy uvedená v objednávce.
+Ceny v e-shopu jsou konečné. Prodávající není plátcem DPH. Cena dopravy se připočítává podle zvoleného způsobu, stejně jako případný poplatek za zvolený způsob platby. Nabízené způsoby dopravy a platby a jejich ceny jsou uvedeny v pokladně; platí ceny uvedené v objednávce.
 
-Kupující platí bankovním převodem na účet prodávající, s variabilním symbolem objednávky; číslo účtu, částku a QR kód pro platbu dostane po odeslání objednávky na obrazovce i e-mailem. Cena je splatná do 7 dnů od uzavření smlouvy. Nezaplacenou objednávku může prodávající po uplynutí této lhůty zrušit a zboží vrátit do nabídky.
+Kupující platí způsobem, který zvolí v pokladně:
+
+- **bankovním převodem** na účet prodávající, s variabilním symbolem objednávky; číslo účtu, částku a QR kód pro platbu dostane po odeslání objednávky na obrazovce i e-mailem. Cena je splatná do 7 dnů od uzavření smlouvy. Nezaplacenou objednávku může prodávající po uplynutí této lhůty zrušit a zboží vrátit do nabídky;
+- **v hotovosti při převzetí**, jen při osobním odběru; cena je splatná při převzetí zboží.
 
 Doklad o zakoupení vystaví prodávající po zaplacení a pošle jej kupujícímu e-mailem.
 
 ## 5. Dodání
 
-Zboží prodávající odešle zpravidla do 5 pracovních dnů od připsání platby na účet. O odeslání informuje kupujícího e-mailem, u Zásilkovny a České pošty s číslem zásilky pro sledování.
+Zboží placené převodem prodávající odešle zpravidla do 5 pracovních dnů od připsání platby na účet. O odeslání informuje kupujícího e-mailem, u Zásilkovny a České pošty s číslem zásilky pro sledování.
 
 Při osobním odběru se prodávající s kupujícím domluví na místě a čase převzetí v Praze e-mailem.
 
@@ -58,7 +61,7 @@ Spotřebitel může od smlouvy odstoupit bez udání důvodu do **14 dnů** od p
 
 Zboží kupující vrátí do 14 dnů od odstoupení na adresu, kterou mu prodávající sdělí. Zboží má být nepoškozené, nepoužívané a pokud možno v původním obalu. **Náklady na vrácení zboží nese kupující.** Za snížení hodnoty zboží v důsledku nakládání s ním jinak, než je nutné k seznámení se s ním, odpovídá kupující.
 
-Prodávající vrátí kupujícímu do 14 dnů od odstoupení všechny přijaté peníze, včetně ceny nejlevnějšího nabízeného způsobu dopravy, stejným způsobem, jakým je přijal (převodem na účet). Peníze nemusí vrátit dříve, než zboží obdrží nebo než kupující prokáže, že je odeslal.
+Prodávající vrátí kupujícímu do 14 dnů od odstoupení všechny přijaté peníze, včetně ceny nejlevnějšího nabízeného způsobu dopravy, stejným způsobem, jakým je přijal (převodem na účet; platbu v hotovosti hotově, nebo převodem na účet, pokud s tím kupující souhlasí). Peníze nemusí vrátit dříve, než zboží obdrží nebo než kupující prokáže, že je odeslal.
 
 Od smlouvy nelze odstoupit u zboží vyrobeného podle přání kupujícího nebo přizpůsobeného jeho osobním potřebám (§ 1837 písm. d) občanského zákoníku), pokud byla taková zakázka výslovně sjednána.
 
@@ -130,15 +133,18 @@ The seller may cancel an order that is not paid within the period in article 4, 
 
 ## 4. Price and payment
 
-Prices in the shop are final. The seller is not a VAT payer. Shipping is added according to the chosen method. The shipping options and their prices are shown at checkout; the shipping price stated in the order applies.
+Prices in the shop are final. The seller is not a VAT payer. Shipping is added according to the chosen method, as is any fee for the chosen payment method. The shipping and payment options and their prices are shown at checkout; the prices stated in the order apply.
 
-The buyer pays by bank transfer to the seller's account, with the order's variable symbol; the account number, the amount and a QR payment code are shown after the order is sent and e-mailed to the buyer. The price is due within 7 days of the contract. After that the seller may cancel an unpaid order and offer the goods again.
+The buyer pays the way they choose at checkout:
+
+- **by bank transfer** to the seller's account, with the order's variable symbol; the account number, the amount and a QR payment code are shown after the order is sent and e-mailed to the buyer. The price is due within 7 days of the contract. After that the seller may cancel an unpaid order and offer the goods again;
+- **in cash on pickup**, with personal pickup only; the price is due when the goods are handed over.
 
 The seller issues a receipt once the order is paid and e-mails it to the buyer.
 
 ## 5. Delivery
 
-The seller usually ships within 5 working days of the payment arriving, and e-mails the buyer when the parcel is on its way — for Packeta and Czech Post with a tracking number.
+The seller usually ships an order paid by transfer within 5 working days of the payment arriving, and e-mails the buyer when the parcel is on its way — for Packeta and Czech Post with a tracking number.
 
 For a pickup, the seller and the buyer agree on the place and time in Prague by e-mail.
 
@@ -150,7 +156,7 @@ A consumer may withdraw from the contract without giving a reason within **14 da
 
 The buyer returns the goods within 14 days of withdrawing, to the address the seller gives. The goods should be undamaged, unused and ideally in their original packaging. **The buyer bears the cost of returning the goods.** The buyer is liable for any loss of value caused by handling the goods beyond what is needed to examine them.
 
-The seller refunds everything received, including the cheapest shipping offered, within 14 days of the withdrawal, the same way it was paid (bank transfer). The seller need not refund before receiving the goods or proof that they were sent.
+The seller refunds everything received, including the cheapest shipping offered, within 14 days of the withdrawal, the same way it was paid (by bank transfer; a cash payment in cash, or by bank transfer if the buyer agrees). The seller need not refund before receiving the goods or proof that they were sent.
 
 There is no right of withdrawal for goods made to the buyer's specification or clearly personalised (Section 1837(d) of the Civil Code), where such a commission was expressly agreed.
 

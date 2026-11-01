@@ -2,6 +2,7 @@ import type {
   OrderAction,
   OrderEvent,
   OrderStatus,
+  PaymentKind,
   PaymentStatus,
   ShippingKind,
 } from '@klotilda/domain';
@@ -12,6 +13,11 @@ type BadgeColor = NonNullable<BadgeProps['color']>;
 export const SHIPPING_KIND_LABELS: Record<ShippingKind, string> = {
   delivery: 'Doručení dopravcem',
   pickup: 'Osobní odběr',
+};
+
+export const PAYMENT_KIND_LABELS: Record<PaymentKind, string> = {
+  bank_transfer: 'Bankovní převod předem',
+  cash: 'Hotově při osobním odběru',
 };
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {

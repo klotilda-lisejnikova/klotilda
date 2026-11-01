@@ -1,5 +1,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { ShippingMethod } from "@/services";
+import MethodOption from "./MethodOption";
+import { methodText } from "./method-text";
 import { CheckoutData } from "./types";
 
 interface Props {
@@ -11,15 +13,6 @@ interface Props {
   onChange: (data: Partial<CheckoutData>) => void;
   onNext: () => void;
   onBack: () => void;
-}
-
-/** A method's name and description in the page's language, Czech where English is missing. */
-function shippingText(method: ShippingMethod, locale: string) {
-  const english = locale === "en";
-  return {
-    name: (english && method.name_en) || method.name_cs,
-    description: (english && method.description_en) || method.description_cs,
-  };
 }
 
 export default function Step2Shipping({
@@ -38,8 +31,9 @@ export default function Step2Shipping({
   const select = (method: ShippingMethod) =>
     onChange({
       shippingMethod: method.code,
-      shippingName: shippingText(method, locale).name,
+      shippingName: methodText(method, locale).name,
       shippingPrice: method.price,
+      shippingKind: method.kind,
     });
 
   return (
@@ -65,44 +59,19 @@ export default function Step2Shipping({
         </p>
       )}
       <div className="flex flex-col gap-3">
-        {offered.map((method) => {
-          const { name, description } = shippingText(method, locale);
-          const active = data.shippingMethod === method.code;
-          return (
-            <button
-              key={method.code}
-              type="button"
-              onClick={() => select(method)}
-              aria-pressed={active}
-              className={`flex items-center justify-between gap-4 border px-4 py-3 text-left transition-colors ${
-                active
-                  ? "border-moss bg-moss/5"
-                  : "border-stone-200 hover:border-stone-400"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`h-4 w-4 shrink-0 rounded-full border-2 ${
-                    active ? "border-moss bg-moss" : "border-stone-300"
-                  }`}
-                />
-                <span className="flex flex-col">
-                  <span className="text-sm text-stone-800">{name}</span>
-                  {description && (
-                    <span className="mt-0.5 text-xs text-stone-500">
-                      {description}
-                    </span>
-                  )}
-                </span>
-              </div>
-              <span className="shrink-0 text-sm text-stone-600">
-                {method.price === 0
-                  ? t("shipping.free")
-                  : `${method.price.toLocaleString("cs-CZ")} ${t("currency")}`}
-              </span>
-            </button>
-          );
-        })}
+        {offered.map((method) => (
+          <MethodOption
+            key={method.code}
+            {...methodText(method, locale)}
+            price={
+              method.price === 0
+                ? t("shipping.free")
+                : `${method.price.toLocaleString("cs-CZ")} ${t("currency")}`
+            }
+            selected={data.shippingMethod === method.code}
+            onSelect={() => select(method)}
+          />
+        ))}
       </div>
 
       <div className="flex gap-3">

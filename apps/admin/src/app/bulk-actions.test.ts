@@ -3,8 +3,8 @@ import type { Order } from '@klotilda/domain';
 import { ApiError } from '@eleansphere/entity-core';
 import { actOnOrders, BULK_ACTIONS, commonBulkActions } from './bulk-actions';
 
-const order = (state: Pick<Order, 'paymentStatus' | 'orderStatus' | 'shippingKind'>) =>
-  state as Order;
+const order = (state: Pick<Order, 'paymentStatus' | 'orderStatus' | 'shippingKind'>): Order =>
+  ({ paymentKind: 'bank_transfer', ...state }) as Order;
 
 describe('Bulk order actions', () => {
   it('offer what every selected order allows, never cancelling or refunding', () => {

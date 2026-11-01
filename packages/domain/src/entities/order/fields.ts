@@ -3,10 +3,11 @@ import {
   DEFAULT_ORDER_STATUS,
   DEFAULT_PAYMENT_STATUS,
   ORDER_STATUSES,
+  PAYMENT_KINDS,
   PAYMENT_STATUSES,
   SHIPPING_KINDS,
 } from '../../constants';
-import { SHIPPING_CODE_MAX_LENGTH } from '../shipping-method/fields';
+import { CODE_MAX_LENGTH } from '../../codes';
 
 const NAME_MAX_LENGTH = 100;
 const EMAIL_MAX_LENGTH = 254;
@@ -29,7 +30,9 @@ export const customerFields = {
   city: { type: 'STRING', required: true, maxLength: CITY_MAX_LENGTH },
   zip: { type: 'STRING', required: true, maxLength: ZIP_MAX_LENGTH },
   /** A `ShippingMethod`'s code; the checkout refuses one that isn't offered. */
-  shippingMethod: { type: 'STRING', required: true, maxLength: SHIPPING_CODE_MAX_LENGTH },
+  shippingMethod: { type: 'STRING', required: true, maxLength: CODE_MAX_LENGTH },
+  /** A `PaymentMethod`'s code; the checkout refuses one that isn't offered or doesn't fit. */
+  paymentMethod: { type: 'STRING', required: true, maxLength: CODE_MAX_LENGTH },
   notes: { type: 'TEXT', maxLength: NOTES_MAX_LENGTH },
 } as const satisfies Fields;
 
@@ -51,6 +54,10 @@ export const orderFields = {
   shippingName: { type: 'STRING', required: true, readOnly: true },
   shippingKind: { type: 'ENUM', values: SHIPPING_KINDS, required: true, readOnly: true },
   shippingPrice: { type: 'FLOAT', default: 0, readOnly: true },
+  /** The payment method's name, kind and fee when ordered, the same way. */
+  paymentName: { type: 'STRING', required: true, readOnly: true },
+  paymentKind: { type: 'ENUM', values: PAYMENT_KINDS, required: true, readOnly: true },
+  paymentFee: { type: 'FLOAT', default: 0, readOnly: true },
   /**
    * The ordered `OrderItem[]` as JSON: name and price as they were when ordered, so an order
    * doesn't change when its product does.
@@ -59,7 +66,7 @@ export const orderFields = {
   totalAmount: { type: 'FLOAT', required: true, readOnly: true },
   /**
    * Numeric, for the bank transfer: incoming payments are matched to orders by it (order ids
-   * aren't numeric).
+   * aren't numeric). Every order has one; customers know their order by it.
    */
   variableSymbol: { type: 'STRING', required: true, readOnly: true },
   paymentStatus: { type: 'ENUM', values: PAYMENT_STATUSES, default: DEFAULT_PAYMENT_STATUS },

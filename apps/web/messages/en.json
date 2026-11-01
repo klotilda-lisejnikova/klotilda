@@ -19,12 +19,15 @@
   "checkoutResult": {
     "successTitle": "Order received",
     "successBody": "Your order has been received and the stock reserved. Please complete payment by scanning the QR code below — a confirmation with the payment details was also sent to your email.",
+    "successBodyCash": "Your order has been received and the stock reserved. You pay in cash when you pick it up; once it is ready, we'll let you know where and when. A confirmation was also sent to your email.",
     "backHome": "Back to home",
     "qrAlt": "Payment QR code",
     "qrHint": "Scan with your mobile banking app",
     "account": "Account number",
     "variableSymbol": "Variable symbol",
-    "amount": "Amount"
+    "orderNumber": "Order number",
+    "amount": "Amount",
+    "amountAtPickup": "To pay at pickup"
   },
   "checkout": {
     "steps": {
@@ -50,12 +53,15 @@
       "none": "No shipping option is available right now. Please try again later."
     },
     "payment": {
-      "qr": "QR code payment",
-      "qrDesc": "After placing your order, scan the QR code in your mobile banking app, or enter the transfer manually using the details shown."
+      "loading": "Loading payment methods…",
+      "unavailable": "The payment methods could not be loaded. Please try again in a moment.",
+      "gone": "The chosen payment method is no longer offered or doesn't go with the chosen shipping. Please choose another.",
+      "none": "No payment method can be chosen for this shipping right now. Please try another shipping method."
     },
     "summary": {
       "items": "Items",
       "shipping": "Shipping",
+      "payment": "Payment",
       "total": "Total",
       "notes": "Order note (optional)",
       "confirm": "Order with obligation to pay",

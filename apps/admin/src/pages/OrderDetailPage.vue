@@ -187,6 +187,10 @@ async function copy(text: string, what: string) {
             <span class="mr-auto">Doprava — {{ order.shippingName }}</span>
             <span class="w-24 text-right tabular-nums">{{ formatCzk(order.shippingPrice) }}</span>
           </li>
+          <li v-if="order.paymentFee" class="flex gap-3 py-2 text-muted">
+            <span class="mr-auto">Platba — {{ order.paymentName }}</span>
+            <span class="w-24 text-right tabular-nums">{{ formatCzk(order.paymentFee) }}</span>
+          </li>
           <li class="flex gap-3 pt-2 font-semibold">
             <span class="mr-auto">Celkem</span>
             <span class="w-24 text-right tabular-nums">{{ formatCzk(order.totalAmount) }}</span>
@@ -260,6 +264,14 @@ async function copy(text: string, what: string) {
       <UCard>
         <template #header><h2 class="font-semibold">Platba</h2></template>
         <dl class="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-2 text-sm">
+          <dt class="text-muted">Způsob</dt>
+          <dd class="font-medium text-highlighted">
+            {{ order.paymentName }}
+            <span v-if="order.paymentKind === 'cash'" class="block text-xs font-normal text-muted">
+              Zaplatí při převzetí
+            </span>
+          </dd>
+          <span />
           <dt class="text-muted">Variabilní symbol</dt>
           <dd class="font-medium text-highlighted tabular-nums">{{ order.variableSymbol }}</dd>
           <UButton

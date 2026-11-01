@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { OrderStatus, PaymentStatus } from '@klotilda/domain';
+import type { OrderStatus, PaymentKind, PaymentStatus } from '@klotilda/domain';
 import { isPaymentOverdue, ORDER_STAGES, overdueCutoff } from './order-stages';
 
 const NOW = new Date('2026-10-31T12:00:00Z');
@@ -8,8 +8,9 @@ const AWAITING = ORDER_STAGES.find((stage) => stage.value === 'awaiting-payment'
 const order = (
   paymentStatus: PaymentStatus,
   orderStatus: OrderStatus,
-  createdAt = overdueCutoff().toISOString()
-) => ({ paymentStatus, orderStatus, createdAt });
+  createdAt = overdueCutoff().toISOString(),
+  paymentKind: PaymentKind = 'bank_transfer'
+) => ({ paymentStatus, orderStatus, createdAt, paymentKind });
 
 describe('isPaymentOverdue', () => {
   beforeEach(() => {
@@ -30,5 +31,10 @@ describe('isPaymentOverdue', () => {
     }
     const justAfter = new Date(cutoff + 1).toISOString();
     expect(isPaymentOverdue(order('pending', 'new', justAfter))).toBe(false);
+  });
+
+  it('never flags a cash order, paid only at the pickup', () => {
+    expect(AWAITING.filter.paymentKind).not.toContain('cash');
+    expect(isPaymentOverdue(order('pending', 'new', undefined, 'cash'))).toBe(false);
   });
 });

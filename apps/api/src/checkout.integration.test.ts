@@ -11,6 +11,7 @@ const CUSTOMER = {
   city: 'Praha',
   zip: '11000',
   shippingMethod: 'zasilkovna',
+  paymentMethod: 'prevod',
   termsAccepted: true,
 };
 const ZASILKOVNA_PRICE = 99;

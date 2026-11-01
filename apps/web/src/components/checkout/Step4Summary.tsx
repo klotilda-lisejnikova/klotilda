@@ -30,7 +30,7 @@ export default function Step4Summary({
 }: Props) {
   const t = useTranslations("checkout");
   const tCart = useTranslations("cart");
-  const total = cartTotal(items) + data.shippingPrice;
+  const total = cartTotal(items) + data.shippingPrice + data.paymentFee;
   const blocked = items.some(isBlocked);
   const termsBox = useRef<HTMLInputElement>(null);
   const [termsMissing, setTermsMissing] = useState(false);
@@ -81,6 +81,16 @@ export default function Step4Summary({
               ? t("shipping.free")
               : `${data.shippingPrice} ${t("currency")}`}
           </span>
+        </div>
+        <div className="flex justify-between text-sm text-stone-500">
+          <span>
+            {t("summary.payment")} — {data.paymentName}
+          </span>
+          {data.paymentFee > 0 && (
+            <span>
+              {data.paymentFee} {t("currency")}
+            </span>
+          )}
         </div>
         <div className="flex justify-between text-base font-medium text-stone-800">
           <span>{t("summary.total")}</span>

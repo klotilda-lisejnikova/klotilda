@@ -8,6 +8,8 @@ import {
   GALLERY_ROWS,
   galleryItemEntity,
   IMAGE_ROLE,
+  PAYMENT_METHODS_ORDER_ROUTE,
+  paymentMethodEntity,
   PRODUCT_IMAGE_ORDER_ROUTE,
   productEntity,
   SHIPPING_METHODS_ORDER_ROUTE,
@@ -78,7 +80,8 @@ async function saveOrder(sequelize: Sequelize, list: OrderedList, ids: string[])
  *   main one);
  * - `PUT /api/gallery/rows/:row/order` — the pictures of one gallery row (`GalleryItem.sortOrder`);
  * - `PUT /api/categories/all/order` — every category (`Category.sortOrder`, the shop's filters);
- * - `PUT /api/shipping-methods/all/order` — every shipping method (the checkout's choices).
+ * - `PUT /api/shipping-methods/all/order` — every shipping method (the checkout's choices);
+ * - `PUT /api/payment-methods/all/order` — every payment method (the same).
  */
 export function createReorderPlugin({ registry, jwtSecret }: ReorderPluginOptions): ProjectPlugin {
   return {
@@ -129,40 +132,36 @@ export function createReorderPlugin({ registry, jwtSecret }: ReorderPluginOption
         })
       );
 
-      app.put(
-        CATEGORIES_ORDER_ROUTE,
-        createVerifyToken(jwtSecret),
-        asyncHandler(async (req, res) => {
-          const ids = readReorderRequest(req.body);
-          await saveOrder(
-            sequelize,
-            {
-              model: registry.get(categoryEntity.config.name),
-              where: {},
-              conflict: 'Kategorie se mezitím změnily. Zkuste to prosím znovu.',
-            },
-            ids
-          );
-          res.status(NO_CONTENT).end();
-        })
-      );
+      /** A list ordered whole (`where: {}`): every row of the model, in the order of `{ ids }`. */
+      const putWholeListOrder = (route: string, modelName: string, conflict: string) =>
+        app.put(
+          route,
+          createVerifyToken(jwtSecret),
+          asyncHandler(async (req, res) => {
+            const ids = readReorderRequest(req.body);
+            await saveOrder(
+              sequelize,
+              { model: registry.get(modelName), where: {}, conflict },
+              ids
+            );
+            res.status(NO_CONTENT).end();
+          })
+        );
 
-      app.put(
+      putWholeListOrder(
+        CATEGORIES_ORDER_ROUTE,
+        categoryEntity.config.name,
+        'Kategorie se mezitím změnily. Zkuste to prosím znovu.'
+      );
+      putWholeListOrder(
         SHIPPING_METHODS_ORDER_ROUTE,
-        createVerifyToken(jwtSecret),
-        asyncHandler(async (req, res) => {
-          const ids = readReorderRequest(req.body);
-          await saveOrder(
-            sequelize,
-            {
-              model: registry.get(shippingMethodEntity.config.name),
-              where: {},
-              conflict: 'Způsoby dopravy se mezitím změnily. Zkuste to prosím znovu.',
-            },
-            ids
-          );
-          res.status(NO_CONTENT).end();
-        })
+        shippingMethodEntity.config.name,
+        'Způsoby dopravy se mezitím změnily. Zkuste to prosím znovu.'
+      );
+      putWholeListOrder(
+        PAYMENT_METHODS_ORDER_ROUTE,
+        paymentMethodEntity.config.name,
+        'Způsoby platby se mezitím změnily. Zkuste to prosím znovu.'
       );
     },
   };

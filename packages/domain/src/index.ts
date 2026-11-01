@@ -2,9 +2,11 @@ import { adminUserEntity } from './entities/admin-user';
 import { categoryEntity } from './entities/category';
 import { galleryItemEntity } from './entities/gallery-item';
 import { orderEntity } from './entities/order';
+import { paymentMethodEntity } from './entities/payment-method';
 import { productEntity } from './entities/product';
 import { shippingMethodEntity } from './entities/shipping-method';
 
+export * from './codes';
 export * from './constants';
 export * from './ordering';
 export * from './seller';
@@ -65,16 +67,20 @@ export {
   SHIPPING_METHODS_ORDER_ROUTE,
   SHIPPING_METHODS_PATH,
   shippingMethodEntity,
-  toShippingCode,
   TRACKING_NUMBER_PLACEHOLDER,
   trackingUrlFor,
   type ShippingMethod,
 } from './entities/shipping-method';
+export { shippingMethodFields, TRACKING_URL_MAX_LENGTH } from './entities/shipping-method/fields';
 export {
-  SHIPPING_CODE_MAX_LENGTH,
-  shippingMethodFields,
-  TRACKING_URL_MAX_LENGTH,
-} from './entities/shipping-method/fields';
+  PAYMENT_METHOD_ORDER,
+  PAYMENT_METHODS_ORDER_ROUTE,
+  PAYMENT_METHODS_PATH,
+  paymentFitsShipping,
+  paymentMethodEntity,
+  type PaymentMethod,
+} from './entities/payment-method';
+export { paymentMethodFields } from './entities/payment-method/fields';
 export { customerFields, orderActionFields, orderFields } from './entities/order/fields';
 export { createServices, KlotildaAuthService, type Services } from './services';
 
@@ -86,6 +92,7 @@ export const allEntities = {
   galleryItem: galleryItemEntity,
   order: orderEntity,
   shippingMethod: shippingMethodEntity,
+  paymentMethod: paymentMethodEntity,
 };
 
 /** Accounts are made by the seed script and signed in to through `/api/auth` only. */

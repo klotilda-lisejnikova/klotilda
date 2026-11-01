@@ -9,7 +9,10 @@ export type {
   CheckoutResponse,
   GalleryRow,
   OrderStatus,
+  PaymentKind,
+  PaymentMethod,
   PaymentStatus,
+  ShippingKind,
   ShippingMethod,
 } from "@klotilda/domain";
 

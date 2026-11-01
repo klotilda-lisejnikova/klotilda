@@ -1,6 +1,6 @@
 import { defineEntity } from '@eleansphere/entity-core';
 import type { ReorderRequest } from '../../ordering';
-import { SHIPPING_CODE_MAX_LENGTH, shippingMethodFields } from './fields';
+import { shippingMethodFields } from './fields';
 
 export const SHIPPING_METHODS_PATH = '/api/shipping-methods';
 export const SHIPPING_METHOD_ORDER = 'sortOrder,name_cs';
@@ -49,19 +49,4 @@ export function trackingUrlFor(
   return template
     .trim()
     .replaceAll(TRACKING_NUMBER_PLACEHOLDER, encodeURIComponent(trackingNumber));
-}
-
-/**
- * `"Osobní odběr"` → `"osobni-odber"`: lower case, no diacritics, letters, digits, `-` and `_`
- * (the first methods' codes have underscores). Empty when nothing usable is left.
- */
-export function toShippingCode(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, '-')
-    .replace(/^[-_]+|[-_]+$/g, '')
-    .slice(0, SHIPPING_CODE_MAX_LENGTH)
-    .replace(/[-_]+$/, '');
 }

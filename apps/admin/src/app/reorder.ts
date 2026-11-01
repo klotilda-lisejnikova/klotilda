@@ -1,4 +1,6 @@
 import { nextTick, shallowRef } from 'vue';
+import { useMutation, useQueryClient } from '@tanstack/vue-query';
+import type { QueryKey } from '@tanstack/vue-query';
 
 /** `items` with the one at `from` moved to `to`, as a new array; out-of-range moves change nothing. */
 export function moveItem<T>(items: readonly T[], from: number, to: number): T[] {
@@ -102,4 +104,63 @@ export function useDragReorder<Group extends string | number>(
     isTarget: (group: Group, index: number) =>
       isSame(landing.value, group, index) && !isSame(dragging.value, group, index),
   };
+}
+
+export interface ListReorderOptions<T extends { id: string }> {
+  /** The query holding the whole list, in its order. */
+  queryKey: QueryKey;
+  /** The list as shown now. */
+  items: () => readonly T[];
+  /** Saves the new order, every id once (the API's `reorder`). */
+  save: (ids: string[]) => Promise<unknown>;
+  onError: (err: unknown) => void;
+  /** After the save, either way: reload what depends on the order. */
+  onSettled: () => void;
+}
+
+interface Reorder<T> {
+  ordered: T[];
+  /** An arrow's move: its button gets the focus back. */
+  arrow?: { id: string; direction: MoveDirection };
+}
+
+/**
+ * Reordering a whole list saved at once (the categories, the shipping and payment methods): the
+ * list shows the new order before the answer and goes back to the saved one if the save fails. A
+ * move while one is saving, or one that goes nowhere, is ignored. `move` suits `useDragReorder`,
+ * `moveByArrow` the arrows.
+ */
+export function useListReorder<T extends { id: string }>(options: ListReorderOptions<T>) {
+  const queryClient = useQueryClient();
+  const { queryKey } = options;
+
+  const reorder = useMutation({
+    mutationFn: ({ ordered }: Reorder<T>) => options.save(ordered.map((item) => item.id)),
+    onMutate: async ({ ordered, arrow }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<T[]>(queryKey);
+      queryClient.setQueryData<T[]>(queryKey, ordered);
+      if (arrow) void focusMoveButton(arrow.id, arrow.direction);
+      return { previous };
+    },
+    onError: (err, _reorder, context) => {
+      queryClient.setQueryData(queryKey, context?.previous);
+      options.onError(err);
+    },
+    onSettled: () => options.onSettled(),
+  });
+
+  function move(from: number, to: number, arrow?: Reorder<T>['arrow']) {
+    const items = options.items();
+    if (reorder.isPending.value || from === to || !(from in items) || !(to in items)) return;
+    reorder.mutate({ ordered: moveItem(items, from, to), arrow });
+  }
+
+  function moveByArrow(index: number, direction: MoveDirection) {
+    const item = options.items()[index];
+    if (!item) return;
+    move(index, direction === 'back' ? index - 1 : index + 1, { id: item.id, direction });
+  }
+
+  return { move, moveByArrow };
 }

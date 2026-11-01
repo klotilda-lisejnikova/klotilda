@@ -146,6 +146,22 @@ describe('Migrations', () => {
         ['ceska_posta', 129, 'delivery'],
         ['osobni_odber', 0, 'pickup'],
       ]);
+      // Every older order was paid by bank transfer, at no fee.
+      expect(order?.get('paymentMethod')).toBe('prevod');
+      expect(order?.get('paymentName')).toBe('Bankovní převod');
+      expect(order?.get('paymentKind')).toBe('bank_transfer');
+      expect(order?.get('paymentFee')).toBe(0);
+      const payments = await request(core.app).get('/api/payment-methods');
+      expect(
+        payments.body.data.map((method: { code: string; fee: number; kind: string }) => [
+          method.code,
+          method.fee,
+          method.kind,
+        ])
+      ).toEqual([
+        ['prevod', 0, 'bank_transfer'],
+        ['hotove', 0, 'cash'],
+      ]);
     } finally {
       await core.close();
     }

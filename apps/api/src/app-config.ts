@@ -15,6 +15,7 @@ import {
   FILE_REF_TYPES,
   galleryItemEntity,
   orderEntity,
+  paymentMethodEntity,
   productEntity,
   shippingMethodEntity,
 } from '@klotilda/domain';
@@ -24,12 +25,12 @@ import { CHECKOUT_RATE_LIMIT, createCheckoutPlugin } from './checkout/checkout-p
 import type { Environment, StorageSettings } from './env';
 import { authorizeFileAccess } from './files/authorize-file-access';
 import { createShopImages } from './files/shop-images';
+import { normalizeCode } from './http/normalize-code';
 import { rejectEmptyQueryObjects } from './http/query-guard';
 import { securityHeaders } from './http/security-headers';
 import { createModelRegistry } from './models-registry';
 import { migrations } from './migrations';
 import { createOrderActionsPlugin } from './orders/order-actions-plugin';
-import { normalizeShippingCode } from './shipping/shipping-methods';
 import { createWebRevalidator } from './web/revalidate-web';
 
 const ACCESS_TOKEN_LIFETIME = '15m';
@@ -103,7 +104,11 @@ export function buildAppConfig(
       },
       [shippingMethodEntity.config.name]: {
         access: { read: activeUnlessSignedIn },
-        hooks: { beforeCreate: normalizeShippingCode, beforeUpdate: normalizeShippingCode },
+        hooks: { beforeCreate: normalizeCode, beforeUpdate: normalizeCode },
+      },
+      [paymentMethodEntity.config.name]: {
+        access: { read: activeUnlessSignedIn },
+        hooks: { beforeCreate: normalizeCode, beforeUpdate: normalizeCode },
       },
       [orderEntity.config.name]: {
         access: { write: signedInExceptCreating },
