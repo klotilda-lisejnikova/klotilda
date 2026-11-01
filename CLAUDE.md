@@ -146,6 +146,10 @@ never rename them.
 `listGallery`, `listShippingMethods`, `listPaymentMethods`, `checkout`. The checkout reads the
 shipping and payment methods live and offers only the payment methods that fit the chosen shipping;
 the terms name no prices of either (the checkout shows them, the order states the ones agreed).
+A method with a pickup network asks for the point on Zásilkovna's map (`src/lib/packeta-widget.ts`,
+their script loaded only when the customer opens it, `NEXT_PUBLIC_PACKETA_API_KEY`; without the
+key the method shows as unavailable and step 2 can't go on) and sends only its id; a point the API refuses sends the customer
+back to step 2, a 503 asks to try again. The footer says the shop delivers with Zásilkovna.
 Photos go through `mediaUrl()` (relative `/api/files/:id` without a bucket).
 `NEXT_PUBLIC_SHOP_ENABLED` gates the shop (see `src/lib/features.ts`). The image
 optimizer takes only the API's host and `NEXT_PUBLIC_MEDIA_URL` (the bucket's public URL, the API's

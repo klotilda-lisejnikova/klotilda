@@ -71,7 +71,23 @@ export default function Footer() {
 
         {/* Tagline + copyright */}
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-stone-100 pt-3 text-xs text-stone-400">
-          <p>{t("tagline")}</p>
+          <p>
+            {t("tagline")}
+            {/* That the shop delivers with Zásilkovna, as Packeta recommends shops to show. */}
+            {SHOP_ENABLED && (
+              <>
+                {" · "}
+                <a
+                  href="https://www.zasilkovna.cz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-moss transition-colors"
+                >
+                  {t("packeta")}
+                </a>
+              </>
+            )}
+          </p>
           <p>
             {t("copyright")}
             <span className="ml-3 text-stone-300 tabular-nums">

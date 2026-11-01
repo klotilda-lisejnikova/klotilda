@@ -1,7 +1,7 @@
 # Zásilkovna pickup points at checkout
 
 **Ticket:** none yet
-**Status:** active — step 1 (API, admin) in review
+**Status:** active — steps 1–2 (API, admin, web) in review
 
 The owner (2026-11-01): "krok zásilkovna má chybu — musí si dotyčný vybrat místo k vyzvednutí v
 blízkosti bydliště" and "projdi si i co musíme splnit u zásilkovny, musíme i přidat jejich banner
@@ -104,7 +104,8 @@ checkout the same for every method.
   zkuste to znovu". Modal mode (tested on a phone).
 - Options: `language` from the locale (`cs` / `en`), `country: 'cz'`, `vendors` Czech points + Z-BOX
   (`{ country: 'cz' }`, `{ country: 'cz', group: 'zbox' }`), `appIdentity: 'klotilda-<version>'`.
-- The point is part of `CheckoutData`; step 4 and the thank-you page show "Výdejní místo: …". A 400
+- The point is part of `CheckoutData`; step 4 shows "Výdejní místo: …" (the confirmation e-mail
+  repeats it). A 400
   on `pickupPointId` sends the customer back to step 2 with the message.
 - `NEXT_PUBLIC_PACKETA_API_KEY` in Vercel (`klotilda-frontend`, both environments). Without it the
   method is shown as unavailable instead of breaking the checkout.
@@ -114,8 +115,8 @@ checkout the same for every method.
 
 ## Zásilkovna in the footer
 
-A small "Doručujeme se Zásilkovnou" with the official logo from Packeta's banner pack, in the
-footer's legal row, linking to `zasilkovna.cz`. Shown only with the shop on (`SHOP_ENABLED`) — the
+A small "Doručujeme se Zásilkovnou" linking to `zasilkovna.cz`, beside the footer's tagline; the
+official logo from Packeta's banner pack takes the words' place once the owner provides the pack. Shown only with the shop on (`SHOP_ENABLED`) — the
 footer cannot know which methods are active without a request on every page, and Zásilkovna is
 offered whenever the shop is. The logo is a static file in `apps/web/public/` (SVG if the pack has
 one), `next/image`, muted to the footer's stone tones on hover only if the brand rules allow it —
@@ -123,15 +124,45 @@ the pack's rules decide; otherwise shown as delivered.
 
 ## Legal texts
 
-- **Terms** (`obchodní podmínky`, Doprava): Zásilkovna delivers to the pickup point or Z-BOX the
-  buyer chose; the buyer has 7 days to collect (Packeta's app can extend it); an uncollected parcel
-  comes back and the buyer pays the shipping both ways. A new `TERMS_VERSION`.
-- **Privacy**: the carrier receives name, e-mail, phone and the chosen point (no home address for
-  Zásilkovna); choosing a point opens Packeta's map, which stores the last chosen point in its own
-  cookies (`branchId`, `favorite-pickup-points`) and asks for location only if "near me" is used.
-- The legal texts are moving into the admin (legal-texts step 3–4). If that has landed, these become
-  a new published version in the admin; if not, the edit goes into `src/content/legal/*.ts` and the
-  legal-texts migration seeds from it. Coordinated with that work, not done twice.
+The texts are `LegalDocumentVersion` rows (legal-texts step 3): a change is a new version, drafted
+by the legal-texts work and published by the owner. The additions for that draft:
+
+> **Language and purpose.** Customer-facing text for the next version of the terms and the privacy
+> policy, Czech and English, to be pasted into the draft by the legal-texts work; not published.
+
+**Terms, section "5. Dodání" / "5. Delivery"** — a new paragraph after the first one:
+
+> Při dopravě Zásilkovnou doručí dopravce zboží na výdejní místo nebo do Z-BOXu, které kupující
+> zvolí v pokladně. Jakmile zásilka dorazí, pošle Zásilkovna kupujícímu SMS a e-mail s heslem pro
+> vyzvednutí (u Z-BOXu s kódem k otevření schránky). Zásilku je třeba vyzvednout do 7 dnů; lhůtu lze
+> v aplikaci Zásilkovny prodloužit. Nevyzvednutou zásilku vrátí dopravce prodávající; prodávající
+> pak kupujícímu vrátí kupní cenu bez nákladů na dopravu, nebo mu zboží po zaplacení nového
+> poštovného pošle znovu.
+>
+> With Zásilkovna (Packeta) the carrier delivers to the pickup point or Z-BOX the buyer chose at
+> checkout. When the parcel arrives, Zásilkovna sends the buyer a text message and an e-mail with
+> the pickup code (for a Z-BOX, the code that opens the box). The parcel must be collected within
+> 7 days; Zásilkovna's app can extend this. An uncollected parcel goes back to the seller, who then
+> refunds the price of the goods without the shipping, or sends the goods again once the new
+> shipping is paid.
+
+**Privacy, the carriers' paragraph** — replaces "Dopravcům (Zásilkovna s.r.o., Česká pošta, s.p.)
+předáváme jméno, doručovací adresu, e-mail a telefon, aby vám mohli zásilku doručit." (and its
+English twin):
+
+> Dopravcům předáváme údaje potřebné k doručení: Zásilkovně s.r.o. jméno, e-mail, telefon a
+> zvolené výdejní místo, České poště, s.p. jméno, doručovací adresu, e-mail a telefon. Výdejní místo
+> vybíráte na mapě Zásilkovny, kterou web načte až ve chvíli, kdy ji otevřete; mapa si ve vašem
+> prohlížeči pamatuje naposledy zvolené místo (cookies Zásilkovny) a o vaši polohu požádá, jen
+> když zvolíte hledání v okolí.
+>
+> We pass the carriers what delivery needs: Zásilkovna s.r.o. your name, e-mail, phone and the
+> chosen pickup point; Česká pošta, s.p. your name, delivery address, e-mail and phone. You choose
+> the pickup point on Zásilkovna's map, which the site loads only when you open it; the map
+> remembers the last chosen point in your browser (Zásilkovna's cookies) and asks for your
+> location only if you search near you.
+
+The phone is optional at checkout; Zásilkovna then notifies by e-mail only.
 
 ## E-mails
 
@@ -144,7 +175,8 @@ the pack's rules decide; otherwise shown as delivered.
 ## Admin
 
 - Order detail: a "Výdejní místo" block next to the address: name, address, Z-BOX mark, the id with
-  a copy button (what she enters in Packeta's client section). "Kopírovat adresu" copies the name, the point and its id instead of the home address.
+  a copy button (what she enters in Packeta's client section). "Kopírovat adresu" copies the
+  name, the point and its id instead of the home address.
 - Orders list: the point's name under "Zásilkovna" (small, secondary), on the cards in brackets.
 
 ## Migration
@@ -156,9 +188,11 @@ as usual.
 ## Steps
 
 1. API + domain: fields, migration, validation against Packeta (mocked in tests), e-mails, admin
-   (Doprava select, order detail). PR into `dev`.
-2. Web: widget in step 2, summary, error handling, `Permissions-Policy`, footer logo. PR into `dev`.
-3. Legal texts, with the legal-texts work (above).
+   (Doprava switch, order detail).
+2. Web: widget in step 2, summary, error handling, `Permissions-Policy`, footer line (the logo once
+   the banner pack arrives).
+3. Legal texts: the paragraphs above go into the next drafted version (legal-texts work); the owner
+   publishes it.
 
 Steps 1 and 2 reach `dev` together: the migration turns pickup points on for `zasilkovna`, so with
 the API alone (or without `PACKETA_API_KEY` on Railway) the test site can't order Zásilkovna — a

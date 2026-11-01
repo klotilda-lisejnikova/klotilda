@@ -1,6 +1,10 @@
 import { HttpError } from '@eleansphere/be-core';
 import type { Sequelize } from '@eleansphere/be-core';
-import { PICKUP_POINT_ID_PATTERN, shippingMethodEntity } from '@klotilda/domain';
+import {
+  PICKUP_POINT_ID_PATTERN,
+  resolvePickupNetwork,
+  shippingMethodEntity,
+} from '@klotilda/domain';
 import type { PickupNetwork, ShippingKind } from '@klotilda/domain';
 import type { ModelRegistry } from '../models-registry';
 import { PickupPointsUnavailable } from './pickup-points';
@@ -26,11 +30,13 @@ export interface OfferedShipping {
 
 type Transaction = Awaited<ReturnType<Sequelize['transaction']>>;
 
-/** The method's pickup network; a pickup (the customer collects from the artist) has none. */
+/** The locked or read method's pickup network (`resolvePickupNetwork`). */
 function networkOf(method: { get(key: string): unknown } | null): PickupNetwork | null {
-  if (!method || method.get('kind') !== 'delivery') return null;
-  const network = method.get('pickupNetwork');
-  return network ? (network as PickupNetwork) : null;
+  if (!method) return null;
+  return resolvePickupNetwork({
+    kind: method.get('kind') as ShippingKind,
+    pickupNetwork: (method.get('pickupNetwork') as PickupNetwork | null) ?? null,
+  });
 }
 
 /**

@@ -1,3 +1,5 @@
+import type { PickupNetwork, ShippingKind } from './constants';
+
 /**
  * Zásilkovna (Packeta) pickup points: the shop sends to staffed points and Z-BOXes in the Czech
  * Republic. The web's map offers these and the API validates the chosen point against the same
@@ -27,4 +29,15 @@ export function formatPickupPointAddress(address: {
     .filter(Boolean)
     .join(' ');
   return [address.street?.trim(), place].filter(Boolean).join(', ');
+}
+
+/**
+ * The carrier whose pickup point a shipping method sends to: its `pickupNetwork`, for a `delivery`
+ * only — a pickup from the artist has none. The checkout's web and the API both decide by it.
+ */
+export function resolvePickupNetwork(method: {
+  kind: ShippingKind;
+  pickupNetwork?: PickupNetwork | null;
+}): PickupNetwork | null {
+  return method.kind === 'delivery' ? (method.pickupNetwork ?? null) : null;
 }

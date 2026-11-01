@@ -10,7 +10,8 @@
     "copyright": "© 2026 Klotilda. All rights reserved.",
     "tagline": "Original ceramics, embroidery and linocuts",
     "legal": "Legal information",
-    "seller": "Seller"
+    "seller": "Seller",
+    "packeta": "We deliver with Zásilkovna (Packeta)"
   },
   "metadata": {
     "title": "Klotilda — Original Ceramics, Embroidery & Linocuts",
@@ -51,6 +52,18 @@
       "unavailable": "Shipping options could not be loaded. Please try again in a moment.",
       "gone": "The shipping option you chose is no longer offered. Please choose another.",
       "none": "No shipping option is available right now. Please try again later."
+    },
+    "pickupPoint": {
+      "choose": "Choose a pickup point",
+      "opening": "Opening the map…",
+      "change": "Change",
+      "chosen": "Pickup point",
+      "chosenBox": "Z-BOX",
+      "summary": "Pickup point: {name}",
+      "failed": "The map of pickup points couldn't be loaded. Please try again.",
+      "unavailable": "Choosing a Zásilkovna pickup point isn't available right now. Please choose another shipping method.",
+      "refused": "The chosen pickup point isn't taking parcels right now. Please choose another one.",
+      "checkFailed": "Zásilkovna couldn't confirm the pickup point just now. Please try sending the order again in a moment."
     },
     "payment": {
       "loading": "Loading payment methods…",

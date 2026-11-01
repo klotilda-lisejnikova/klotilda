@@ -4,7 +4,8 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { ApiError } from "@eleansphere/entity-core";
 import { Link } from "@/i18n/navigation";
-import { paymentFitsShipping } from "@klotilda/domain";
+import { paymentFitsShipping, resolvePickupNetwork } from "@klotilda/domain";
+import type { CheckoutRequest } from "@klotilda/domain";
 import {
   checkout,
   CheckoutResponse,
@@ -33,6 +34,9 @@ import { CheckoutData, INITIAL_CHECKOUT } from "@/components/checkout/types";
 
 /** The API refuses an order whose lines no longer match the shop (sold out, gone, bad quantity). */
 const CART_OUT_OF_DATE = [400, 409];
+/** Zásilkovna couldn't confirm the pickup point just now; the same order may go a moment later. */
+const SERVICE_UNAVAILABLE = 503;
+const PICKUP_POINT_FIELD: keyof CheckoutRequest = "pickupPointId";
 /** The last step lists every line itself. */
 const SUMMARY_STEP = 3;
 const SHIPPING_STEP = 1;
@@ -56,6 +60,17 @@ function useLoaded<T>(load: () => Promise<T[]>) {
   return [list, setList] as const;
 }
 
+/** The API refused the pickup point itself (missing, malformed, or Zásilkovna said no). */
+function refusesPickupPoint(err: ApiError): boolean {
+  const issues = (err.body as { issues?: { path?: string }[] } | undefined)
+    ?.issues;
+  return (
+    err.status === 400 &&
+    Array.isArray(issues) &&
+    issues.some((issue) => issue.path === PICKUP_POINT_FIELD)
+  );
+}
+
 export default function CheckoutPage() {
   const t = useTranslations("checkout");
   const mounted = useMounted();
@@ -77,6 +92,8 @@ export default function CheckoutPage() {
   /** Set when the chosen method went away meanwhile: its step says so and asks for another. */
   const [shippingGone, setShippingGone] = useState(false);
   const [paymentGone, setPaymentGone] = useState(false);
+  /** Set when the shop refused the chosen pickup point: step 2 asks for another. */
+  const [pointRefused, setPointRefused] = useState(false);
 
   const changed = items.filter((item) => item.issue);
 
@@ -103,6 +120,18 @@ export default function CheckoutPage() {
         shippingKind: null,
       });
       setShippingGone(true);
+      setStep(SHIPPING_STEP);
+      return;
+    }
+    const network = resolvePickupNetwork(ship);
+    if (network !== data.pickupNetwork) {
+      // The method now sends to a point, or no longer does: choose again.
+      update({
+        shippingPrice: ship.price,
+        shippingKind: ship.kind,
+        pickupNetwork: network,
+        pickupPoint: null,
+      });
       setStep(SHIPPING_STEP);
       return;
     }
@@ -137,6 +166,8 @@ export default function CheckoutPage() {
         city: data.city,
         zip: data.zip,
         shippingMethod: data.shippingMethod,
+        // The API asks Zásilkovna about the id and keeps the point as Zásilkovna describes it.
+        pickupPointId: data.pickupPoint?.id,
         paymentMethod: data.paymentMethod,
         items: items.map((i) => ({
           productId: i.productId,
@@ -148,7 +179,19 @@ export default function CheckoutPage() {
       clearCart();
       setResult(placed);
     } catch (err) {
-      if (err instanceof ApiError && CART_OUT_OF_DATE.includes(err.status)) {
+      if (err instanceof ApiError && refusesPickupPoint(err)) {
+        update({ pickupPoint: null });
+        setPointRefused(true);
+        setStep(SHIPPING_STEP);
+      } else if (
+        err instanceof ApiError &&
+        err.status === SERVICE_UNAVAILABLE
+      ) {
+        setError("pickupUnavailable");
+      } else if (
+        err instanceof ApiError &&
+        CART_OUT_OF_DATE.includes(err.status)
+      ) {
         // Something changed meanwhile: refresh the lines and the methods, so the summary shows
         // what and why.
         const [, shipping, payment] = await Promise.all([
@@ -225,8 +268,10 @@ export default function CheckoutPage() {
           data={data}
           methods={shippingMethods}
           gone={shippingGone}
+          pointRefused={pointRefused}
           onChange={(patch) => {
             setShippingGone(false);
+            if (patch.pickupPoint) setPointRefused(false);
             update(patch);
           }}
           onNext={() => setStep(PAYMENT_STEP)}

@@ -10,7 +10,8 @@
     "copyright": "© 2026 Klotilda. Všechna práva vyhrazena.",
     "tagline": "Keramika, linoryty a výšivky",
     "legal": "Právní informace",
-    "seller": "Prodávající"
+    "seller": "Prodávající",
+    "packeta": "Doručujeme se Zásilkovnou"
   },
   "metadata": {
     "title": "Klotilda — Originální keramika, výšivky a linoryty",
@@ -51,6 +52,18 @@
       "unavailable": "Způsoby dopravy se nepodařilo načíst. Zkuste to prosím za chvíli znovu.",
       "gone": "Zvolený způsob dopravy už není v nabídce. Vyberte prosím jiný.",
       "none": "Momentálně nelze vybrat žádný způsob dopravy. Zkuste to prosím později."
+    },
+    "pickupPoint": {
+      "choose": "Vybrat výdejní místo",
+      "opening": "Otevírám mapu…",
+      "change": "Změnit",
+      "chosen": "Výdejní místo",
+      "chosenBox": "Z-BOX",
+      "summary": "Výdejní místo: {name}",
+      "failed": "Mapu výdejních míst se nepodařilo načíst. Zkuste to prosím znovu.",
+      "unavailable": "Výběr výdejního místa Zásilkovny teď není k dispozici. Vyberte prosím jinou dopravu.",
+      "refused": "Vybrané výdejní místo teď zásilky nepřijímá. Vyberte prosím jiné.",
+      "checkFailed": "Výdejní místo se teď nepodařilo ověřit u Zásilkovny. Zkuste prosím objednávku odeslat za chvíli znovu."
     },
     "payment": {
       "loading": "Načítám způsoby platby…",

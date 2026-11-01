@@ -6,8 +6,17 @@ import CartLine from "@/components/shop/CartLine";
 import { cartTotal, isBlocked, type CartItem } from "@/store/cart.store";
 import { CheckoutData } from "./types";
 
-/** `cartChanged`: the shop refused the lines as they were; `failed`: anything else. */
-export type SubmitError = "cartChanged" | "failed";
+/**
+ * `cartChanged`: the shop refused the lines as they were; `pickupUnavailable`: Zásilkovna couldn't
+ * confirm the pickup point just now; `failed`: anything else.
+ */
+export type SubmitError = "cartChanged" | "pickupUnavailable" | "failed";
+
+const ERROR_MESSAGES = {
+  cartChanged: "errorChanged",
+  pickupUnavailable: "pickupPoint.checkFailed",
+  failed: "error",
+} as const satisfies Record<SubmitError, string>;
 
 interface Props {
   data: CheckoutData;
@@ -82,6 +91,12 @@ export default function Step4Summary({
               : `${data.shippingPrice} ${t("currency")}`}
           </span>
         </div>
+        {data.pickupPoint && (
+          <p className="-mt-1 text-xs text-stone-500">
+            {t("pickupPoint.summary", { name: data.pickupPoint.name })}
+            {data.pickupPoint.address && `, ${data.pickupPoint.address}`}
+          </p>
+        )}
         <div className="flex justify-between text-sm text-stone-500">
           <span>
             {t("summary.payment")} — {data.paymentName}
@@ -163,7 +178,7 @@ export default function Step4Summary({
       ) : (
         error && (
           <p className="text-sm text-rose-600" role="alert">
-            {error === "cartChanged" ? t("errorChanged") : t("error")}
+            {t(ERROR_MESSAGES[error])}
           </p>
         )
       )}

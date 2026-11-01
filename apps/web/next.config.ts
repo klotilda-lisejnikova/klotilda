@@ -37,12 +37,18 @@ if (mediaUrl) {
 const SECURITY_HEADERS = [
   {
     key: "Content-Security-Policy",
-    value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
+    value:
+      "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
   },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  // Zásilkovna's map (checkout) may ask for the location, for its "near me".
+  {
+    key: "Permissions-Policy",
+    value:
+      'camera=(), microphone=(), geolocation=(self "https://widget.packeta.com")',
+  },
 ];
 
 // The project version lives in the root package.json (`pnpm release`). Next runs this file
