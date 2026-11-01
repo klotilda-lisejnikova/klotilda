@@ -16,6 +16,7 @@ import {
   galleryItemEntity,
   orderEntity,
   productEntity,
+  shippingMethodEntity,
 } from '@klotilda/domain';
 import { normalizeSlug, withCategory } from './catalogue/categories';
 import { createReorderPlugin } from './catalogue/reorder-plugin';
@@ -28,6 +29,7 @@ import { securityHeaders } from './http/security-headers';
 import { createModelRegistry } from './models-registry';
 import { migrations } from './migrations';
 import { createOrderActionsPlugin } from './orders/order-actions-plugin';
+import { normalizeShippingCode } from './shipping/shipping-methods';
 import { createWebRevalidator } from './web/revalidate-web';
 
 const ACCESS_TOKEN_LIFETIME = '15m';
@@ -98,6 +100,10 @@ export function buildAppConfig(
         access: { read: activeUnlessSignedIn },
         enrich: withCategory(models, galleryImages.attach),
         beforeDelete: galleryImages.removeWithRow,
+      },
+      [shippingMethodEntity.config.name]: {
+        access: { read: activeUnlessSignedIn },
+        hooks: { beforeCreate: normalizeShippingCode, beforeUpdate: normalizeShippingCode },
       },
       [orderEntity.config.name]: {
         access: { write: signedInExceptCreating },

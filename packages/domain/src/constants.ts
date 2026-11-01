@@ -1,22 +1,17 @@
-/** How an order travels, with what it costs in CZK. The server charges these, never the client. */
-export const SHIPPING_PRICES = {
-  zasilkovna: 99,
-  ceska_posta: 129,
-  osobni_odber: 0,
-} as const;
-export type ShippingMethod = keyof typeof SHIPPING_PRICES;
-export const SHIPPING_METHODS = [
-  'zasilkovna',
-  'ceska_posta',
-  'osobni_odber',
-] as const satisfies readonly ShippingMethod[];
+/**
+ * What a shipping method does with a paid order: a carrier takes it (`delivery`, the order is
+ * shipped) or the customer collects it (`pickup`, the order is made ready). The methods themselves
+ * are rows the admin manages (`ShippingMethod`).
+ */
+export const SHIPPING_KINDS = ['delivery', 'pickup'] as const;
+export type ShippingKind = (typeof SHIPPING_KINDS)[number];
 
 /** Payments arrive by bank transfer; the admin records what reached the account. */
 export const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'refunded'] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 export const DEFAULT_PAYMENT_STATUS = 'pending' satisfies PaymentStatus;
 
-/** `ready`: waiting to be picked up in Prague (`osobni_odber`), where others are `shipped`. */
+/** `ready`: waiting to be picked up (a `pickup` shipping method), where others are `shipped`. */
 export const ORDER_STATUSES = [
   'new',
   'processing',

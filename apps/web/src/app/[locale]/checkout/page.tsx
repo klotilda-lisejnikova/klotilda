@@ -1,10 +1,15 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ApiError } from "@eleansphere/entity-core";
 import { Link } from "@/i18n/navigation";
-import { checkout, CheckoutResponse } from "@/services";
+import {
+  checkout,
+  CheckoutResponse,
+  listShippingMethods,
+  ShippingMethod,
+} from "@/services";
 import {
   isBlocked,
   useCart,
@@ -40,11 +45,45 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<SubmitError | null>(null);
   const [result, setResult] = useState<CheckoutResponse | null>(null);
+  const [shippingMethods, setShippingMethods] = useState<
+    ShippingMethod[] | null | "error"
+  >(null);
+
+  // Read live, not baked into the page: the admin may change a price or hide a method any time.
+  useEffect(() => {
+    let current = true;
+    listShippingMethods()
+      .then((methods) => current && setShippingMethods(methods))
+      .catch(() => current && setShippingMethods("error"));
+    return () => {
+      current = false;
+    };
+  }, []);
+
+  /** Set when the chosen method went away meanwhile: step 2 says so and asks for another. */
+  const [shippingGone, setShippingGone] = useState(false);
 
   const changed = items.filter((item) => item.issue);
 
   const update = (patch: Partial<CheckoutData>) =>
     setData((prev) => ({ ...prev, ...patch }));
+
+  /**
+   * The methods as the API offers them now: a chosen method that is gone sends the customer back
+   * to pick another, a changed price is taken over.
+   */
+  const refreshShipping = (methods: ShippingMethod[]) => {
+    setShippingMethods(methods);
+    const chosen = methods.find((method) => method.code === data.shippingMethod);
+    if (!chosen) {
+      update({ shippingMethod: "", shippingName: "", shippingPrice: 0 });
+      setShippingGone(true);
+      setStep(1);
+      return;
+    }
+    update({ shippingPrice: chosen.price });
+    setError("cartChanged");
+  };
 
   const handleSubmit = async () => {
     if (items.some(isBlocked) || !data.termsAccepted) return;
@@ -72,9 +111,14 @@ export default function CheckoutPage() {
       setResult(placed);
     } catch (err) {
       if (err instanceof ApiError && CART_OUT_OF_DATE.includes(err.status)) {
-        // Something changed meanwhile: refresh the lines so the summary shows what and why.
-        await check();
-        setError("cartChanged");
+        // Something changed meanwhile: refresh the lines and the shipping methods, so the
+        // summary shows what and why.
+        const [, methods] = await Promise.all([
+          check(),
+          listShippingMethods().catch(() => null),
+        ]);
+        if (methods) refreshShipping(methods);
+        else setError("cartChanged");
       } else {
         setError("failed");
       }
@@ -136,7 +180,12 @@ export default function CheckoutPage() {
       {step === 1 && (
         <Step2Shipping
           data={data}
-          onChange={update}
+          methods={shippingMethods}
+          gone={shippingGone}
+          onChange={(patch) => {
+            setShippingGone(false);
+            update(patch);
+          }}
           onNext={() => setStep(2)}
           onBack={() => setStep(0)}
         />

@@ -1,4 +1,4 @@
-import type { OrderStatus, PaymentStatus, ShippingMethod } from '../../constants';
+import type { OrderStatus, PaymentStatus, ShippingKind } from '../../constants';
 
 /**
  * What the admin does with an order, one step at a time. Each action checks the order is in a
@@ -29,10 +29,10 @@ export interface OrderActionRequest {
 export interface OrderState {
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
-  shippingMethod: ShippingMethod;
+  shippingKind: ShippingKind;
 }
 
-const PICKUP: ShippingMethod = 'osobni_odber';
+const PICKUP: ShippingKind = 'pickup';
 /** Paid for, not yet handed over. */
 const BEING_PREPARED: readonly OrderStatus[] = ['new', 'processing'];
 const HANDED_OVER: readonly OrderStatus[] = ['shipped', 'ready'];
@@ -44,11 +44,11 @@ const ALLOWED: Record<OrderAction, (order: OrderState) => boolean> = {
     order.orderStatus !== 'cancelled',
   ship: (order) =>
     order.paymentStatus === 'paid' &&
-    order.shippingMethod !== PICKUP &&
+    order.shippingKind !== PICKUP &&
     BEING_PREPARED.includes(order.orderStatus),
   'ready-for-pickup': (order) =>
     order.paymentStatus === 'paid' &&
-    order.shippingMethod === PICKUP &&
+    order.shippingKind === PICKUP &&
     BEING_PREPARED.includes(order.orderStatus),
   'mark-delivered': (order) => HANDED_OVER.includes(order.orderStatus),
   cancel: (order) => CANCELLABLE.includes(order.orderStatus),
@@ -104,10 +104,3 @@ export interface OrderEvent {
 export function parseOrderHistory(order: { history?: string | null }): OrderEvent[] {
   return order.history ? (JSON.parse(order.history) as OrderEvent[]) : [];
 }
-
-/** Where a customer follows a parcel, per carrier. */
-export const TRACKING_URLS: Partial<Record<ShippingMethod, (trackingNumber: string) => string>> = {
-  zasilkovna: (number) => `https://tracking.packeta.com/cs/?id=${encodeURIComponent(number)}`,
-  ceska_posta: (number) =>
-    `https://www.postaonline.cz/trackandtrace/-/zasilka/cislo?parcelNumbers=${encodeURIComponent(number)}`,
-};

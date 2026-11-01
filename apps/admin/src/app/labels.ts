@@ -3,16 +3,15 @@ import type {
   OrderEvent,
   OrderStatus,
   PaymentStatus,
-  ShippingMethod,
+  ShippingKind,
 } from '@klotilda/domain';
 import type { BadgeProps } from '@nuxt/ui';
 
 type BadgeColor = NonNullable<BadgeProps['color']>;
 
-export const SHIPPING_LABELS: Record<ShippingMethod, string> = {
-  zasilkovna: 'Zásilkovna',
-  ceska_posta: 'Česká pošta',
-  osobni_odber: 'Osobní odběr',
+export const SHIPPING_KIND_LABELS: Record<ShippingKind, string> = {
+  delivery: 'Doručení dopravcem',
+  pickup: 'Osobní odběr',
 };
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {

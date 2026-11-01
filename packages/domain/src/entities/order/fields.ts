@@ -4,8 +4,9 @@ import {
   DEFAULT_PAYMENT_STATUS,
   ORDER_STATUSES,
   PAYMENT_STATUSES,
-  SHIPPING_METHODS,
+  SHIPPING_KINDS,
 } from '../../constants';
+import { SHIPPING_CODE_MAX_LENGTH } from '../shipping-method/fields';
 
 const NAME_MAX_LENGTH = 100;
 const EMAIL_MAX_LENGTH = 254;
@@ -27,7 +28,8 @@ export const customerFields = {
   street: { type: 'STRING', required: true, maxLength: STREET_MAX_LENGTH },
   city: { type: 'STRING', required: true, maxLength: CITY_MAX_LENGTH },
   zip: { type: 'STRING', required: true, maxLength: ZIP_MAX_LENGTH },
-  shippingMethod: { type: 'ENUM', values: SHIPPING_METHODS, required: true },
+  /** A `ShippingMethod`'s code; the checkout refuses one that isn't offered. */
+  shippingMethod: { type: 'STRING', required: true, maxLength: SHIPPING_CODE_MAX_LENGTH },
   notes: { type: 'TEXT', maxLength: NOTES_MAX_LENGTH },
 } as const satisfies Fields;
 
@@ -45,6 +47,9 @@ function asReadOnly<T extends Fields>(fields: T): ReadOnlyFields<T> {
  */
 export const orderFields = {
   ...asReadOnly(customerFields),
+  /** The shipping method's name and kind when ordered, so editing the method changes no order. */
+  shippingName: { type: 'STRING', required: true, readOnly: true },
+  shippingKind: { type: 'ENUM', values: SHIPPING_KINDS, required: true, readOnly: true },
   shippingPrice: { type: 'FLOAT', default: 0, readOnly: true },
   /**
    * The ordered `OrderItem[]` as JSON: name and price as they were when ordered, so an order
@@ -61,6 +66,8 @@ export const orderFields = {
   orderStatus: { type: 'ENUM', values: ORDER_STATUSES, default: DEFAULT_ORDER_STATUS },
   /** The carrier's parcel number, set when the order is shipped. */
   trackingNumber: { type: 'STRING', maxLength: TRACKING_NUMBER_MAX_LENGTH, readOnly: true },
+  /** Where the parcel is followed, made from the method's `trackingUrl` when shipped. */
+  trackingUrl: { type: 'TEXT', readOnly: true },
   /** What happened to the order, as `OrderEvent[]` JSON, oldest first. Empty on older orders. */
   history: { type: 'TEXT', readOnly: true },
   /** The terms (`TERMS_VERSION`) the customer agreed to at checkout, and when. */

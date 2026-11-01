@@ -38,11 +38,7 @@ Prodávající může objednávku zrušit, pokud ji kupující nezaplatí ve lh�
 
 ## 4. Cena a platba
 
-Ceny v e-shopu jsou konečné. Prodávající není plátcem DPH. Cena dopravy se připočítává podle zvoleného způsobu:
-
-- Zásilkovna: {{priceZasilkovna}} Kč
-- Česká pošta: {{priceCeskaPosta}} Kč
-- Osobní odběr v Praze: zdarma
+Ceny v e-shopu jsou konečné. Prodávající není plátcem DPH. Cena dopravy se připočítává podle zvoleného způsobu. Nabízené způsoby dopravy a jejich ceny jsou uvedeny v pokladně; platí cena dopravy uvedená v objednávce.
 
 Kupující platí bankovním převodem na účet prodávající, s variabilním symbolem objednávky; číslo účtu, částku a QR kód pro platbu dostane po odeslání objednávky na obrazovce i e-mailem. Cena je splatná do 7 dnů od uzavření smlouvy. Nezaplacenou objednávku může prodávající po uplynutí této lhůty zrušit a zboží vrátit do nabídky.
 
@@ -134,11 +130,7 @@ The seller may cancel an order that is not paid within the period in article 4, 
 
 ## 4. Price and payment
 
-Prices in the shop are final. The seller is not a VAT payer. Shipping is added according to the chosen method:
-
-- Zásilkovna (Packeta): {{priceZasilkovna}} CZK
-- Czech Post: {{priceCeskaPosta}} CZK
-- Pickup in Prague: free
+Prices in the shop are final. The seller is not a VAT payer. Shipping is added according to the chosen method. The shipping options and their prices are shown at checkout; the shipping price stated in the order applies.
 
 The buyer pays by bank transfer to the seller's account, with the order's variable symbol; the account number, the amount and a QR payment code are shown after the order is sent and e-mailed to the buyer. The price is due within 7 days of the contract. After that the seller may cancel an unpaid order and offer the goods again.
 

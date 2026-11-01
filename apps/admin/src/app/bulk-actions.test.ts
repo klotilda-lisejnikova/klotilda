@@ -3,7 +3,7 @@ import type { Order } from '@klotilda/domain';
 import { ApiError } from '@eleansphere/entity-core';
 import { actOnOrders, BULK_ACTIONS, commonBulkActions } from './bulk-actions';
 
-const order = (state: Pick<Order, 'paymentStatus' | 'orderStatus' | 'shippingMethod'>) =>
+const order = (state: Pick<Order, 'paymentStatus' | 'orderStatus' | 'shippingKind'>) =>
   state as Order;
 
 describe('Bulk order actions', () => {
@@ -11,22 +11,22 @@ describe('Bulk order actions', () => {
     const unpaid = order({
       paymentStatus: 'pending',
       orderStatus: 'new',
-      shippingMethod: 'zasilkovna',
+      shippingKind: 'delivery',
     });
     const paidPost = order({
       paymentStatus: 'paid',
       orderStatus: 'processing',
-      shippingMethod: 'ceska_posta',
+      shippingKind: 'delivery',
     });
     const paidPickup = order({
       paymentStatus: 'paid',
       orderStatus: 'processing',
-      shippingMethod: 'osobni_odber',
+      shippingKind: 'pickup',
     });
     const cancelledPaid = order({
       paymentStatus: 'paid',
       orderStatus: 'cancelled',
-      shippingMethod: 'zasilkovna',
+      shippingKind: 'delivery',
     });
 
     expect(commonBulkActions([unpaid, unpaid])).toEqual(['mark-paid']);

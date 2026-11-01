@@ -15,6 +15,8 @@ import {
   parseOrderHistory,
   parseOrderItems,
   productEntity,
+  shippingMethodEntity,
+  trackingUrlFor,
 } from '@klotilda/domain';
 import type {
   Order,
@@ -66,6 +68,20 @@ async function restock(registry: ModelRegistry, items: OrderItem[], transaction:
   }
 }
 
+/** The parcel's link from the order's shipping method, if it still exists and has one. */
+async function findTrackingUrl(
+  registry: ModelRegistry,
+  shippingMethod: string,
+  trackingNumber: string | undefined,
+  transaction: Transaction
+): Promise<string | null> {
+  if (!trackingNumber) return null;
+  const method = await registry
+    .get(shippingMethodEntity.config.name)
+    .findOne({ where: { code: shippingMethod }, transaction });
+  return trackingUrlFor(method?.get('trackingUrl') as string | null, trackingNumber) ?? null;
+}
+
 /**
  * `POST /api/orders/:id/actions/:action` — the signed-in admin takes an order a step further
  * (`ORDER_ACTIONS`): the statuses move, a cancelled order's pieces go back in stock, the step is
@@ -113,7 +129,15 @@ export function createOrderActionsPlugin({
             await row.update(
               {
                 ...applyAction(stored as OrderState, action),
-                ...(action === 'ship' && { trackingNumber: trackingNumber ?? null }),
+                ...(action === 'ship' && {
+                  trackingNumber: trackingNumber ?? null,
+                  trackingUrl: await findTrackingUrl(
+                    registry,
+                    stored.shippingMethod,
+                    trackingNumber,
+                    transaction
+                  ),
+                }),
                 history: JSON.stringify([...parseOrderHistory(stored), event]),
               },
               { transaction }
@@ -132,7 +156,7 @@ export function createOrderActionsPlugin({
                 : await sendEmail(
                     emailService,
                     saved.customerEmail,
-                    template(placed, event),
+                    template(placed, { ...event, trackingUrl: saved.trackingUrl ?? undefined }),
                     siteUrl
                   );
             const history = parseOrderHistory(saved);

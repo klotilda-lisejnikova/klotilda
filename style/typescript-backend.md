@@ -26,7 +26,7 @@ already has a consistent practice, the practice is written down rather than repl
 - File names: `kebab-case.ts` (`checkout-plugin.ts`, `read-checkout-request.ts`). No `PascalCase` or
   `camelCase` file names.
 - Types and interfaces: `PascalCase`. Functions and variables: `camelCase`. Constants that configure
-  behaviour: `UPPER_SNAKE_CASE` (`SHIPPING_PRICES`, `CHECKOUT_RATE_LIMIT`).
+  behaviour: `UPPER_SNAKE_CASE` (`SHIPPING_KINDS`, `CHECKOUT_RATE_LIMIT`).
 - Prefer function declarations for named operations; reserve arrow functions for inline callbacks and
   short transforms.
 - Array types are written `T[]`, as the code already does.

@@ -9,7 +9,6 @@ import StatTile from '@/components/StatTile.vue';
 import { fileUrl, services } from '@/app/api';
 import { fetchAllPages } from '@/app/all-pages';
 import { formatCzk, formatDateTime, inMonth, plural } from '@/app/format';
-import { SHIPPING_LABELS } from '@/app/labels';
 import {
   daysSince,
   isPaymentOverdue,
@@ -190,7 +189,7 @@ const stats = computed(() => [
                 {{ order.customerFirstName }} {{ order.customerLastName }}
               </p>
               <p class="text-xs text-muted">
-                {{ formatDateTime(order.createdAt) }} · {{ SHIPPING_LABELS[order.shippingMethod] }}
+                {{ formatDateTime(order.createdAt) }} · {{ order.shippingName }}
               </p>
             </div>
             <UBadge

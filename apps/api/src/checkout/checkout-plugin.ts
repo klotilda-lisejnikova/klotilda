@@ -6,7 +6,6 @@ import {
   DEFAULT_PAYMENT_STATUS,
   orderEntity,
   productEntity,
-  SHIPPING_PRICES,
   TERMS_VERSION,
 } from '@klotilda/domain';
 import type {
@@ -23,6 +22,7 @@ import type { BankAccount } from '../env';
 import { asyncHandler } from '../http/async-handler';
 import type { ModelRegistry } from '../models-registry';
 import { createQrPaymentDataUrl, createVariableSymbol } from './qr-payment';
+import { resolveOfferedShipping } from '../shipping/shipping-methods';
 import { readCheckoutRequest } from './read-checkout-request';
 
 const CREATED = 201;
@@ -110,9 +110,9 @@ async function announceOrder(
 }
 
 /**
- * `POST /api/checkout` — public. Places an order from the cart: prices come from the products,
- * never from the client; the stock is taken down at once (payment is a bank transfer the admin
- * confirms later, matched by the variable symbol). Answers how to pay, QR code included, then
+ * `POST /api/checkout` — public. Places an order from the cart: prices come from the products
+ * and the chosen active shipping method, never from the client; the stock is taken down at once
+ * (payment is a bank transfer the admin confirms later, matched by the variable symbol). Answers how to pay, QR code included, then
  * e-mails the customer and the artist; a failed e-mail is logged and noted in the order's history.
  */
 export function createCheckoutPlugin({
@@ -130,10 +130,14 @@ export function createCheckoutPlugin({
         ...limits,
         asyncHandler(async (req, res) => {
           const { items, termsAccepted: _accepted, ...customer } = readCheckoutRequest(req.body);
-          const shippingPrice = SHIPPING_PRICES[customer.shippingMethod];
 
           const placedEvent: OrderEvent = { type: 'placed', at: new Date().toISOString() };
           const order: PlacedOrder = await sequelize.transaction(async (transaction) => {
+            const shipping = await resolveOfferedShipping(
+              registry,
+              customer.shippingMethod,
+              transaction
+            );
             const orderItems = await reserveStock(registry, items, transaction);
             const itemsTotal = orderItems.reduce(
               (sum, item) => sum + item.price * item.quantity,
@@ -142,8 +146,8 @@ export function createCheckoutPlugin({
             const placed = {
               id: generateId(orderEntity.config.prefix),
               ...customer,
-              shippingPrice,
-              totalAmount: itemsTotal + shippingPrice,
+              ...shipping,
+              totalAmount: itemsTotal + shipping.shippingPrice,
               variableSymbol: createVariableSymbol(),
               paymentStatus: DEFAULT_PAYMENT_STATUS as PaymentStatus,
               orderStatus: DEFAULT_ORDER_STATUS,

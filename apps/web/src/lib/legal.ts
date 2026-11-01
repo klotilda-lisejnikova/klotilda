@@ -2,11 +2,10 @@ import {
   COMPLAINTS_ANCHOR,
   LEGAL_PATHS,
   SELLER,
-  SHIPPING_PRICES,
   TERMS_EFFECTIVE_FROM,
 } from "@klotilda/domain";
 
-/** What the legal texts may name as `{{key}}`: the seller, prices and the pages' paths. */
+/** What the legal texts may name as `{{key}}`: the seller, the dates and the pages' paths. */
 const VALUES: Record<string, string> = {
   sellerName: SELLER.name,
   sellerIco: SELLER.ico,
@@ -15,8 +14,6 @@ const VALUES: Record<string, string> = {
   sellerPhone: SELLER.phone,
   sellerRegistration: SELLER.registration,
   effectiveFrom: TERMS_EFFECTIVE_FROM,
-  priceZasilkovna: String(SHIPPING_PRICES.zasilkovna),
-  priceCeskaPosta: String(SHIPPING_PRICES.ceska_posta),
   termsPath: LEGAL_PATHS.terms,
   privacyPath: LEGAL_PATHS.privacy,
   withdrawalPath: LEGAL_PATHS.withdrawal,

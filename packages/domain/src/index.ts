@@ -3,6 +3,7 @@ import { categoryEntity } from './entities/category';
 import { galleryItemEntity } from './entities/gallery-item';
 import { orderEntity } from './entities/order';
 import { productEntity } from './entities/product';
+import { shippingMethodEntity } from './entities/shipping-method';
 
 export * from './constants';
 export * from './ordering';
@@ -48,7 +49,6 @@ export {
   ORDERS_PATH,
   parseOrderHistory,
   parseOrderItems,
-  TRACKING_URLS,
   type CheckoutItem,
   type CheckoutRequest,
   type CheckoutResponse,
@@ -60,6 +60,21 @@ export {
   type OrderItem,
   type OrderState,
 } from './entities/order';
+export {
+  SHIPPING_METHOD_ORDER,
+  SHIPPING_METHODS_ORDER_ROUTE,
+  SHIPPING_METHODS_PATH,
+  shippingMethodEntity,
+  toShippingCode,
+  TRACKING_NUMBER_PLACEHOLDER,
+  trackingUrlFor,
+  type ShippingMethod,
+} from './entities/shipping-method';
+export {
+  SHIPPING_CODE_MAX_LENGTH,
+  shippingMethodFields,
+  TRACKING_URL_MAX_LENGTH,
+} from './entities/shipping-method/fields';
 export { customerFields, orderActionFields, orderFields } from './entities/order/fields';
 export { createServices, KlotildaAuthService, type Services } from './services';
 
@@ -70,6 +85,7 @@ export const allEntities = {
   product: productEntity,
   galleryItem: galleryItemEntity,
   order: orderEntity,
+  shippingMethod: shippingMethodEntity,
 };
 
 /** Accounts are made by the seed script and signed in to through `/api/auth` only. */

@@ -10,6 +10,8 @@ import {
   IMAGE_ROLE,
   PRODUCT_IMAGE_ORDER_ROUTE,
   productEntity,
+  SHIPPING_METHODS_ORDER_ROUTE,
+  shippingMethodEntity,
 } from '@klotilda/domain';
 import type { ReorderRequest } from '@klotilda/domain';
 import { asyncHandler } from '../http/async-handler';
@@ -75,7 +77,8 @@ async function saveOrder(sequelize: Sequelize, list: OrderedList, ids: string[])
  * - `PUT /api/products/:id/images/order` — a product's photos (`File.sortOrder`; the first is the
  *   main one);
  * - `PUT /api/gallery/rows/:row/order` — the pictures of one gallery row (`GalleryItem.sortOrder`);
- * - `PUT /api/categories/all/order` — every category (`Category.sortOrder`, the shop's filters).
+ * - `PUT /api/categories/all/order` — every category (`Category.sortOrder`, the shop's filters);
+ * - `PUT /api/shipping-methods/all/order` — every shipping method (the checkout's choices).
  */
 export function createReorderPlugin({ registry, jwtSecret }: ReorderPluginOptions): ProjectPlugin {
   return {
@@ -137,6 +140,24 @@ export function createReorderPlugin({ registry, jwtSecret }: ReorderPluginOption
               model: registry.get(categoryEntity.config.name),
               where: {},
               conflict: 'Kategorie se mezitím změnily. Zkuste to prosím znovu.',
+            },
+            ids
+          );
+          res.status(NO_CONTENT).end();
+        })
+      );
+
+      app.put(
+        SHIPPING_METHODS_ORDER_ROUTE,
+        createVerifyToken(jwtSecret),
+        asyncHandler(async (req, res) => {
+          const ids = readReorderRequest(req.body);
+          await saveOrder(
+            sequelize,
+            {
+              model: registry.get(shippingMethodEntity.config.name),
+              where: {},
+              conflict: 'Způsoby dopravy se mezitím změnily. Zkuste to prosím znovu.',
             },
             ids
           );

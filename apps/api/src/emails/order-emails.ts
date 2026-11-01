@@ -1,18 +1,7 @@
-import {
-  COMPLAINTS_ANCHOR,
-  LEGAL_PATHS,
-  TERMS_EFFECTIVE_FROM,
-  TRACKING_URLS,
-} from '@klotilda/domain';
-import type { OrderAction, OrderItem, PaymentStatus, ShippingMethod } from '@klotilda/domain';
+import { COMPLAINTS_ANCHOR, LEGAL_PATHS, TERMS_EFFECTIVE_FROM } from '@klotilda/domain';
+import type { OrderAction, OrderItem, PaymentStatus, ShippingKind } from '@klotilda/domain';
 import { formatCzk } from './email-layout';
 import type { EmailBlock, EmailContent } from './email-layout';
-
-const SHIPPING_LABELS: Record<ShippingMethod, string> = {
-  zasilkovna: 'Zásilkovna',
-  ceska_posta: 'Česká pošta',
-  osobni_odber: 'Osobní odběr v Praze',
-};
 
 /** What the e-mails about an order say. Customers know an order by its variable symbol. */
 export interface PlacedOrder {
@@ -23,7 +12,8 @@ export interface PlacedOrder {
   street: string;
   city: string;
   zip: string;
-  shippingMethod: ShippingMethod;
+  shippingName: string;
+  shippingKind: ShippingKind;
   shippingPrice: number;
   totalAmount: number;
   variableSymbol: string;
@@ -35,13 +25,11 @@ export interface PlacedOrder {
 export interface ActionDetails {
   message?: string;
   trackingNumber?: string;
+  /** The parcel's link, from the shipping method. */
+  trackingUrl?: string;
 }
 
-/** "Odeslali jsme ji …" */
-const SHIPPED_WITH: Partial<Record<ShippingMethod, string>> = {
-  zasilkovna: 'Zásilkovnou',
-  ceska_posta: 'Českou poštou',
-};
+const isPickup = (order: PlacedOrder) => order.shippingKind === 'pickup';
 
 const address = (order: PlacedOrder) => `${order.street}, ${order.zip} ${order.city}`;
 
@@ -49,7 +37,7 @@ function itemsBlock(order: PlacedOrder): EmailBlock {
   return {
     kind: 'items',
     items: order.items,
-    shipping: { label: SHIPPING_LABELS[order.shippingMethod], price: order.shippingPrice },
+    shipping: { label: order.shippingName, price: order.shippingPrice },
     total: order.totalAmount,
   };
 }
@@ -62,7 +50,6 @@ const noteBlocks = (message: string | undefined): EmailBlock[] =>
  * is on the shop's confirmation page; the e-mail carries account, symbol and amount as text.
  */
 export function orderReceivedEmail(order: PlacedOrder, bankAccount: string): EmailContent {
-  const isPickup = order.shippingMethod === 'osobni_odber';
   return {
     subject: `Objednávka ${order.variableSymbol} — čeká na platbu`,
     title: 'Děkujeme za objednávku',
@@ -84,7 +71,7 @@ export function orderReceivedEmail(order: PlacedOrder, bankAccount: string): Ema
         kind: 'paragraph',
         text: 'Platit můžete i QR kódem ze stránky s potvrzením objednávky.',
       },
-      isPickup
+      isPickup(order)
         ? {
             kind: 'paragraph',
             text: 'Až bude objednávka připravená, ozveme se, kde a kdy si ji vyzvednete.',
@@ -140,39 +127,33 @@ export const ORDER_ACTION_EMAILS: Partial<Record<OrderAction, ActionEmail>> = {
     blocks: [
       {
         kind: 'paragraph',
-        text:
-          order.shippingMethod === 'osobni_odber'
-            ? `Děkujeme, platbu za objednávku ${order.variableSymbol} jsme přijali. Až bude připravená k vyzvednutí, dáme vám vědět.`
-            : `Děkujeme, platbu za objednávku ${order.variableSymbol} jsme přijali. Teď ji balíme a ozveme se, až bude na cestě.`,
+        text: isPickup(order)
+          ? `Děkujeme, platbu za objednávku ${order.variableSymbol} jsme přijali. Až bude připravená k vyzvednutí, dáme vám vědět.`
+          : `Děkujeme, platbu za objednávku ${order.variableSymbol} jsme přijali. Teď ji balíme a ozveme se, až bude na cestě.`,
       },
       ...noteBlocks(message),
       itemsBlock(order),
     ],
   }),
 
-  ship: (order, { message, trackingNumber }) => {
-    const trackingUrl = trackingNumber && TRACKING_URLS[order.shippingMethod]?.(trackingNumber);
-    return {
-      subject: `Objednávka ${order.variableSymbol} je na cestě`,
-      title: 'Zásilka je na cestě',
-      blocks: [
-        {
-          kind: 'paragraph',
-          text:
-            `Objednávku ${order.variableSymbol} jsme odeslali ${SHIPPED_WITH[order.shippingMethod] ?? ''}`.trim() +
-            '.',
-        },
-        ...(trackingNumber
-          ? [{ kind: 'facts', rows: [['Číslo zásilky', trackingNumber]] } satisfies EmailBlock]
-          : []),
-        ...(trackingUrl
-          ? [{ kind: 'button', label: 'Sledovat zásilku', href: trackingUrl } satisfies EmailBlock]
-          : []),
-        ...noteBlocks(message),
-        { kind: 'facts', rows: [['Doručení na adresu', address(order)]] },
-      ],
-    };
-  },
+  ship: (order, { message, trackingNumber, trackingUrl }) => ({
+    subject: `Objednávka ${order.variableSymbol} je na cestě`,
+    title: 'Zásilka je na cestě',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: `Objednávku ${order.variableSymbol} jsme odeslali (${order.shippingName}).`,
+      },
+      ...(trackingNumber
+        ? [{ kind: 'facts', rows: [['Číslo zásilky', trackingNumber]] } satisfies EmailBlock]
+        : []),
+      ...(trackingUrl
+        ? [{ kind: 'button', label: 'Sledovat zásilku', href: trackingUrl } satisfies EmailBlock]
+        : []),
+      ...noteBlocks(message),
+      { kind: 'facts', rows: [['Doručení na adresu', address(order)]] },
+    ],
+  }),
 
   'ready-for-pickup': (order, { message }) => ({
     subject: `Objednávka ${order.variableSymbol} je připravená k vyzvednutí`,
