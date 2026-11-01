@@ -40,7 +40,7 @@ access, the DTO types, the typed clients and the admin's form schema (`formSchem
 model means changing `fields.ts` — plus a migration (below).
 
 Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `ShippingMethod`,
-`PaymentMethod`, `EmailTemplate`, `Seller`, `LegalDocumentVersion`) are the production table names
+`PaymentMethod`, `EmailTemplate`, `Seller`, `LegalDocumentVersion`, `Review`) are the production table names
 (`Products`, …) — never rename them.
 
 ## Backend
@@ -88,8 +88,9 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
   cancel (puts the pieces back in stock unless `restock: false`), mark-refunded. Each is written to
   the order's `history` (JSON) and e-mails the customer unless `notify: false` or the e-mail is
   turned off (`skipped` in the history); PATCHing the statuses stays for corrections and does
-  neither. E-mails are blocks rendered as HTML in the site's colours and as plain text
-  (`src/emails/email-layout.ts`); `SITE_URL` is linked in them.
+  neither. `mark-delivered`'s e-mail invites the customer to review the order (below). E-mails are
+  blocks rendered as HTML in the site's colours and as plain text (`src/emails/email-layout.ts`);
+  `SITE_URL` is linked in them.
 - E-mail texts (`EmailTemplate`, `/api/email-templates`, signed-in admin only): one row per
   automatic e-mail (`EMAIL_TEMPLATE_KEYS`: the order confirmation, the artist's new order and one
   per action that e-mails), seeded by the `2026-11-01-email-templates` migration; the API only reads
@@ -124,6 +125,19 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
   `2026-11-01-legal-documents` migration published version `2026-11-02` of each with the texts
   the website had. The checkout stores the current terms version on the order and answers 412
   (`TERMS_CHANGED`) when the shop sent another (`termsVersion`); the confirmation names its date.
+- Reviews (`Review`, `src/reviews/`): one per order, written only through a link the
+  `mark-delivered` e-mail carries (or `POST /api/orders/:id/review-request`, the admin sending it
+  again): `/recenze/napsat?token=`, the order id and an expiry (`REVIEW_LINK_LIFETIME_DAYS`)
+  signed with a key derived from `JWT_SECRET` (`review-link.ts`), nothing stored. Public and
+  rate-limited: `GET /api/reviews/all/invitation?token=` (the order's pieces, a suggested name)
+  and `POST` there (stars, text, name, `locale`, `consent: true`; 404 for a forged or expired link,
+  409 for an order not delivered or already reviewed), with the order row locked. A review starts
+  `pending` and `ADMIN_EMAIL` gets `new-review`. The admin's CRUD (`signedInExceptCreating`) lists,
+  PATCHes `status` (`published` / `hidden`), `hiddenReason` and `reply` — the customer's words are
+  `readOnly` — and deletes; an order with a review can't be deleted (409). The website shows only
+  `GET /api/reviews/all/public` (published, newest first, `averageRating`, `?productId=`), which
+  answers nothing that leads to the order or the customer. Plan:
+  `features/2026-11-01-customer-reviews/`.
 - Files: any signed-in admin uploads (only product / gallery images) and deletes any photo; photos
   are public.
 - Ordering (`src/catalogue/reorder-plugin.ts`, signed-in admin): `PUT /api/products/:id/images/order`
@@ -154,7 +168,8 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
 
 `apps/web/src/services/index.ts` wraps the domain clients: `listProducts`, `getProduct`,
 `listGallery`, `listShippingMethods`, `listPaymentMethods`, `getSeller`, `getLegalVersion`,
-`listLegalVersions`, `listSiteTexts`, `checkout`. Every page's messages are the translation
+`listLegalVersions`, `listSiteTexts`, `checkout`, `listPublicReviews`, `getReviewInvitation`,
+`submitReview`. Every page's messages are the translation
 files with the admin's `SiteText` rows laid over them (`src/i18n/request.ts`, the domain's
 `withSiteTexts`, which keeps the typed text literal for ICU), read through `unstable_cache`
 (`lib/site-texts.ts`, tag `site-texts`, hourly), so every page render depends on the API like the
@@ -162,6 +177,12 @@ gallery does: a failed read keeps the last good page. The checkout reads the
 shipping and payment methods live and offers only the payment methods that fit the chosen shipping;
 the terms name no prices of either (the checkout shows them, the order states the ones agreed).
 Photos go through `mediaUrl()` (relative `/api/files/:id` without a bucket).
+Reviews (gated with the shop): `/recenze` lists the published ones with the shop's average, the
+home page shows the newest three and a product page the ones naming that piece (`lib/reviews.ts`:
+none while the API has no reviews route); `/recenze/napsat?token=` (`noindex`, rendered per
+request) is the form behind the e-mail's link, calling the API from the visitor's browser so the
+rate limit counts each customer on their own; the language switch keeps its token, and the
+analytics leave it out (`components/ui/SiteAnalytics.tsx`).
 `NEXT_PUBLIC_SHOP_ENABLED` gates the shop (see `src/lib/features.ts`). The image
 optimizer takes only the API's host and `NEXT_PUBLIC_MEDIA_URL` (the bucket's public URL, the API's
 `R2_PUBLIC_BASE_URL`), which a Vercel production build requires. `next.config.ts` sets the
@@ -199,6 +220,10 @@ live preview in a sandboxed `iframe`, the seller's details, the website's texts 
 English side by side, and per legal document its published versions and
 one draft, edited beside a preview the domain's parser renders with today's seller, published
 after a confirmation); it is not on the phone's bottom bar, only in the slide-over.
+"Recenze" (`pages/ReviewsPage.vue`, `app/reviews.ts`) lists the reviews by status (Ke schválení,
+Zveřejněné, Skryté) as cards to publish, hide with a reason, answer or delete; the sidebar and the
+overview count the pending ones, and a delivered order's detail shows its review or "Požádat o
+recenzi" (`components/OrderReviewCard.vue`). Like the settings, it is only in the phone's slide-over.
 `vercel.json` sends a Content-Security-Policy that allows only the admin's own scripts (hence
 `public/color-scheme.js` instead of an inline script) and API calls only to `*.up.railway.app`.
 

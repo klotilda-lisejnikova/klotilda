@@ -8,6 +8,7 @@ import { legalDocumentVersionEntity } from './entities/legal-document';
 import { orderEntity } from './entities/order';
 import { paymentMethodEntity } from './entities/payment-method';
 import { productEntity } from './entities/product';
+import { reviewEntity } from './entities/review';
 import { sellerEntity } from './entities/seller';
 import { shippingMethodEntity } from './entities/shipping-method';
 import { siteTextEntity } from './entities/site-text';
@@ -33,6 +34,7 @@ export function createServices(baseUrl: string, tokenSource: AccessTokenSource) 
       seller: sellerEntity,
       legalDocuments: legalDocumentVersionEntity,
       siteTexts: siteTextEntity,
+      reviews: reviewEntity,
     },
     baseUrl,
     tokenSource

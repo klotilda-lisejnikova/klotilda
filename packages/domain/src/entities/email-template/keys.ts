@@ -1,6 +1,7 @@
 /**
- * The e-mails the API sends by itself, one `EmailTemplate` row each. Five are named after the
- * order action that sends them.
+ * The e-mails the API sends by itself, one `EmailTemplate` row each. Six are named after the
+ * order action that sends them (`mark-delivered` invites the customer to review the order);
+ * `new-review` tells the artist a review waits for her.
  */
 export const EMAIL_TEMPLATE_KEYS = [
   'order-received',
@@ -8,8 +9,10 @@ export const EMAIL_TEMPLATE_KEYS = [
   'mark-paid',
   'ship',
   'ready-for-pickup',
+  'mark-delivered',
   'cancel',
   'mark-refunded',
+  'new-review',
 ] as const;
 export type EmailTemplateKey = (typeof EMAIL_TEMPLATE_KEYS)[number];
 

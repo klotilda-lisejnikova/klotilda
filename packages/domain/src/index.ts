@@ -6,6 +6,7 @@ import { legalDocumentVersionEntity } from './entities/legal-document';
 import { orderEntity } from './entities/order';
 import { paymentMethodEntity } from './entities/payment-method';
 import { productEntity } from './entities/product';
+import { reviewEntity } from './entities/review';
 import { sellerEntity } from './entities/seller';
 import { shippingMethodEntity } from './entities/shipping-method';
 import { siteTextEntity } from './entities/site-text';
@@ -15,6 +16,7 @@ export * from './constants';
 export * from './legal-text';
 export * from './ordering';
 export * from './placeholders';
+export { asReadOnly, type ReadOnlyFields } from './read-only';
 export * from './seller';
 export { adminUserEntity, type AdminUser } from './entities/admin-user';
 export { adminUserFields } from './entities/admin-user/fields';
@@ -121,6 +123,42 @@ export {
 } from './entities/payment-method';
 export { paymentMethodFields } from './entities/payment-method/fields';
 export { customerFields, orderActionFields, orderFields } from './entities/order/fields';
+export {
+  DEFAULT_REVIEW_STATUS,
+  MAX_RATING,
+  MIN_RATING,
+  parseReviewedItems,
+  PUBLIC_REVIEWS_DEFAULT_LIMIT,
+  PUBLIC_REVIEWS_MAX_LIMIT,
+  PUBLIC_REVIEWS_ROUTE,
+  REVIEW_AUTHOR_NAME_MAX_LENGTH,
+  REVIEW_BODY_MAX_LENGTH,
+  REVIEW_BODY_MIN_LENGTH,
+  REVIEW_HIDDEN_REASON_MAX_LENGTH,
+  REVIEW_INVITATION_ROUTE,
+  REVIEW_LINK_LIFETIME_DAYS,
+  REVIEW_LOCALES,
+  REVIEW_NOT_DELIVERED_MESSAGE,
+  REVIEW_REPLY_MAX_LENGTH,
+  REVIEW_REQUEST_ROUTE,
+  REVIEW_STATUSES,
+  REVIEW_TOKEN_MAX_LENGTH,
+  REVIEW_WRITE_PATH,
+  reviewEntity,
+  reviewFields,
+  REVIEWS_PATH,
+  reviewSubmissionFields,
+  suggestedAuthorName,
+  type PublicReview,
+  type PublicReviewsPage,
+  type PublicReviewsQuery,
+  type Review,
+  type ReviewedItem,
+  type ReviewInvitation,
+  type ReviewLocale,
+  type ReviewStatus,
+  type ReviewSubmission,
+} from './entities/review';
 export { createServices, KlotildaAuthService, type Services } from './services';
 
 /** Every entity, for the API's `toModelConfigs(allEntities)`. */
@@ -136,6 +174,7 @@ export const allEntities = {
   seller: sellerEntity,
   legalDocumentVersion: legalDocumentVersionEntity,
   siteText: siteTextEntity,
+  review: reviewEntity,
 };
 
 /** Accounts are made by the seed script and signed in to through `/api/auth` only. */

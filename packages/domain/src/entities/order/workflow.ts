@@ -102,9 +102,9 @@ export function applyAction(
 /** What the customer's e-mail did: sent, failed (logged on the server), or not sent on purpose. */
 export type EmailOutcome = 'sent' | 'failed' | 'skipped';
 
-/** One line of an order's history. */
+/** One line of an order's history; `review-request` is the review link e-mailed again. */
 export interface OrderEvent {
-  type: 'placed' | OrderAction;
+  type: 'placed' | OrderAction | 'review-request';
   /** ISO timestamp. */
   at: string;
   email?: EmailOutcome;

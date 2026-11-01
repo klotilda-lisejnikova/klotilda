@@ -6,6 +6,8 @@ import { Link } from "@/i18n/navigation";
 import { getProduct, listAllProducts, type Product } from "@/services";
 import { loadStaticData } from "@/lib/static-data";
 import { categoryName } from "@/lib/category";
+import { loadOptionalReviews } from "@/lib/reviews";
+import ReviewCard from "@/components/reviews/ReviewCard";
 import ProductGallery from "@/components/shop/ProductGallery";
 import ProductPurchase from "@/components/shop/ProductPurchase";
 
@@ -56,8 +58,10 @@ export default async function ProductDetailPage({ params }: Props) {
   const { locale, id } = await params;
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "shop" });
+  const tReviews = await getTranslations({ locale, namespace: "reviews" });
 
   const product = await loadProduct(id);
+  const reviews = await loadOptionalReviews("ProductPage", { productId: id });
 
   const name =
     locale === "en" && product.name_en ? product.name_en : product.name_cs;
@@ -114,6 +118,20 @@ export default async function ProductDetailPage({ params }: Props) {
           </ProductPurchase>
         </div>
       </div>
+
+      {/* Reviews of orders that held this very piece; other pieces' reviews would mislead. */}
+      {reviews.data.length > 0 && (
+        <div className="mt-16 border-t border-stone-200 pt-12">
+          <h2 className="font-serif text-2xl font-light tracking-[0.08em] text-stone-800">
+            {tReviews("product")}
+          </h2>
+          <div className="mt-6 space-y-5">
+            {reviews.data.map((review) => (
+              <ReviewCard key={review.id} review={review} showItems={false} />
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

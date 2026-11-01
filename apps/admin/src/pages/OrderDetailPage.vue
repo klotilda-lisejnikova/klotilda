@@ -6,11 +6,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import { availableActions, parseOrderHistory, parseOrderItems } from '@klotilda/domain';
 import type { Order, OrderAction, OrderStatus, PaymentStatus } from '@klotilda/domain';
 import ConfirmDelete from '@/components/ConfirmDelete.vue';
+import OrderReviewCard from '@/components/OrderReviewCard.vue';
 import OrderStatusBadges from '@/components/OrderStatusBadges.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { services } from '@/app/api';
 import { describeError } from '@/app/errors';
 import { useListReturn } from '@/app/list-return';
+import { REVIEWS_QUERY_KEY, useOrderReview } from '@/app/reviews';
 import { formatCzk, formatDateTime } from '@/app/format';
 import { emailFailed, refreshAfterOrderAction, shouldNotify } from '@/app/order-actions';
 import {
@@ -106,6 +108,28 @@ const update = useMutation({
     services.orders.update(props.id, changes),
   onSuccess: (updated: Order) => saved(updated, 'Uloženo'),
   onError: (err) => toast.add({ title: describeError(err), color: 'error' }),
+});
+
+// ── The order's review, or sending the link to write one again ──────
+const {
+  data: review,
+  isPending: reviewPending,
+  isError: reviewFailed,
+} = useOrderReview(() => props.id);
+
+const requestReview = useMutation({
+  mutationFn: () => services.reviews.requestFor(props.id),
+  onSuccess: (updated) => {
+    if (emailFailed(updated)) {
+      queryClient.setQueryData(['order', props.id], updated);
+      toast.add({ title: 'E-mail zákazníkovi se nepodařilo odeslat.', color: 'warning' });
+      return;
+    }
+    saved(updated, 'Odkaz na recenzi odešel zákazníkovi');
+  },
+  onError: (err) => toast.add({ title: describeError(err), color: 'error' }),
+  // A 409 may mean the customer has just written one: show it instead of the button.
+  onSettled: () => void queryClient.invalidateQueries({ queryKey: REVIEWS_QUERY_KEY }),
 });
 
 const remove = useMutation({
@@ -289,6 +313,15 @@ async function copy(text: string, what: string) {
           <span />
         </dl>
       </UCard>
+
+      <OrderReviewCard
+        :delivered="order.orderStatus === 'delivered'"
+        :review="review ?? null"
+        :loading="reviewPending"
+        :failed="reviewFailed"
+        :requesting="requestReview.isPending.value"
+        @request="requestReview.mutate()"
+      />
 
       <UCard>
         <template #header><h2 class="font-semibold">Historie</h2></template>

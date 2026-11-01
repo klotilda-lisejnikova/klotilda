@@ -162,8 +162,8 @@ describe('Migrations', () => {
         ['prevod', 0, 'bank_transfer'],
         ['hotove', 0, 'cash'],
       ]);
-      // The e-mails' wording became rows, one per e-mail.
-      expect(await core.models.EmailTemplate.count()).toBe(7);
+      // The e-mails' wording became rows, one per e-mail, the two about reviews included.
+      expect(await core.models.EmailTemplate.count()).toBe(9);
       // The seller's details became one row.
       expect(await core.models.Seller.count()).toBe(1);
       // The legal pages became one published version each, the one the checkout stored.

@@ -8,6 +8,7 @@ import {
   SHIPPING_KINDS,
 } from '../../constants';
 import { CODE_MAX_LENGTH } from '../../codes';
+import { asReadOnly } from '../../read-only';
 import { LEGAL_VERSION_MAX_LENGTH } from '../legal-document/fields';
 
 const NAME_MAX_LENGTH = 100;
@@ -35,14 +36,6 @@ export const customerFields = {
   paymentMethod: { type: 'STRING', required: true, maxLength: CODE_MAX_LENGTH },
   notes: { type: 'TEXT', maxLength: NOTES_MAX_LENGTH },
 } as const satisfies Fields;
-
-type ReadOnlyFields<T extends Fields> = { [K in keyof T]: T[K] & { readonly readOnly: true } };
-
-function asReadOnly<T extends Fields>(fields: T): ReadOnlyFields<T> {
-  return Object.fromEntries(
-    Object.entries(fields).map(([name, field]) => [name, { ...field, readOnly: true }])
-  ) as ReadOnlyFields<T>;
-}
 
 /**
  * A stored order. What the customer sent and what the server worked out stays as it was; the

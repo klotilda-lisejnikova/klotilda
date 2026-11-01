@@ -6,6 +6,7 @@ import { orderTerms } from './2026-09-29-order-terms';
 import { emailTemplates } from './2026-11-01-email-templates';
 import { legalDocuments } from './2026-11-01-legal-documents';
 import { paymentMethods } from './2026-11-01-payment-methods';
+import { reviews } from './2026-11-01-reviews';
 import { seller } from './2026-11-01-seller';
 import { shippingMethods } from './2026-11-01-shipping-methods';
 import { siteTexts } from './2026-11-01-site-texts';
@@ -26,4 +27,5 @@ export const migrations: Migration[] = [
   seller,
   legalDocuments,
   siteTexts,
+  reviews,
 ];

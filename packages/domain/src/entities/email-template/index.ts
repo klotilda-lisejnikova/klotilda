@@ -117,4 +117,18 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateKey, EmailTemplateDefinition> 
     heading: 'Vrátili jsme vám peníze',
     body: 'Za zrušenou objednávku {{vs}} jsme vám vrátili {{castka}}.',
   },
+  'mark-delivered': {
+    to: 'customer',
+    placeholders: ORDER_PLACEHOLDERS,
+    subject: 'Objednávka {{vs}} — jak jste spokojeni?',
+    heading: 'Děkujeme za nákup',
+    body: 'Dobrý den, objednávka {{vs}} je u vás. Budeme rádi, když nám napíšete, jak se vám líbí — vaše recenze pomůže dalším zákazníkům.',
+  },
+  'new-review': {
+    to: 'artist',
+    placeholders: ORDER_PLACEHOLDERS,
+    subject: 'Nová recenze k objednávce {{vs}}',
+    heading: 'Nová recenze',
+    body: 'Recenze čeká na schválení v adminu, v části Recenze.',
+  },
 };

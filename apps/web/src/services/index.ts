@@ -7,7 +7,11 @@ import type {
   LegalVersionSummary,
   PaymentMethod,
   ProductWithImages,
+  PublicReviewsPage,
+  PublicReviewsQuery,
   PublishedLegalVersion,
+  ReviewInvitation,
+  ReviewSubmission,
   Seller,
   ShippingMethod,
   SiteText,
@@ -101,4 +105,23 @@ export function listLegalVersions(
 /** The texts the admin words for the website (`SITE_TEXT_KEYS`), one row each. */
 export async function listSiteTexts(): Promise<SiteText[]> {
   return (await services.siteTexts.getAll({ limit: 50 })).data;
+}
+
+/** The published reviews, newest first, with the shop's average stars. */
+export function listPublicReviews(
+  query: PublicReviewsQuery = {},
+): Promise<PublicReviewsPage> {
+  return services.reviews.listPublic(query);
+}
+
+/** What the link from the e-mail invites the customer to review. */
+export function getReviewInvitation(token: string): Promise<ReviewInvitation> {
+  return services.reviews.invitation(token);
+}
+
+/** Writes the customer's review; it shows once the artist publishes it. */
+export function submitReview(
+  request: ReviewSubmission,
+): Promise<{ id: string }> {
+  return services.reviews.submit(request);
 }

@@ -6,6 +6,7 @@ import {
   LEGAL_DOCUMENTS_PATH,
   ORDERS_PATH,
   PRODUCTS_PATH,
+  REVIEWS_PATH,
   SELLER_PATH,
   SITE_TEXTS_PATH,
 } from '@klotilda/domain';
@@ -20,11 +21,20 @@ export interface WebRevalidation {
 const DEBOUNCE_MS = 1000;
 const FILES_PATH = '/api/files';
 
+/** One review's CRUD route, `/api/reviews/:id` (a trailing slash allowed, as Express allows it). */
+const REVIEW_ROW = new RegExp(`^${REVIEWS_PATH}/(?!all/?$)[^/]+/?$`);
+
+/** The admin publishing, hiding, answering or deleting a review. */
+function isReviewDecision(method: string, path: string): boolean {
+  return (method === 'PATCH' || method === 'PUT' || method === 'DELETE') && REVIEW_ROW.test(path);
+}
+
 /**
  * Requests that change what the website shows: the catalogue and the gallery, their photos, the
- * seller's details, the site's texts, a published legal text, a placed order (stock goes down) and
- * order actions (a cancelled order's stock comes back). A legal draft's saves don't: the website
- * never shows one.
+ * seller's details, the site's texts, a published legal text, a placed order (stock goes down),
+ * order actions (a cancelled order's stock comes back) and the admin's decisions on a review
+ * (`PATCH` / `DELETE /api/reviews/:id`). A legal draft's saves don't: the website never shows one;
+ * nor does a review just written, which waits unseen, or the review routes under `/all/`.
  */
 function changesTheWebsite(method: string, path: string): boolean {
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false;
@@ -39,7 +49,8 @@ function changesTheWebsite(method: string, path: string): boolean {
       SITE_TEXTS_PATH,
     ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`)) ||
     (path.startsWith(`${ORDERS_PATH}/`) && path.includes('/actions/')) ||
-    (path.startsWith(`${LEGAL_DOCUMENTS_PATH}/`) && path.endsWith('/draft/publish'))
+    (path.startsWith(`${LEGAL_DOCUMENTS_PATH}/`) && path.endsWith('/draft/publish')) ||
+    isReviewDecision(method, path)
   );
 }
 
