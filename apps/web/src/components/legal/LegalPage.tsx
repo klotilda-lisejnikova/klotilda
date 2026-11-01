@@ -28,7 +28,16 @@ async function loadExtraValues(
   language: "cs" | "en",
 ): Promise<Record<string, string>> {
   if (kind !== "terms") return {};
-  const methods = await loadStaticData("TermsPage", listShippingMethods, []);
+  // A failed load says "shown at checkout" instead of failing the page: the text stays true,
+  // and the website may build before an API that serves the shipping methods is deployed.
+  const methods = await loadStaticData(
+    "TermsPage",
+    listShippingMethods,
+    [],
+  ).catch((err: unknown) => {
+    console.error("[TermsPage] Shipping methods could not be loaded:", err);
+    return [];
+  });
   const prices = methods.map((method) => ({
     name: (language === "en" && method.name_en) || method.name_cs,
     price: method.price,
