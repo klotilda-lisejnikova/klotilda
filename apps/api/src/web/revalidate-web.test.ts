@@ -58,4 +58,11 @@ describe('Website revalidation', () => {
     send('POST', '/api/orders/ord1/actions/cancel');
     await vi.waitFor(() => expect(calls).toHaveLength(1), { timeout: 3000 });
   });
+
+  it("tells the website when the seller's details change", async () => {
+    await quiet();
+    calls.length = 0;
+    send('PATCH', '/api/seller/sel1');
+    await vi.waitFor(() => expect(calls).toHaveLength(1), { timeout: 3000 });
+  });
 });

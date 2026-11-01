@@ -40,8 +40,8 @@ access, the DTO types, the typed clients and the admin's form schema (`formSchem
 model means changing `fields.ts` — plus a migration (below).
 
 Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `ShippingMethod`,
-`PaymentMethod`, `EmailTemplate`) are the production table names (`Products`, …) — never rename
-them.
+`PaymentMethod`, `EmailTemplate`, `Seller`) are the production table names (`Products`, …) —
+never rename them.
 
 ## Backend
 
@@ -100,6 +100,11 @@ them.
   payment details, tracking, address, legal links) stays generated around that text
   (`src/emails/order-emails.ts`). A missing row falls back to the domain's default.
   `POST /api/email-templates/all/preview` renders a text for a sample order.
+- The seller (`Seller`, `/api/seller`): one row (name, IČO, address, e-mail, phone, registration,
+  `complete`), anyone reads it, the signed-in admin PATCHes it (`signedInEditingOnly`); seeded
+  with placeholders by the `2026-11-01-seller` migration. The e-mails' footer names it
+  (`resolveSellerLine`, the domain's `SELLER` when the row is missing); the website still shows
+  the domain's `SELLER` until it reads the row.
 - Files: any signed-in admin uploads (only product / gallery images) and deletes any photo; photos
   are public.
 - Ordering (`src/catalogue/reorder-plugin.ts`, signed-in admin): `PUT /api/products/:id/images/order`
@@ -160,9 +165,9 @@ products list is a table or cards (remembered per browser) with an "in the shop"
 product. The overview counts through the API and charts the paid revenue of the last 12 months by
 the month of the order (`app/revenue.ts`). Every `UFormField` keeps a line free for its message
 (`vite.config.ts`), so a message that appears or goes never moves a button from under the pointer.
-The sidebar's "Nastavení" group holds the shop's settings (Doprava, Platby, E-maily: the shipping
-and payment methods and the e-mail texts, the last with a live preview in a sandboxed `iframe`); it
-is not on the phone's bottom bar, only in the slide-over.
+The sidebar's "Nastavení" group holds the shop's settings (Doprava, Platby, E-maily,
+Prodávající: the shipping and payment methods, the e-mail texts with a live preview in a sandboxed
+`iframe`, and the seller's details); it is not on the phone's bottom bar, only in the slide-over.
 `vercel.json` sends a Content-Security-Policy that allows only the admin's own scripts (hence
 `public/color-scheme.js` instead of an inline script) and API calls only to `*.up.railway.app`.
 
@@ -195,7 +200,7 @@ Branches: `main` = production, `dev` = test.
   Both run with `NODE_ENV=production`, so each needs `TRUST_PROXY=1` and a `JWT_SECRET` of at
   least 32 characters before it takes a build that checks them, or the API won't start.
 
-  After a change to the catalogue, the gallery or the stock the API calls the web's
+  After a change to the catalogue, the gallery, the stock or the seller the API calls the web's
   `POST /api/revalidate` (`WEB_REVALIDATE_URL`, `WEB_REVALIDATE_SECRET` = the web's
   `REVALIDATE_SECRET`), so admin edits show at once; set for `test` / the `dev` branch, not yet
   for production — set it there before the shop goes live: without it the shop's pages

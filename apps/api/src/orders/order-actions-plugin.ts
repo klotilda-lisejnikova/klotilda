@@ -32,6 +32,7 @@ import { resolveEmailText } from '../emails/email-templates';
 import { orderActionEmail } from '../emails/order-emails';
 import type { PlacedOrder } from '../emails/order-emails';
 import { sendEmail } from '../emails/send-email';
+import { resolveSellerLine } from '../seller/seller';
 import { asyncHandler } from '../http/async-handler';
 import type { ModelRegistry } from '../models-registry';
 
@@ -170,10 +171,11 @@ export function createOrderActionsPlugin({
           // The e-mail goes after the change is saved; how it went is noted on the same line.
           const email = await findActionEmail(registry, action, order.toJSON() as Order, event);
           if (email) {
-            event.email =
-              request.notify === false || !email.enabled
-                ? 'skipped'
-                : await sendEmail(emailService, email.to, email.content, siteUrl);
+            const sends = request.notify !== false && email.enabled;
+            const footer = sends && { siteUrl, sellerLine: await resolveSellerLine(registry) };
+            event.email = footer
+              ? await sendEmail(emailService, email.to, email.content, footer)
+              : 'skipped';
             const history = parseOrderHistory(order.toJSON() as Order);
             history[history.length - 1] = event;
             await order.update({ history: JSON.stringify(history) });

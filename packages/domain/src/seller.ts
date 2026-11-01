@@ -1,7 +1,8 @@
+import { sellerLine } from './entities/seller';
+
 /**
- * Who sells: shown in the website's footer (§ 435 of the Civil Code), in the terms and privacy
- * pages and in the order e-mails. Every value here is a PLACEHOLDER until the artist's details are
- * known — change them here, and set `placeholder` to false.
+ * The seller's details the website shows (footer, legal pages) until it reads the `Seller` row the
+ * admin edits; the API's e-mails already read the row. Every value is a PLACEHOLDER.
  */
 export const SELLER = {
   /** The name the trade licence is issued to. */
@@ -37,4 +38,4 @@ export const LEGAL_PATHS = {
 export const COMPLAINTS_ANCHOR = 'reklamace';
 
 /** "Jméno Příjmení, IČO 12345678, Ulice 1, 110 00 Praha 1" */
-export const SELLER_LINE = `${SELLER.name}, IČO ${SELLER.ico}, ${SELLER.address}`;
+export const SELLER_LINE = sellerLine(SELLER);

@@ -164,6 +164,8 @@ describe('Migrations', () => {
       ]);
       // The e-mails' wording became rows, one per e-mail.
       expect(await core.models.EmailTemplate.count()).toBe(7);
+      // The seller's details became one row.
+      expect(await core.models.Seller.count()).toBe(1);
     } finally {
       await core.close();
     }

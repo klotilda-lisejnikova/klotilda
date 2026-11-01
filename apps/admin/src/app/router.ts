@@ -64,6 +64,11 @@ export const router = createRouter({
           component: () => import('@/pages/PaymentMethodsPage.vue'),
         },
         {
+          path: 'seller',
+          name: 'seller',
+          component: () => import('@/pages/SellerPage.vue'),
+        },
+        {
           path: 'emails',
           name: 'email-templates',
           component: () => import('@/pages/EmailTemplatesPage.vue'),
