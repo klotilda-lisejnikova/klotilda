@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { TERMS_VERSION } from '@klotilda/domain';
 import { ARTIST_EMAIL, bearer, startTestApp, TEST_PICKUP_POINT_ID } from './test-support/test-app';
 import type { TestApp } from './test-support/test-app';
 
@@ -16,6 +15,8 @@ const CUSTOMER = {
   termsAccepted: true,
 };
 const ZASILKOVNA_PRICE = 99;
+/** The terms version the migration publishes. */
+const FIRST_TERMS_VERSION = '2026-11-02';
 
 describe('Checkout', () => {
   let app: TestApp;
@@ -76,7 +77,7 @@ describe('Checkout', () => {
     expect(JSON.parse(order.body.items)).toEqual([
       { productId: bowl.id, name: 'Mísa', price: 800, quantity: 2 },
     ]);
-    expect(order.body.termsVersion).toBe(TERMS_VERSION);
+    expect(order.body.termsVersion).toBe(FIRST_TERMS_VERSION);
     expect(new Date(order.body.termsAcceptedAt).getTime()).toBeGreaterThan(Date.now() - 60_000);
   });
 

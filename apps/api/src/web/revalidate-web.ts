@@ -3,6 +3,7 @@ import {
   CATEGORIES_PATH,
   CHECKOUT_PATH,
   GALLERY_PATH,
+  LEGAL_DOCUMENTS_PATH,
   ORDERS_PATH,
   PRODUCTS_PATH,
   SELLER_PATH,
@@ -20,8 +21,8 @@ const FILES_PATH = '/api/files';
 
 /**
  * Requests that change what the website shows: the catalogue and the gallery, their photos, the
- * seller's details, a placed order (stock goes down) and order actions (a cancelled order's stock
- * comes back).
+ * seller's details, a published legal text, a placed order (stock goes down) and order actions (a
+ * cancelled order's stock comes back). A legal draft's saves don't: the website never shows one.
  */
 function changesTheWebsite(method: string, path: string): boolean {
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false;
@@ -29,7 +30,8 @@ function changesTheWebsite(method: string, path: string): boolean {
     [PRODUCTS_PATH, CATEGORIES_PATH, GALLERY_PATH, FILES_PATH, CHECKOUT_PATH, SELLER_PATH].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`)
     ) ||
-    (path.startsWith(`${ORDERS_PATH}/`) && path.includes('/actions/'))
+    (path.startsWith(`${ORDERS_PATH}/`) && path.includes('/actions/')) ||
+    (path.startsWith(`${LEGAL_DOCUMENTS_PATH}/`) && path.endsWith('/draft/publish'))
   );
 }
 

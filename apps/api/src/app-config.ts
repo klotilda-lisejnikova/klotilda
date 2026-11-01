@@ -15,6 +15,7 @@ import {
   ENTITIES_WITHOUT_CRUD_ROUTES,
   FILE_REF_TYPES,
   galleryItemEntity,
+  legalDocumentVersionEntity,
   orderEntity,
   paymentMethodEntity,
   productEntity,
@@ -31,6 +32,7 @@ import { createShopImages } from './files/shop-images';
 import { normalizeCode } from './http/normalize-code';
 import { rejectEmptyQueryObjects } from './http/query-guard';
 import { securityHeaders } from './http/security-headers';
+import { createLegalDocumentsPlugin } from './legal/legal-documents-plugin';
 import { createModelRegistry } from './models-registry';
 import { migrations } from './migrations';
 import { createOrderActionsPlugin } from './orders/order-actions-plugin';
@@ -58,6 +60,9 @@ const activeUnlessSignedIn: AccessDecider = (req) => (req.user ? true : { active
 /** The e-mail templates and the seller are fixed rows: the admin edits them, never adds or removes one. */
 const signedInEditingOnly: AccessDecider = (req) =>
   req.user !== undefined && req.method !== CREATE_METHOD && req.method !== DELETE_METHOD;
+
+/** Legal versions change only through `src/legal/`, which keeps a published one frozen. */
+const nobody: AccessDecider = () => false;
 
 /** Orders are placed only through `POST /api/checkout`; the admin updates and deletes them. */
 const signedInExceptCreating: AccessDecider = (req) =>
@@ -130,6 +135,9 @@ export function buildAppConfig(
       [sellerEntity.config.name]: {
         access: { write: signedInEditingOnly },
       },
+      [legalDocumentVersionEntity.config.name]: {
+        access: { write: nobody },
+      },
     },
     plugins: [
       models.plugin,
@@ -148,6 +156,7 @@ export function buildAppConfig(
         siteUrl: environment.siteUrl,
       }),
       createReorderPlugin({ registry: models, jwtSecret: environment.jwtSecret }),
+      createLegalDocumentsPlugin({ registry: models, jwtSecret: environment.jwtSecret }),
       createEmailPreviewPlugin({
         registry: models,
         jwtSecret: environment.jwtSecret,
