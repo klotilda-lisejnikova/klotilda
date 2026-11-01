@@ -113,7 +113,7 @@ function Thanks() {
       </h2>
       <p className="mt-3 text-stone-700">{t("thanksBody")}</p>
       <Link
-        href="/recenze"
+        href="/shop/recenze"
         className="text-moss mt-6 inline-block text-sm underline underline-offset-4"
       >
         {t("toReviews")}

@@ -10,12 +10,7 @@ export default function Header() {
   const links = [
     { href: "/#about", label: t("about") },
     { href: "/#gallery", label: t("gallery") },
-    ...(SHOP_ENABLED
-      ? [
-          { href: "/shop", label: t("shop") },
-          { href: "/recenze", label: t("reviews") },
-        ]
-      : []),
+    ...(SHOP_ENABLED ? [{ href: "/shop", label: t("shop") }] : []),
     { href: "/#contact", label: t("contact") },
   ];
 

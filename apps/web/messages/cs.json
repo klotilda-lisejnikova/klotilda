@@ -3,7 +3,6 @@
     "about": "O mně",
     "gallery": "Galerie",
     "shop": "E-shop",
-    "reviews": "Recenze",
     "contact": "Kontakt",
     "menu": "Menu"
   },
@@ -190,7 +189,6 @@
     "bought": "Koupeno:",
     "reply": "Odpověď Klotildy",
     "otherLanguage": "Napsáno anglicky",
-    "latest": "Co říkají zákazníci",
     "all": "Všechny recenze",
     "product": "Recenze tohoto kusu",
     "write": {
@@ -219,6 +217,8 @@
       "error": "Recenzi se nepodařilo odeslat. Zkuste to prosím znovu.",
       "checkFields": "Zkontrolujte prosím text recenze (aspoň {min} znaků) a jméno.",
       "ratingMissing": "Vyberte prosím počet hvězdiček."
-    }
+    },
+    "shopLink": "Recenze zákazníků",
+    "back": "E-shop"
   }
 }

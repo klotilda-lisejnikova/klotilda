@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { listAllProducts } from "@/services";
 import { loadStaticData } from "@/lib/static-data";
+import { loadOptionalReviews } from "@/lib/reviews";
+import ReviewsSummary from "@/components/reviews/ReviewsSummary";
 import FadeIn from "@/components/ui/FadeIn";
 import ShopCatalog, { CatalogView } from "@/components/shop/ShopCatalog";
 import { ALL_CATEGORIES } from "@/components/shop/CategoryFilter";
@@ -27,7 +29,11 @@ export default async function ShopPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "shop" });
-  const products = await loadStaticData("ShopPage", listAllProducts, []);
+  const [products, reviews] = await Promise.all([
+    loadStaticData("ShopPage", listAllProducts, []),
+    // Only the average and the count are shown here.
+    loadOptionalReviews("ShopPage", { limit: 1 }),
+  ]);
 
   return (
     // The paper background and the heading of the home page's gallery.
@@ -40,6 +46,7 @@ export default async function ShopPage({ params }: Props) {
           <p className="mt-4 text-xs tracking-widest text-stone-500">
             {t("description")}
           </p>
+          <ReviewsSummary page={reviews} />
         </FadeIn>
 
         {/* The static HTML holds every product; the browser then applies ?category= itself. */}

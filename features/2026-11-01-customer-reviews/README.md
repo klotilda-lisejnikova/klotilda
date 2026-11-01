@@ -38,7 +38,7 @@ sequenceDiagram
   participant W as Web
   A->>API: mark-delivered (or "Požádat o recenzi" on the order)
   API->>C: e-mail "Jak jste spokojena?" with a personal link
-  C->>W: /recenze/napsat?token=…
+  C->>W: /shop/recenze/napsat?token=…
   W->>API: GET /api/reviews/all/invitation?token=… (suggested name, items)
   C->>W: stars, text, name shown
   W->>API: POST /api/reviews/all/invitation {token, rating, body, authorName, locale, consent}
@@ -65,7 +65,7 @@ sequenceDiagram
    changing `JWT_SECRET` ends the links already sent. Nothing is stored for it, and it doesn't depend on the order's `history`, which older orders and
    statuses set by a plain PATCH don't have. The API accepts it only while it hasn't expired, the
    order is `delivered` and it has no review yet. One order, one review.
-3. **Writing.** `/recenze/napsat` (both languages, `noindex`) shows the pieces bought, 1–5 stars,
+3. **Writing.** `/shop/recenze/napsat` (both languages, `noindex`) shows the pieces bought, 1–5 stars,
    the text and the name to show, prefilled as first name + initial ("Jana N."). A checkbox agrees
    to publishing the review with that name. `POST /api/reviews/all/invitation` is public and rate-limited like the
    checkout.
@@ -127,13 +127,13 @@ The review form calls the invitation routes **from the visitor's browser**, like
 are rate-limited per client address, so a call from the website's server would make every customer
 share one limit.
 
-- **`/recenze`** (in the menu next to the shop, gated with the shop by `NEXT_PUBLIC_SHOP_ENABLED`):
-  the average and the count, the reviews newest first (stars, text, name, the pieces by name, not
-  linked, since a sold original's page goes; date, the artist's reply), and a short note on where they come from: "Recenze mohou napsat jen
+- **Inside the shop, not the site's menu** (the owner's call, 2026-11-01): the shop page shows the
+  average and the count, linking **`/shop/recenze`** (gated with the shop): the reviews newest
+  first (stars, text, name, the pieces by name, not linked, since a sold original's page goes;
+  date, the artist's reply), and a short note on where they come from: "Recenze mohou napsat jen
   zákazníci, kteří u nás nakoupili, přes odkaz z e-mailu po doručení. Zveřejňujeme kladné i
-  záporné." A review in the other language is shown as written, marked with its language.
-- **Home page:** a strip of the three newest published reviews with a link to `/recenze` (only
-  once there are any).
+  záporné." A review in the other language is shown as written, marked with its language. The
+  home page shows none.
 - **Product detail:** reviews naming that piece, under the description; for an unsold piece of a
   category, nothing — no "reviews of similar products", which would be misleading.
 - **No star rich snippets** for now: Google ignores a shop's reviews of itself, and the products are
@@ -162,7 +162,7 @@ there; the overview gets a "Recenze ke schválení" count that links to it. `Nav
   ([legal texts](../2026-11-01-legal-texts/README.md)). So this plan **doesn't edit the legal
   texts**: once that work is on `dev`, the owner publishes a new version with the paragraph from
   the admin. The paragraph is drafted in step 3's PR description. **The privacy version with it
-  must be published before `/recenze/napsat` reaches `main`** (on `dev` it can be tested before).
+  must be published before `/shop/recenze/napsat` reaches `main`** (on `dev` it can be tested before).
 
 ## Steps
 
@@ -178,7 +178,8 @@ same files at once.
    equals a synced one.
 2. **Admin:** "Recenze" page, badge, overview count, review on the order detail, the
    "Požádat o recenzi" button, the e-mail switch for `mark-delivered`.
-3. **Web:** `/recenze`, `/recenze/napsat`, home strip, product detail, cs/en texts.
+3. **Web:** `/shop/recenze`, `/shop/recenze/napsat`, the shop page's summary, product detail,
+   cs/en texts.
 
 ## Later, not now
 

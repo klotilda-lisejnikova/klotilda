@@ -3,6 +3,7 @@ import { PUBLIC_REVIEWS_MAX_LIMIT } from "@klotilda/domain";
 import ReviewCard from "@/components/reviews/ReviewCard";
 import ReviewStars from "@/components/reviews/ReviewStars";
 import { loadReviews } from "@/lib/reviews";
+import { Link } from "@/i18n/navigation";
 
 /**
  * The newest published reviews; the admin's decisions rebuild the page at once
@@ -31,6 +32,12 @@ export default async function ReviewsPage({ params }: Props) {
   return (
     <section className="bg-paper min-h-[60vh]">
       <div className="mx-auto max-w-3xl px-4 pt-16 pb-24 md:px-8 md:pt-24 md:pb-32">
+        <Link
+          href="/shop"
+          className="hover:text-moss mb-8 inline-block text-[0.7rem] tracking-[0.25em] text-stone-400 uppercase transition-colors"
+        >
+          ← {t("back")}
+        </Link>
         <h1 className="font-serif text-3xl font-light tracking-[0.12em] text-stone-800 md:text-4xl">
           {t("title")}
         </h1>

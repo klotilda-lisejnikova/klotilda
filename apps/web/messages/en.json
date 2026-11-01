@@ -3,7 +3,6 @@
     "about": "About",
     "gallery": "Gallery",
     "shop": "Shop",
-    "reviews": "Reviews",
     "contact": "Contact",
     "menu": "Menu"
   },
@@ -190,7 +189,6 @@
     "bought": "Bought:",
     "reply": "Klotilda's reply",
     "otherLanguage": "Written in Czech",
-    "latest": "What customers say",
     "all": "All reviews",
     "product": "Reviews of this piece",
     "write": {
@@ -219,6 +217,8 @@
       "error": "The review could not be sent. Please try again.",
       "checkFields": "Please check the review text (at least {min} characters) and the name.",
       "ratingMissing": "Please choose the number of stars."
-    }
+    },
+    "shopLink": "Customer reviews",
+    "back": "Shop"
   }
 }

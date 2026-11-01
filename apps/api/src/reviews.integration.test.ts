@@ -233,7 +233,7 @@ describe('Reviews', () => {
     const before = app.outbox.sent.length;
     const answer = await request();
     expect(answer.status).toBe(200);
-    expect(app.outbox.sent.slice(before)[0].html).toContain('/recenze/napsat?token=');
+    expect(app.outbox.sent.slice(before)[0].html).toContain('/shop/recenze/napsat?token=');
     const history = JSON.parse(answer.body.history) as { type: string; email?: string }[];
     expect(history.at(-1)).toMatchObject({ type: 'review-request', email: 'sent' });
 

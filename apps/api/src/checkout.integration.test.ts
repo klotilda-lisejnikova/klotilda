@@ -351,7 +351,7 @@ describe('Order actions', () => {
     expect(delivered.body.orderStatus).toBe('delivered');
     const deliveredEmail = emailsTo(CUSTOMER.customerEmail, before)[2];
     expect(deliveredEmail.subject).toMatch(/jak jste spokojeni/);
-    expect(deliveredEmail.html).toContain('https://klotilda.test/recenze/napsat?token=');
+    expect(deliveredEmail.html).toContain('https://klotilda.test/shop/recenze/napsat?token=');
 
     const history = JSON.parse((await readOrder(orderId)).history);
     expect(

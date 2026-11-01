@@ -43,7 +43,7 @@ describe('Review links', () => {
     const link = createReviewLink('https://klotilda.test/', SECRET, ORDER_ID, NOW);
     expect(link.expiresAt).toEqual(later(REVIEW_LINK_LIFETIME_DAYS));
     const url = new URL(link.url);
-    expect(`${url.origin}${url.pathname}`).toBe('https://klotilda.test/recenze/napsat');
+    expect(`${url.origin}${url.pathname}`).toBe('https://klotilda.test/shop/recenze/napsat');
     expect(readReviewToken(SECRET, url.searchParams.get('token') ?? '', NOW)?.orderId).toBe(
       ORDER_ID
     );
