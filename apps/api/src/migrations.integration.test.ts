@@ -166,6 +166,12 @@ describe('Migrations', () => {
       expect(await core.models.EmailTemplate.count()).toBe(7);
       // The seller's details became one row.
       expect(await core.models.Seller.count()).toBe(1);
+      // The legal pages became one published version each, the one the checkout stored.
+      const terms = await request(core.app).get('/api/legal-documents/terms/current');
+      expect(terms.body).toMatchObject({ version: '2026-11-02', seller: { ico: '12345678' } });
+      expect(await core.models.LegalDocumentVersion.count({ where: { status: 'published' } })).toBe(
+        3
+      );
     } finally {
       await core.close();
     }

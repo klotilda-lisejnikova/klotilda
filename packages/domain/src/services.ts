@@ -4,6 +4,7 @@ import type { AdminUser } from './entities/admin-user';
 import { categoryEntity } from './entities/category';
 import { emailTemplateEntity } from './entities/email-template';
 import { galleryItemEntity } from './entities/gallery-item';
+import { legalDocumentVersionEntity } from './entities/legal-document';
 import { orderEntity } from './entities/order';
 import { paymentMethodEntity } from './entities/payment-method';
 import { productEntity } from './entities/product';
@@ -29,6 +30,7 @@ export function createServices(baseUrl: string, tokenSource: AccessTokenSource) 
       paymentMethods: paymentMethodEntity,
       emailTemplates: emailTemplateEntity,
       seller: sellerEntity,
+      legalDocuments: legalDocumentVersionEntity,
     },
     baseUrl,
     tokenSource

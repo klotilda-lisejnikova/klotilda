@@ -33,11 +33,17 @@ export interface CheckoutItem {
 /**
  * `POST /api/checkout`. `termsAccepted` must be `true`: the customer ticked that they have read the
  * terms (and the complaints procedure in them); the order stores which version and when.
+ * `termsVersion` is the version the shop showed: when another has been published since, the order
+ * is refused with 412 (`TERMS_CHANGED`), so the customer reads the new one first.
  */
 export type CheckoutRequest = InferCreateDto<typeof customerFields> & {
   items: CheckoutItem[];
   termsAccepted: true;
+  termsVersion?: string;
 };
+
+/** The checkout's answer when the terms the customer agreed to are no longer the current ones. */
+export const TERMS_CHANGED = 412;
 
 interface PlacedOrderAnswer {
   orderId: string;

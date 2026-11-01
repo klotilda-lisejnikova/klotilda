@@ -1,7 +1,7 @@
 # Legal texts and seller details in the admin
 
 **Ticket:** none yet
-**Status:** active — step 1 in review, step 2 (the API and admin half) in progress
+**Status:** active — steps 1 and 2 (the API and admin half) on `dev`, step 3 in review
 
 The owner wants the shop's texts editable in the admin, the terms (obchodní podmínky) first ("dále
 co by mělo být konfigurovatelné jsou texty obchodní podmínky atd."). Today they are code:
@@ -27,7 +27,7 @@ flowchart LR
   api -->|revalidate| web[Web: legal pages, footer]
   web -->|GET current / by version| api
   checkout[Web checkout] -->|termsVersion it showed| api
-  api -->|409 if not the current one| checkout
+  api -->|412 if not the current one| checkout
   api --> mail[E-mails: seller line, terms version link]
 ```
 
@@ -84,7 +84,9 @@ Rules, all in the API (`src/legal/`):
   undone, so the admin asks first.
 - **"Today" is Prague's**: one domain function (`pragueDate(now)`, `Intl` with
   `Europe/Prague`) names the version; never `CURRENT_DATE` or the server's zone. Tested at 23:30
-  UTC and across the DST change.
+  UTC and across the DST change. A version never sorts before an earlier one (the first versions
+  are dated 2026-11-02 ahead of their publishing): a draft published before that day gets
+  `2026-11-02.2`, so the newest version is always the current one.
 - **Public reads:** `GET /api/legal-documents/:document/current` and
   `…/versions/:version` (published only, with the seller snapshot); the draft only signed in.
 
@@ -100,9 +102,9 @@ Rules, all in the API (`src/legal/`):
   earlier versions listed under the current one. `content/legal/*.ts` and `lib/legal.ts` go.
 - **Checkout:** the summary step reads the current terms version live and links **that exact
   version's page**, so what the customer opens is what they agree to; the checkout sends
-  `termsVersion`. A version published meanwhile gets a 409 with its own code (`terms_changed`,
-  plus the current version), which the web handles apart from "the cart changed": it loads the new
-  version, unticks the box and says the terms changed. `TERMS_VERSION` goes.
+  `termsVersion`. A version published meanwhile gets a 412 (`TERMS_CHANGED`; the web already reads
+  400 and 409 as "the cart changed"), which the web handles on its own: it loads the new version,
+  unticks the box and says the terms changed. `TERMS_VERSION` goes.
 - **E-mails:** the confirmation names and links the order's own `termsVersion`.
 - **Migration** creates both tables, seeds the `Seller` row and version `2026-11-02` of each
   document, published, with today's texts (frozen copies). Test orders placed under the earlier
@@ -119,12 +121,12 @@ souhlasí s touto verzí; zveřejněnou verzi už nejde změnit").
 
 ## Steps
 
-1. One placeholder engine and the Markdown parser in the domain (no behaviour change). _(in review)_
-2. Seller details: entity, migration, the e-mails' footer and the admin page "Prodávající"; then,
-   in its own PR once the API has deployed, the web reads it.
+1. One placeholder engine and the Markdown parser in the domain (no behaviour change). _(done)_
+2. Seller details: entity, migration, the e-mails' footer and the admin page "Prodávající"
+   _(done)_; then, in its own PR once the API has deployed, the web reads it.
 3. Legal versions in the API: entity, migration with today's texts, routes, publish rules, the
-   checkout's version check.
-4. The web reads them: legal pages, version pages, checkout link and 409 handling, e-mail link.
+   checkout's version check. _(in review)_
+4. The web reads them: legal pages, version pages, checkout link and 412 handling, e-mail link.
 5. Admin "Právní texty": versions, draft editor with preview, publish.
 6. The website's own texts (home page, "o mně", contact) in the admin; planned once 1–5 are on
    `dev`.
@@ -133,6 +135,14 @@ Each a PR into `dev`, verified on the test sites; the API side of a step deploys
 reads it.
 
 ## Follow-ups
+
+- The first versions are dated 2026-11-02, a day ahead of their publishing; a version published
+  on 2026-11-01 is `2026-11-02.2`, and an order placed that day reads "platných od 2. 11. 2026".
+  Only the test site takes orders before then. If a version's real start ever matters to a
+  reader, show `publishedAt` too.
+- One draft per document and unique versions are kept by the advisory lock in `src/legal/`, not
+  by an index (a partial unique index would differ from what `sync()` builds). A checkout that
+  started before a publish commits is still placed under the version the customer saw.
 
 - The confirmation e-mail only links the terms. Consumer law likely wants them on a durable medium
   (the text itself, e.g. as a plain-text attachment, not just a link); ask whoever checks the
