@@ -101,9 +101,7 @@ export const reviewEntity = defineEntity({
   extend: (Base) =>
     class extends Base {
       invitation(token: string) {
-        return this.get<ReviewInvitation>(
-          `${REVIEW_INVITATION_ROUTE}?token=${encodeURIComponent(token)}`
-        );
+        return this.get<ReviewInvitation, { token: string }>(REVIEW_INVITATION_ROUTE, { token });
       }
 
       submit(request: ReviewSubmission) {
@@ -111,9 +109,11 @@ export const reviewEntity = defineEntity({
       }
 
       listPublic({ page = 1, limit = 20, productId }: PublicReviewsQuery = {}) {
-        const query = new URLSearchParams({ page: String(page), limit: String(limit) });
-        if (productId) query.set('productId', productId);
-        return this.get<PublicReviewsPage>(`${PUBLIC_REVIEWS_ROUTE}?${query}`);
+        return this.get<PublicReviewsPage, PublicReviewsQuery>(PUBLIC_REVIEWS_ROUTE, {
+          page,
+          limit,
+          productId: productId || undefined,
+        });
       }
 
       /** E-mails the customer of a delivered order the link to write a review again. */
