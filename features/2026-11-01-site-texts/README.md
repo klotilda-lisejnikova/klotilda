@@ -47,6 +47,8 @@ is built from the handle instead of being written into `ContactSection`. The API
   message's key. The contact e-mail and Instagram (`UNTRANSLATED_SITE_TEXTS`) read the same in
   both languages: their English text is never used, and the admin shows no field for it. The
   Instagram link takes a handle or a profile's address.
+- **Order of deploys:** a web built before its API has the route (a 404) renders the translation
+  files alone and asks again on the next render, so a merge never fails the web's build.
 - **Costs:** every page's render now reads the texts (cached), as the home page reads the gallery:
   with the API down a first render of a page fails and a regeneration keeps the last good one.
   Until production sets `WEB_REVALIDATE_URL`, an edit there shows within the cache's hour plus the
