@@ -2,8 +2,10 @@
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useQueryClient } from '@tanstack/vue-query';
+import { useToast } from '@nuxt/ui/composables';
 import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui';
 import type { RouteLocationRaw } from 'vue-router';
+import { useInstallPrompt } from '@/app/install-prompt';
 import { usePendingReviewCount } from '@/app/reviews';
 import { useSession } from '@/app/session';
 import { confirmLeave, hasUnsavedChanges } from '@/app/unsaved-changes';
@@ -108,9 +110,29 @@ async function signOut() {
   await router.push({ name: 'sign-in' });
 }
 
+/** Installing as an app stays offered here once the overview's offer is dismissed. */
+const { option: installOption, install } = useInstallPrompt();
+const toast = useToast();
+
+function installApp() {
+  if (installOption.value === 'prompt') {
+    void install();
+    return;
+  }
+  toast.add({
+    title: 'Přidání na plochu',
+    description: 'V Safari klepněte na Sdílet a pak na „Přidat na plochu“.',
+    icon: 'i-lucide-smartphone',
+    duration: 0,
+  });
+}
+
 const email = computed(() => session.admin.value?.email ?? '');
 const accountMenu = computed<DropdownMenuItem[][]>(() => [
   [{ type: 'label', label: email.value }],
+  ...(installOption.value === 'none'
+    ? []
+    : [[{ label: 'Nainstalovat aplikaci', icon: 'i-lucide-smartphone', onSelect: installApp }]]),
   [{ label: 'Odhlásit se', icon: 'i-lucide-log-out', onSelect: () => void signOut() }],
 ]);
 </script>
