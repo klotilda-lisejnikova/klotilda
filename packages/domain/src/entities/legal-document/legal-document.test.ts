@@ -3,6 +3,8 @@ import {
   fillLegalText,
   formatCzechDate,
   isLegalVersion,
+  legalSellerSnapshot,
+  legalTextFor,
   legalTextProblems,
   nextLegalVersion,
   pragueDate,
@@ -64,5 +66,25 @@ describe('Legal document versions', () => {
     expect(problems).toHaveLength(3);
     expect(problems[0]).toContain('{{vs}}');
     expect(problems[2]).toContain('{#reklamace}');
+  });
+
+  it("keep the seller's row with an empty optional detail as none", () => {
+    const row = { ...SELLER, phone: '', registration: 'OSVČ', complete: null };
+    expect(legalSellerSnapshot(row)).toEqual({ ...SELLER, registration: 'OSVČ', complete: false });
+  });
+
+  it('show the English page the Czech text while it has none', () => {
+    expect(legalTextFor({ body_cs: 'cs', body_en: 'en' }, 'en')).toEqual({
+      text: 'en',
+      czechOnly: false,
+    });
+    expect(legalTextFor({ body_cs: 'cs', body_en: '  ' }, 'en')).toEqual({
+      text: 'cs',
+      czechOnly: true,
+    });
+    expect(legalTextFor({ body_cs: 'cs', body_en: 'en' }, 'cs')).toEqual({
+      text: 'cs',
+      czechOnly: false,
+    });
   });
 });

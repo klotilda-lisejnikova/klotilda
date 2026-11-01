@@ -109,7 +109,8 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
   the privacy policy and the withdrawal form (`LEGAL_DOCUMENTS`), Czech and optional English text
   in the legal Markdown subset with `LEGAL_PLACEHOLDERS`. Auto CRUD only lists them, signed in; a
   draft is started, saved, deleted and published through `…/:document/draft` (each under the
-  document's advisory lock, one draft per document), and publishing — refused while
+  document's advisory lock, one draft per document), and publishing — sent with the texts the
+  admin saw (409 when the draft holds others), refused while
   `legalTextProblems` finds an unknown placeholder or a missing anchor other pages link to —
   freezes it as the current version, named by Prague's date (`pragueDate`, `-2` for a second one
   that day, never before an earlier one) with a snapshot of the seller's details. Anyone reads
@@ -183,8 +184,10 @@ product. The overview counts through the API and charts the paid revenue of the 
 the month of the order (`app/revenue.ts`). Every `UFormField` keeps a line free for its message
 (`vite.config.ts`), so a message that appears or goes never moves a button from under the pointer.
 The sidebar's "Nastavení" group holds the shop's settings (Doprava, Platby, E-maily,
-Prodávající: the shipping and payment methods, the e-mail texts with a live preview in a sandboxed
-`iframe`, and the seller's details); it is not on the phone's bottom bar, only in the slide-over.
+Prodávající, Právní texty: the shipping and payment methods, the e-mail texts with a live preview
+in a sandboxed `iframe`, the seller's details, and per legal document its published versions and
+one draft, edited beside a preview the domain's parser renders with today's seller, published
+after a confirmation); it is not on the phone's bottom bar, only in the slide-over.
 `vercel.json` sends a Content-Security-Policy that allows only the admin's own scripts (hence
 `public/color-scheme.js` instead of an inline script) and API calls only to `*.up.railway.app`.
 

@@ -34,6 +34,7 @@ const CREATED = 201;
 const NO_CONTENT = 204;
 const BAD_REQUEST = 400;
 const NOT_FOUND = 404;
+const CONFLICT = 409;
 
 const DOCUMENT_ROUTE = `${LEGAL_DOCUMENTS_PATH}/:document`;
 const DRAFT_ROUTE = `${DOCUMENT_ROUTE}/draft`;
@@ -122,13 +123,20 @@ async function startDraft(
   return { draft, created: true };
 }
 
-/** Freezes the draft as the document's newest version, with the seller's details of today. */
+/**
+ * Freezes the draft as the document's newest version, with the seller's details of today, if it
+ * still holds `seen`, the texts the admin read before publishing (another tab may have saved since).
+ */
 async function publishDraft(
   registry: ModelRegistry,
   document: LegalDocumentKey,
+  seen: Required<LegalDraftRequest>,
   transaction: Transaction
 ): Promise<PublishedLegalVersion> {
   const draft = await resolveDraft(registry, document, transaction);
+  if (draft.get('body_cs') !== seen.body_cs || (draft.get('body_en') ?? null) !== seen.body_en) {
+    throw new HttpError(CONFLICT, 'Koncept mezitím změnil někdo jiný. Načtěte stránku znovu.');
+  }
   // The Czech text always counts; the English one only when there is one (else the Czech shows).
   const english = draft.get('body_en');
   const texts = [
@@ -167,8 +175,9 @@ async function publishDraft(
  * Signed in, each under the document's lock:
  * - `GET …/:document/draft`, `POST` (starts one from the current text, or answers the one there
  *   is), `PUT` (`{ body_cs, body_en }`), `DELETE`;
- * - `POST …/:document/draft/publish` — the draft becomes the current version, dated today in
- *   Prague, once its texts pass `legalTextProblems`. A published version never changes again.
+ * - `POST …/:document/draft/publish` (`{ body_cs, body_en }`, the texts the admin saw; 409 when
+ *   the draft holds others) — the draft becomes the current version, dated today in Prague, once
+ *   its texts pass `legalTextProblems`. A published version never changes again.
  */
 export function createLegalDocumentsPlugin({
   registry,
@@ -272,9 +281,10 @@ export function createLegalDocumentsPlugin({
         signedIn,
         asyncHandler(async (req, res) => {
           const document = readDocument(req);
+          const seen = readDraftRequest(req.body);
           res.json(
             await withDocumentLock(sequelize, document, (transaction) =>
-              publishDraft(registry, document, transaction)
+              publishDraft(registry, document, seen, transaction)
             )
           );
         })

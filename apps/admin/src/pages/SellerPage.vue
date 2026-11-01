@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue';
 import { useToast } from '@nuxt/ui/composables';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
+import { useMutation, useQueryClient } from '@tanstack/vue-query';
 import { sellerFields, sellerLine } from '@klotilda/domain';
 import type { Seller } from '@klotilda/domain';
 import PageHeader from '@/components/PageHeader.vue';
@@ -9,6 +9,7 @@ import SaveBar from '@/components/SaveBar.vue';
 import { services } from '@/app/api';
 import { describeError } from '@/app/errors';
 import { emptyToNull, pick } from '@/app/form-values';
+import { SELLER_QUERY_KEY, useSeller } from '@/app/seller';
 import { useUnsavedChanges } from '@/app/unsaved-changes';
 import { formSchema, VALIDATE_ON } from '@/app/validation';
 
@@ -22,19 +23,9 @@ interface SellerForm {
   complete: boolean;
 }
 
-const SELLER_QUERY_KEY = ['seller'];
-
 const toast = useToast();
 const queryClient = useQueryClient();
-const {
-  data: seller,
-  isPending,
-  isError,
-} = useQuery({
-  queryKey: SELLER_QUERY_KEY,
-  queryFn: async (): Promise<Seller | null> =>
-    (await services.seller.getAll({ limit: 1 })).data[0] ?? null,
-});
+const { data: seller, isPending, isError } = useSeller();
 
 const form = reactive<SellerForm>({
   name: '',

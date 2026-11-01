@@ -4,6 +4,7 @@ import {
   fillLegalText,
   formatCzechDate,
   isLegalVersion,
+  legalTextFor,
 } from "@klotilda/domain";
 import type {
   LegalDocumentKey,
@@ -61,14 +62,10 @@ export function legalSource(
   version: PublishedLegalVersion,
   locale: string,
 ): { text: string; czechOnly: boolean } {
-  const english = locale === "en" ? version.body_en : null;
+  const { text, czechOnly } = legalTextFor(version, locale);
   return {
-    text: fillLegalText(
-      english ?? version.body_cs,
-      version.seller,
-      version.effectiveFrom,
-    ),
-    czechOnly: locale === "en" && english === null,
+    text: fillLegalText(text, version.seller, version.effectiveFrom),
+    czechOnly,
   };
 }
 

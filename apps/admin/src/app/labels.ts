@@ -1,6 +1,8 @@
 import type {
   EmailPlaceholder,
   EmailTemplateKey,
+  LegalDocumentKey,
+  LegalPlaceholder,
   OrderAction,
   OrderEvent,
   OrderStatus,
@@ -149,4 +151,33 @@ export const EMAIL_PLACEHOLDER_LABELS: Record<EmailPlaceholder, string> = {
   doprava: 'název dopravy',
   platba: 'název způsobu platby',
   cislo_zasilky: 'číslo zásilky',
+};
+
+export const LEGAL_DOCUMENT_LABELS: Record<LegalDocumentKey, { name: string; about: string }> = {
+  terms: {
+    name: 'Obchodní podmínky',
+    about: 'Smlouva se zákazníkem. Zákazník s nimi souhlasí při objednávce.',
+  },
+  privacy: {
+    name: 'Ochrana osobních údajů',
+    about: 'Jaké údaje e-shop o zákaznících zpracovává, proč a jak dlouho.',
+  },
+  withdrawal: {
+    name: 'Odstoupení od smlouvy',
+    about: 'Vzorový formulář pro vrácení zboží do 14 dnů.',
+  },
+};
+
+export const LEGAL_PLACEHOLDER_LABELS: Record<LegalPlaceholder, string> = {
+  sellerName: 'jméno prodávajícího',
+  sellerIco: 'IČO',
+  sellerAddress: 'sídlo',
+  sellerEmail: 'e-mail prodávajícího',
+  sellerPhone: 'telefon (prázdný, není-li vyplněný)',
+  sellerRegistration: 'zápis (prázdný, není-li vyplněný)',
+  effectiveFrom: 'den, od kterého verze platí',
+  termsPath: 'adresa obchodních podmínek (pro odkaz)',
+  privacyPath: 'adresa stránky o osobních údajích',
+  withdrawalPath: 'adresa formuláře pro odstoupení',
+  complaintsAnchor: 'značka oddílu o reklamacích (#reklamace)',
 };

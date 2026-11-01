@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { isEmailTemplateKey } from '@klotilda/domain';
+import { isEmailTemplateKey, isLegalDocumentKey } from '@klotilda/domain';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useSession } from './session';
 
@@ -67,6 +67,20 @@ export const router = createRouter({
           path: 'seller',
           name: 'seller',
           component: () => import('@/pages/SellerPage.vue'),
+        },
+        {
+          path: 'legal',
+          name: 'legal-documents',
+          component: () => import('@/pages/LegalDocumentsPage.vue'),
+        },
+        {
+          path: 'legal/:document',
+          name: 'legal-document',
+          component: () => import('@/pages/LegalDocumentPage.vue'),
+          props: true,
+          // Only the legal pages there are have a page; any other goes back to the list.
+          beforeEnter: (to) =>
+            isLegalDocumentKey(String(to.params.document)) || { name: 'legal-documents' },
         },
         {
           path: 'emails',
