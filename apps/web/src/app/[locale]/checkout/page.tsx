@@ -60,10 +60,30 @@ export default function CheckoutPage() {
     };
   }, []);
 
+  /** Set when the chosen method went away meanwhile: step 2 says so and asks for another. */
+  const [shippingGone, setShippingGone] = useState(false);
+
   const changed = items.filter((item) => item.issue);
 
   const update = (patch: Partial<CheckoutData>) =>
     setData((prev) => ({ ...prev, ...patch }));
+
+  /**
+   * The methods as the API offers them now: a chosen method that is gone sends the customer back
+   * to pick another, a changed price is taken over.
+   */
+  const refreshShipping = (methods: ShippingMethod[]) => {
+    setShippingMethods(methods);
+    const chosen = methods.find((method) => method.code === data.shippingMethod);
+    if (!chosen) {
+      update({ shippingMethod: "", shippingName: "", shippingPrice: 0 });
+      setShippingGone(true);
+      setStep(1);
+      return;
+    }
+    update({ shippingPrice: chosen.price });
+    setError("cartChanged");
+  };
 
   const handleSubmit = async () => {
     if (items.some(isBlocked) || !data.termsAccepted) return;
@@ -91,9 +111,14 @@ export default function CheckoutPage() {
       setResult(placed);
     } catch (err) {
       if (err instanceof ApiError && CART_OUT_OF_DATE.includes(err.status)) {
-        // Something changed meanwhile: refresh the lines so the summary shows what and why.
-        await check();
-        setError("cartChanged");
+        // Something changed meanwhile: refresh the lines and the shipping methods, so the
+        // summary shows what and why.
+        const [, methods] = await Promise.all([
+          check(),
+          listShippingMethods().catch(() => null),
+        ]);
+        if (methods) refreshShipping(methods);
+        else setError("cartChanged");
       } else {
         setError("failed");
       }
@@ -156,7 +181,11 @@ export default function CheckoutPage() {
         <Step2Shipping
           data={data}
           methods={shippingMethods}
-          onChange={update}
+          gone={shippingGone}
+          onChange={(patch) => {
+            setShippingGone(false);
+            update(patch);
+          }}
           onNext={() => setStep(2)}
           onBack={() => setStep(0)}
         />

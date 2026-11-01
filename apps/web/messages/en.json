@@ -45,7 +45,9 @@
     "shipping": {
       "free": "Free",
       "loading": "Loading shipping options…",
-      "unavailable": "Shipping options could not be loaded. Please try again in a moment."
+      "unavailable": "Shipping options could not be loaded. Please try again in a moment.",
+      "gone": "The shipping option you chose is no longer offered. Please choose another.",
+      "none": "No shipping option is available right now. Please try again later."
     },
     "payment": {
       "qr": "QR code payment",

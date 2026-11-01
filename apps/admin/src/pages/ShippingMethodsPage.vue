@@ -357,7 +357,7 @@ const remove = useMutation({
           :help="
             isNew
               ? 'Vyplní se z názvu. Objednávky dopravu poznají podle něj.'
-              : 'Po změně kódu musí zákazník s rozpracovanou objednávkou dopravu vybrat znovu.'
+              : 'Po změně kódu musí zákazník s rozpracovanou objednávkou dopravu vybrat znovu a dosud neodeslané objednávky ztratí odkaz na sledování.'
           "
         >
           <UInput v-model="form.code" class="w-full" @update:model-value="codeTouched = true" />

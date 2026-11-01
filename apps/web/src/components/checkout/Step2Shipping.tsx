@@ -6,6 +6,8 @@ interface Props {
   data: CheckoutData;
   /** The active methods from the API; `null` while they load, `"error"` if that failed. */
   methods: ShippingMethod[] | null | "error";
+  /** The method chosen before is no longer offered. */
+  gone: boolean;
   onChange: (data: Partial<CheckoutData>) => void;
   onNext: () => void;
   onBack: () => void;
@@ -23,6 +25,7 @@ function shippingText(method: ShippingMethod, locale: string) {
 export default function Step2Shipping({
   data,
   methods,
+  gone,
   onChange,
   onNext,
   onBack,
@@ -44,6 +47,16 @@ export default function Step2Shipping({
       {methods === null && (
         <p className="text-sm text-stone-500" aria-busy="true">
           {t("shipping.loading")}
+        </p>
+      )}
+      {gone && (
+        <p className="text-sm text-amber-800" role="alert">
+          {t("shipping.gone")}
+        </p>
+      )}
+      {Array.isArray(methods) && methods.length === 0 && (
+        <p className="text-sm text-red-700" role="alert">
+          {t("shipping.none")}
         </p>
       )}
       {methods === "error" && (
