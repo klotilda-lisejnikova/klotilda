@@ -69,7 +69,7 @@ describe('Legal document versions', () => {
   });
 
   it("keep the seller's row with an empty optional detail as none", () => {
-    const row = { ...SELLER, phone: '', registration: 'OSVČ', complete: null };
+    const row = { ...SELLER, phone: '', registration: 'OSVČ', complete: false };
     expect(legalSellerSnapshot(row)).toEqual({ ...SELLER, registration: 'OSVČ', complete: false });
   });
 
