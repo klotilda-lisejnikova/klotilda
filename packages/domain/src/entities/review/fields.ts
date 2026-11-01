@@ -15,8 +15,8 @@ export const MAX_RATING = 5;
 export const REVIEW_BODY_MIN_LENGTH = 10;
 export const REVIEW_BODY_MAX_LENGTH = 2000;
 export const REVIEW_AUTHOR_NAME_MAX_LENGTH = 60;
-const HIDDEN_REASON_MAX_LENGTH = 500;
-const REPLY_MAX_LENGTH = 1000;
+export const REVIEW_HIDDEN_REASON_MAX_LENGTH = 500;
+export const REVIEW_REPLY_MAX_LENGTH = 1000;
 
 /** What the customer writes, through the link from the e-mail about the delivered order. */
 export const reviewSubmissionFields = {
@@ -47,7 +47,7 @@ export const reviewFields = {
   /** Shown on the website only once `published`. */
   status: { type: 'ENUM', values: REVIEW_STATUSES, default: DEFAULT_REVIEW_STATUS },
   /** The admin's own note on why a review is hidden; never public. */
-  hiddenReason: { type: 'TEXT', maxLength: HIDDEN_REASON_MAX_LENGTH },
+  hiddenReason: { type: 'TEXT', maxLength: REVIEW_HIDDEN_REASON_MAX_LENGTH },
   /** The artist's public answer, shown under the review. */
-  reply: { type: 'TEXT', maxLength: REPLY_MAX_LENGTH },
+  reply: { type: 'TEXT', maxLength: REVIEW_REPLY_MAX_LENGTH },
 } as const satisfies Fields;

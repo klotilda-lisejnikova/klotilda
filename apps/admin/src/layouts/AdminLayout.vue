@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useQueryClient } from '@tanstack/vue-query';
 import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui';
 import type { RouteLocationRaw } from 'vue-router';
+import { usePendingReviewCount } from '@/app/reviews';
 import { useSession } from '@/app/session';
 import { confirmLeave, hasUnsavedChanges } from '@/app/unsaved-changes';
 import { PAGE_ACTIONS_ID, PAGE_HEADING_ID } from '@/components/page-header';
@@ -17,7 +18,14 @@ interface NavItem {
   exact?: boolean;
   /** Under "Nastavení" in the sidebar; not on the phone's bottom bar, which holds five. */
   settings?: boolean;
+  /** A section the bottom bar has no slot for: on the phone only in the slide-over. */
+  notOnBottomBar?: boolean;
+  /** A count shown beside the label, when there is one. */
+  badge?: () => number | undefined;
 }
+
+/** How many reviews wait for approval: the badge on "Recenze". */
+const { data: pendingReviews } = usePendingReviewCount();
 
 const NAV_ITEMS: NavItem[] = [
   {
@@ -31,6 +39,13 @@ const NAV_ITEMS: NavItem[] = [
   { to: { name: 'products' }, label: 'Produkty', icon: 'i-lucide-package' },
   { to: { name: 'categories' }, label: 'Kategorie', icon: 'i-lucide-tags' },
   { to: { name: 'gallery' }, label: 'Galerie', icon: 'i-lucide-images' },
+  {
+    to: { name: 'reviews' },
+    label: 'Recenze',
+    icon: 'i-lucide-star',
+    notOnBottomBar: true,
+    badge: () => pendingReviews.value || undefined,
+  },
   { to: { name: 'shipping-methods' }, label: 'Doprava', icon: 'i-lucide-truck', settings: true },
   { to: { name: 'payment-methods' }, label: 'Platby', icon: 'i-lucide-wallet', settings: true },
   { to: { name: 'email-templates' }, label: 'E-maily', icon: 'i-lucide-mail', settings: true },
@@ -43,7 +58,7 @@ const NAV_ITEMS: NavItem[] = [
     settings: true,
   },
 ];
-const BOTTOM_BAR_ITEMS = NAV_ITEMS.filter((item) => !item.settings);
+const BOTTOM_BAR_ITEMS = NAV_ITEMS.filter((item) => !item.settings && !item.notOnBottomBar);
 
 const session = useSession();
 const router = useRouter();
@@ -63,6 +78,7 @@ function toNavigationItem(item: NavItem): NavigationMenuItem {
     label: item.label,
     icon: item.icon,
     to: item.to,
+    badge: item.badge?.(),
     active: isCurrent(item),
     // The phone's slide-over closes on its own only when the route changes.
     onSelect: () => {

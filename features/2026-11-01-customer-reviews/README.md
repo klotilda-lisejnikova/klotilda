@@ -1,7 +1,7 @@
 # Customer reviews in the shop
 
 **Ticket:** none yet
-**Status:** active — approved 2026-11-01; step 1 (API) in review
+**Status:** active — approved 2026-11-01; steps 1 (API) and 2 (admin) in review
 
 The owner asked for a way for customers to leave a review in the e-shop:
 
@@ -9,7 +9,8 @@ The owner asked for a way for customers to leave a review in the e-shop:
 >
 > navrhni moznost zanechat recenzi v eshopu, jak to provedes
 
-Approved as designed on 2026-11-01. Step 1 (the API) is built; steps 2 and 3 are to come.
+Approved as designed on 2026-11-01. Steps 1 (the API) and 2 (the admin) are built; step 3 (the
+website) is to come.
 
 ## What shapes it
 
@@ -144,13 +145,12 @@ share one limit.
 A new item **"Recenze"** in the sidebar (between Galerie and Nastavení) with a badge counting the
 pending ones. It does not fit the phone's bottom bar (five slots), so it goes into the slide-over
 there; the overview gets a "Recenze ke schválení" count that links to it. `NavItem` in
-`AdminLayout.vue` has neither a badge nor a "not on the bottom bar" flag apart from `settings`, so it
-gains both (`badge`, `bottomBar: false`).
+`AdminLayout.vue` gains both: a `badge` (a function giving the count) and `notOnBottomBar`.
 
-- The list: tabs Ke schválení / Zveřejněné / Skryté, each row with stars, the start of the text,
-  name, the order's variable symbol (a link to the order) and the date.
-- The detail: the whole text, the pieces, the buttons Zveřejnit / Skrýt (asks for the reason) /
-  Smazat, and the reply with a preview of how it reads on the web.
+- The list: tabs Ke schválení / Zveřejněné / Skryté, each review a card with the whole text, the
+  stars, the name, the language when it isn't Czech, the date, the pieces and a link to the order,
+  the buttons Zveřejnit / Skrýt (asks for the reason) / Smazat, and the reply, saved on its own.
+  A review is short, so the card is the detail: there is no separate detail page.
 - The order detail shows the order's review (or "Požádat o recenzi" while it has none and is
   delivered).
 
@@ -177,7 +177,7 @@ same files at once.
    Tests: token forged / for another order / expired / order not delivered / second review, an
    order with a review can't be deleted (409), the public route leaks nothing, a migrated schema
    equals a synced one.
-2. **Admin:** "Recenze" page and detail, badge, overview count, review on the order detail, the
+2. **Admin:** "Recenze" page, badge, overview count, review on the order detail, the
    "Požádat o recenzi" button, the e-mail switch for `mark-delivered`.
 3. **Web:** `/recenze`, `/recenze/napsat`, home strip, product detail, cs/en texts.
 

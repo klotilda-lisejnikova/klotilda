@@ -102,6 +102,11 @@ export const router = createRouter({
             isEmailTemplateKey(String(to.params.templateKey)) || { name: 'email-templates' },
         },
         {
+          path: 'reviews',
+          name: 'reviews',
+          component: () => import('@/pages/ReviewsPage.vue'),
+        },
+        {
           path: 'gallery',
           name: 'gallery',
           component: () => import('@/pages/GalleryPage.vue'),

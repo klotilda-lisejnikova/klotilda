@@ -8,6 +8,8 @@ import type {
   OrderStatus,
   PaymentKind,
   PaymentStatus,
+  ReviewLocale,
+  ReviewStatus,
   ShippingKind,
   SiteTextKey,
 } from '@klotilda/domain';
@@ -113,6 +115,18 @@ export const EMAIL_OUTCOME_LABELS: Record<NonNullable<OrderEvent['email']>, stri
   sent: 'e-mail odešel',
   failed: 'e-mail se nepodařilo odeslat',
   skipped: 'bez e-mailu',
+};
+
+export const REVIEW_STATUS_LABELS: Record<ReviewStatus, string> = {
+  pending: 'Ke schválení',
+  published: 'Zveřejněná',
+  hidden: 'Skrytá',
+};
+
+/** The language a review was written in, shown when it isn't Czech. */
+export const REVIEW_LOCALE_LABELS: Record<ReviewLocale, string> = {
+  cs: 'česky',
+  en: 'anglicky',
 };
 
 /** `USelect` items from a label map, in its order. */

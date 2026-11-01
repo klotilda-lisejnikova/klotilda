@@ -1,5 +1,6 @@
 import { defineEntity } from '@eleansphere/entity-core';
 import type { InferCreateDto } from '@eleansphere/entity-core';
+import type { Order } from '../order';
 import { reviewFields } from './fields';
 import type { ReviewLocale, reviewSubmissionFields } from './fields';
 
@@ -126,9 +127,12 @@ export const reviewEntity = defineEntity({
         });
       }
 
-      /** E-mails the customer of a delivered order the link to write a review again. */
+      /**
+       * E-mails the customer of a delivered order the link to write a review again; answers the
+       * order, its history with the request.
+       */
       requestFor(orderId: string) {
-        return this.post<void>(
+        return this.post<Order>(
           REVIEW_REQUEST_ROUTE.replace(':id', encodeURIComponent(orderId)),
           {}
         );

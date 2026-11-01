@@ -183,6 +183,10 @@ describe('Reviews', () => {
       createdAt: expect.any(String),
     });
 
+    // A reply cleared in the admin is no reply.
+    await app.api().patch(`/api/reviews/${id}`).set(signedIn()).send({ reply: '' });
+    expect((await publicReviews({ productId })).body.data[0].reply).toBeNull();
+
     await app.api().patch(`/api/reviews/${id}`).set(signedIn()).send({ status: 'hidden' });
     expect(await listed()).not.toContain(id);
   });

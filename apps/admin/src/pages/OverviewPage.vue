@@ -8,6 +8,7 @@ import RevenueChart from '@/components/RevenueChart.vue';
 import StatTile from '@/components/StatTile.vue';
 import { fileUrl, services } from '@/app/api';
 import { fetchAllPages } from '@/app/all-pages';
+import { usePendingReviewCount } from '@/app/reviews';
 import { formatCzk, formatDateTime, inMonth, plural } from '@/app/format';
 import {
   daysSince,
@@ -92,6 +93,9 @@ const soldOut = useQuery({
     >,
 });
 
+// ── Reviews ─────────────────────────────────────────────────────────
+const { data: pendingReviews } = usePendingReviewCount();
+
 // ── Tiles ───────────────────────────────────────────────────────────
 const FAILED_HINT = 'Nepodařilo se načíst';
 
@@ -141,6 +145,18 @@ const stats = computed(() => [
 
 <template>
   <PageHeader title="Přehled" />
+
+  <UAlert
+    v-if="pendingReviews"
+    :title="`${plural(pendingReviews, 'recenze čeká', 'recenze čekají', 'recenzí čeká')} na schválení`"
+    icon="i-lucide-star"
+    color="warning"
+    variant="soft"
+    class="mb-4"
+    :actions="[
+      { label: 'Otevřít recenze', to: { name: 'reviews' }, color: 'warning', variant: 'outline' },
+    ]"
+  />
 
   <div class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
     <StatTile v-for="stat in stats" :key="stat.icon" v-bind="stat" />

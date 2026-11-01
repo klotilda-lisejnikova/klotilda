@@ -183,7 +183,7 @@ function toPublicReview(review: Review): PublicReview {
     authorName: review.authorName,
     locale: review.locale,
     items: parseReviewedItems(review),
-    reply: review.reply ?? null,
+    reply: review.reply?.trim() || null,
     createdAt: new Date(review.createdAt).toISOString(),
   };
 }

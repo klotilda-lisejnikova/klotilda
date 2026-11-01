@@ -213,6 +213,10 @@ live preview in a sandboxed `iframe`, the seller's details, the website's texts 
 English side by side, and per legal document its published versions and
 one draft, edited beside a preview the domain's parser renders with today's seller, published
 after a confirmation); it is not on the phone's bottom bar, only in the slide-over.
+"Recenze" (`pages/ReviewsPage.vue`, `app/reviews.ts`) lists the reviews by status (Ke schválení,
+Zveřejněné, Skryté) as cards to publish, hide with a reason, answer or delete; the sidebar and the
+overview count the pending ones, and a delivered order's detail shows its review or "Požádat o
+recenzi" (`components/OrderReviewCard.vue`). Like the settings, it is only in the phone's slide-over.
 `vercel.json` sends a Content-Security-Policy that allows only the admin's own scripts (hence
 `public/color-scheme.js` instead of an inline script) and API calls only to `*.up.railway.app`.
 
