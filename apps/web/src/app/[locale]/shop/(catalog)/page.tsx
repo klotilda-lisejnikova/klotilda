@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { listAllProducts } from "@/services";
 import { loadStaticData } from "@/lib/static-data";
 import { loadOptionalReviews } from "@/lib/reviews";
-import ReviewsSummary from "@/components/reviews/ReviewsSummary";
+import ShopReviews from "@/components/reviews/ShopReviews";
 import FadeIn from "@/components/ui/FadeIn";
 import ShopCatalog, { CatalogView } from "@/components/shop/ShopCatalog";
 import { ALL_CATEGORIES } from "@/components/shop/CategoryFilter";
@@ -14,6 +14,9 @@ import { ALL_CATEGORIES } from "@/components/shop/CategoryFilter";
  * product page check the stock live, and the checkout decides.
  */
 export const revalidate = 3600;
+
+/** The newest reviews shown at the end of the page; the rest are on `/shop/recenze`. */
+const SHOP_PAGE_REVIEWS = 3;
 
 interface Props {
   params: Promise<{ locale: string }>;
@@ -31,8 +34,7 @@ export default async function ShopPage({ params }: Props) {
   const t = await getTranslations({ locale, namespace: "shop" });
   const [products, reviews] = await Promise.all([
     loadStaticData("ShopPage", listAllProducts, []),
-    // Only the average and the count are shown here.
-    loadOptionalReviews("ShopPage", { limit: 1 }),
+    loadOptionalReviews("ShopPage", { limit: SHOP_PAGE_REVIEWS }),
   ]);
 
   return (
@@ -46,7 +48,6 @@ export default async function ShopPage({ params }: Props) {
           <p className="mt-4 text-xs tracking-widest text-stone-500">
             {t("description")}
           </p>
-          <ReviewsSummary page={reviews} />
         </FadeIn>
 
         {/* The static HTML holds every product; the browser then applies ?category= itself. */}
@@ -61,6 +62,8 @@ export default async function ShopPage({ params }: Props) {
         >
           <ShopCatalog products={products} locale={locale} />
         </Suspense>
+
+        <ShopReviews page={reviews} />
       </div>
     </section>
   );

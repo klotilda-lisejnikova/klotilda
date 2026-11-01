@@ -127,8 +127,8 @@ The review form calls the invitation routes **from the visitor's browser**, like
 are rate-limited per client address, so a call from the website's server would make every customer
 share one limit.
 
-- **Inside the shop, not the site's menu** (the owner's call, 2026-11-01): the shop page shows the
-  average and the count, linking **`/shop/recenze`** (gated with the shop): the reviews newest
+- **Inside the shop, not the site's menu** (the owner's call, 2026-11-01): the shop page ends, above
+  the footer, with the average, the count and the newest three, linking **`/shop/recenze`** (gated with the shop): the reviews newest
   first (stars, text, name, the pieces by name, not linked, since a sold original's page goes;
   date, the artist's reply), and a short note on where they come from: "Recenze mohou napsat jen
   zákazníci, kteří u nás nakoupili, přes odkaz z e-mailu po doručení. Zveřejňujeme kladné i
