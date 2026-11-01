@@ -77,7 +77,8 @@
     "loading": "Processing order…",
     "error": "Something went wrong. Please try again.",
     "errorChanged": "Some items changed in the meantime. Please check your cart and confirm again.",
-    "cartChangedTitle": "Something changed since these went into your cart:"
+    "cartChangedTitle": "Something changed since these went into your cart:",
+    "errorTermsChanged": "The terms and conditions have changed in the meantime. Please read the new version and accept it again."
   },
   "cart": {
     "title": "Cart",
@@ -171,6 +172,10 @@
     "complaints": "Complaints",
     "effectiveFrom": "In force from {date}",
     "draft": "Draft: the seller's details are placeholders and the texts await review. The page goes live on klotilda.cz once everything is filled in.",
-    "print": "Print the form"
+    "print": "Print the form",
+    "archived": "An earlier version, in force from {date}.",
+    "current": "Current version",
+    "versions": "Earlier versions",
+    "czechOnly": "This version is available in Czech only."
   }
 }

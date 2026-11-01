@@ -1,8 +1,6 @@
-import { sellerLine } from './entities/seller';
-
 /**
- * The seller's details the website shows (footer, legal pages) until it reads the `Seller` row the
- * admin edits; the API's e-mails already read the row. Every value is a PLACEHOLDER.
+ * The seller's details named while the `Seller` row the admin edits is missing (the API's e-mails
+ * and the website's footer read the row). Every value is a PLACEHOLDER.
  */
 export const SELLER = {
   /** The name the trade licence is issued to. */
@@ -14,14 +12,7 @@ export const SELLER = {
   email: 'info@klotilda.cz',
   phone: '+420 000 000 000',
   registration: 'fyzická osoba podnikající podle živnostenského zákona',
-  /** A VAT payer's prices and receipts would have to show VAT. */
-  vatPayer: false,
-  /** While true, the legal pages say the seller's details are still to be filled in. */
-  placeholder: true,
 } as const;
-
-/** From when the terms apply, as the website's pages show it until they read the API's versions. */
-export const TERMS_EFFECTIVE_FROM = '2. 11. 2026';
 
 /** The website's legal pages, the same path in both languages. */
 export const LEGAL_PATHS = {
@@ -31,6 +22,3 @@ export const LEGAL_PATHS = {
 } as const;
 /** The complaints procedure is a section of the terms. */
 export const COMPLAINTS_ANCHOR = 'reklamace';
-
-/** "Jméno Příjmení, IČO 12345678, Ulice 1, 110 00 Praha 1" */
-export const SELLER_LINE = sellerLine(SELLER);

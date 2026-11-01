@@ -3,8 +3,12 @@ import type {
   CheckoutRequest,
   CheckoutResponse,
   GalleryItemWithImages,
+  LegalDocumentKey,
+  LegalVersionSummary,
   PaymentMethod,
   ProductWithImages,
+  PublishedLegalVersion,
+  Seller,
   ShippingMethod,
 } from "@klotilda/domain";
 import type { PaginatedResponse } from "@eleansphere/entity-core";
@@ -69,4 +73,26 @@ export async function listPaymentMethods(): Promise<PaymentMethod[]> {
 /** Places the order; the API charges its own prices and answers how to pay. */
 export function checkout(request: CheckoutRequest): Promise<CheckoutResponse> {
   return services.orders.checkout(request);
+}
+
+/** Who sells, as the admin entered it; `undefined` while the API has no row. */
+export async function getSeller(): Promise<Seller | undefined> {
+  return (await services.seller.getAll({ limit: 1 })).data[0];
+}
+
+/** A legal page's version in force, or the published one named. */
+export function getLegalVersion(
+  document: LegalDocumentKey,
+  version?: string,
+): Promise<PublishedLegalVersion> {
+  return version
+    ? services.legalDocuments.version(document, version)
+    : services.legalDocuments.current(document);
+}
+
+/** Every published version of a legal page, newest first. */
+export function listLegalVersions(
+  document: LegalDocumentKey,
+): Promise<LegalVersionSummary[]> {
+  return services.legalDocuments.published(document);
 }

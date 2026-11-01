@@ -29,6 +29,23 @@ export const legalDocumentVersionEntity = defineEntity({
     defaultLimit: 50,
     maxLimit: 100,
   },
+  extend: (Base) =>
+    class extends Base {
+      /** The document's version in force (public). */
+      current(document: LegalDocumentKey) {
+        return this.get<PublishedLegalVersion>(legalCurrentRoute(document));
+      }
+
+      /** Every published version of the document, newest first (public). */
+      published(document: LegalDocumentKey) {
+        return this.get<LegalVersionSummary[]>(legalVersionsRoute(document));
+      }
+
+      /** One published version, as it was published (public). */
+      version(document: LegalDocumentKey, version: string) {
+        return this.get<PublishedLegalVersion>(legalVersionsRoute(document, version));
+      }
+    },
 });
 
 export type LegalDocumentVersion = InstanceType<typeof legalDocumentVersionEntity.Dto>;
@@ -37,6 +54,8 @@ export type LegalDocumentVersion = InstanceType<typeof legalDocumentVersionEntit
 export interface LegalSellerSnapshot extends Pick<Seller, 'name' | 'ico' | 'address' | 'email'> {
   phone: string | null;
   registration: string | null;
+  /** Whether the admin had marked the details complete; the page of a version without says draft. */
+  complete?: boolean;
 }
 
 /** A published version as the website shows it. */
@@ -68,6 +87,9 @@ export const legalCurrentRoute = (document: LegalDocumentKey) =>
 /** `GET` the list of published versions, or one of them (public). */
 export const legalVersionsRoute = (document: LegalDocumentKey, version?: string) =>
   `${LEGAL_DOCUMENTS_PATH}/${document}/versions${version ? `/${encodeURIComponent(version)}` : ''}`;
+/** The website's page of one version (`/obchodni-podminky/2026-11-02`). */
+export const legalVersionPath = (document: LegalDocumentKey, version: string) =>
+  `${LEGAL_PATHS[document]}/${encodeURIComponent(version)}`;
 /** `POST` (start one), `PUT` (save the texts), `DELETE` the draft; signed in. */
 export const legalDraftRoute = (document: LegalDocumentKey) =>
   `${LEGAL_DOCUMENTS_PATH}/${document}/draft`;
@@ -152,11 +174,20 @@ export function pragueDate(now: Date): string {
   return PRAGUE_DATE.format(now);
 }
 
-/** The date part of a version (`2026-11-02` of `2026-11-02.2`): the day it applies from. */
+/**
+ * How a version is named: the date it applies from, `-2`, `-3`… for a second one that day. No dot,
+ * so the website's middleware, which leaves paths with a dot (files) alone, routes its page.
+ */
+const LEGAL_VERSION = /^\d{4}-\d{2}-\d{2}(-[2-9]|-[1-9]\d+)?$/;
+
+/** Whether `value` can name a version (a URL's segment must). */
+export const isLegalVersion = (value: string) => LEGAL_VERSION.test(value);
+
+/** The date part of a version (`2026-11-02` of `2026-11-02-2`): the day it applies from. */
 export const legalVersionDate = (version: string) => version.slice(0, 10);
 
 /**
- * The version a draft published on `date` gets: the date, or `date.2`… when that day has one.
+ * The version a draft published on `date` gets: the date, or `date-2`… when that day has one.
  * Its date is never earlier than one already taken (the first versions were dated a day ahead),
  * so the version published last, the current one, also names the latest day.
  */
@@ -164,6 +195,6 @@ export function nextLegalVersion(date: string, taken: readonly string[]): string
   const latest = taken.map(legalVersionDate).reduce((max, day) => (day > max ? day : max), date);
   if (!taken.includes(latest)) return latest;
   let suffix = 2;
-  while (taken.includes(`${latest}.${suffix}`)) suffix++;
-  return `${latest}.${suffix}`;
+  while (taken.includes(`${latest}-${suffix}`)) suffix++;
+  return `${latest}-${suffix}`;
 }

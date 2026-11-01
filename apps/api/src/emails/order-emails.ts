@@ -4,6 +4,7 @@ import {
   formatCzechDate,
   LEGAL_PATHS,
   legalVersionDate,
+  legalVersionPath,
 } from '@klotilda/domain';
 import type {
   EmailPlaceholder,
@@ -57,6 +58,10 @@ const agreedTerms = ({ termsVersion }: PlacedOrder) =>
   termsVersion
     ? `obchodních podmínek platných od ${formatCzechDate(legalVersionDate(termsVersion))}`
     : 'obchodních podmínek';
+
+/** The page of exactly the terms the order was placed under; the current ones for an older order. */
+const agreedTermsPath = ({ termsVersion }: PlacedOrder) =>
+  termsVersion ? legalVersionPath('terms', termsVersion) : LEGAL_PATHS.terms;
 
 const address = (order: PlacedOrder) => `${order.street}, ${order.zip} ${order.city}`;
 
@@ -172,8 +177,8 @@ export function orderReceivedEmail(
       {
         kind: 'links',
         links: [
-          { label: 'Obchodní podmínky', href: LEGAL_PATHS.terms },
-          { label: 'Reklamace', href: `${LEGAL_PATHS.terms}#${COMPLAINTS_ANCHOR}` },
+          { label: 'Obchodní podmínky', href: agreedTermsPath(order) },
+          { label: 'Reklamace', href: `${agreedTermsPath(order)}#${COMPLAINTS_ANCHOR}` },
           { label: 'Formulář pro odstoupení', href: LEGAL_PATHS.withdrawal },
         ],
       },

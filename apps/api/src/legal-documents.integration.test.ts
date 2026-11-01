@@ -151,7 +151,11 @@ describe('Legal documents', () => {
 
   it('publish a draft as a frozen version, dated today in Prague, with the seller of today', async () => {
     const seller = (await app.api().get('/api/seller')).body.data[0] as { id: string };
-    await app.api().patch(`/api/seller/${seller.id}`).set(asAdmin()).send({ name: 'Klotilda' });
+    await app
+      .api()
+      .patch(`/api/seller/${seller.id}`)
+      .set(asAdmin())
+      .send({ name: 'Klotilda', complete: true });
     await app.api().post(`${TERMS}/draft`).set(asAdmin());
     await app.api().put(`${TERMS}/draft`).set(asAdmin()).send({ body_cs: NEW_TERMS, body_en: '' });
 
@@ -168,7 +172,7 @@ describe('Legal documents', () => {
       effectiveFrom: legalVersionDate(version),
       body_cs: NEW_TERMS,
       body_en: null,
-      seller: { name: 'Klotilda' },
+      seller: { name: 'Klotilda', complete: true },
     });
 
     // The seller's later changes leave the published version as it was.
@@ -219,6 +223,8 @@ describe('Legal documents', () => {
     expect(confirmation?.text).toContain(
       `obchodních podmínek platných od ${formatCzechDate(legalVersionDate(version))}`
     );
+    // It links that very version's page.
+    expect(confirmation?.text).toContain(`/obchodni-podminky/${version}`);
   });
 
   it('take no order while no terms are published', async () => {
