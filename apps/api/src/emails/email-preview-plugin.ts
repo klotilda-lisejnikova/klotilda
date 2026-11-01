@@ -4,6 +4,7 @@ import {
   EMAIL_TEMPLATE_KEYS,
   EMAIL_TEMPLATE_PREVIEW_ROUTE,
   emailTemplateFields,
+  pragueDate,
 } from '@klotilda/domain';
 import type { EmailPreview, EmailPreviewRequest, EmailTemplateKey } from '@klotilda/domain';
 import type { BankAccount } from '../env';
@@ -43,6 +44,7 @@ function sampleOrder(key: EmailTemplateKey): PlacedOrder {
     variableSymbol: '2611011234',
     paymentStatus: key === 'cancel' || key === 'mark-refunded' ? 'paid' : 'pending',
     items: [{ productId: 'prod_sample', name: 'Váza s modrou glazurou', price: 1200, quantity: 1 }],
+    termsVersion: pragueDate(new Date()),
   };
 }
 

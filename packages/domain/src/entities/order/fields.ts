@@ -8,6 +8,7 @@ import {
   SHIPPING_KINDS,
 } from '../../constants';
 import { CODE_MAX_LENGTH } from '../../codes';
+import { LEGAL_VERSION_MAX_LENGTH } from '../legal-document/fields';
 
 const NAME_MAX_LENGTH = 100;
 const EMAIL_MAX_LENGTH = 254;
@@ -18,7 +19,6 @@ const ZIP_MAX_LENGTH = 10;
 const NOTES_MAX_LENGTH = 2000;
 const TRACKING_NUMBER_MAX_LENGTH = 60;
 const ACTION_MESSAGE_MAX_LENGTH = 1000;
-const TERMS_VERSION_MAX_LENGTH = 20;
 
 /** What the customer fills in at checkout. */
 export const customerFields = {
@@ -77,8 +77,8 @@ export const orderFields = {
   trackingUrl: { type: 'TEXT', readOnly: true },
   /** What happened to the order, as `OrderEvent[]` JSON, oldest first. Empty on older orders. */
   history: { type: 'TEXT', readOnly: true },
-  /** The terms (`TERMS_VERSION`) the customer agreed to at checkout, and when. */
-  termsVersion: { type: 'STRING', maxLength: TERMS_VERSION_MAX_LENGTH, readOnly: true },
+  /** The terms the customer agreed to at checkout (a `LegalDocumentVersion` of them), and when. */
+  termsVersion: { type: 'STRING', maxLength: LEGAL_VERSION_MAX_LENGTH, readOnly: true },
   termsAcceptedAt: { type: 'DATE', readOnly: true },
 } as const satisfies Fields;
 

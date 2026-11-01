@@ -2,7 +2,8 @@
  * The shop's terms, the complaints procedure included (the `{{complaintsAnchor}}` section).
  * A DRAFT written from the Czech Civil Code for a small shop of originals paid by bank transfer;
  * have it checked before the shop opens. `{{…}}` are filled in by `fillLegalText` (lib/legal.ts).
- * A change to what the customer agrees to needs a new `TERMS_VERSION` (packages/domain seller.ts).
+ * Orders store the terms version the API publishes, not this text: a change to what the customer
+ * agrees to is published as a new version in the API.
  */
 
 const cs = `

@@ -40,8 +40,8 @@ access, the DTO types, the typed clients and the admin's form schema (`formSchem
 model means changing `fields.ts` — plus a migration (below).
 
 Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `ShippingMethod`,
-`PaymentMethod`, `EmailTemplate`, `Seller`) are the production table names (`Products`, …) —
-never rename them.
+`PaymentMethod`, `EmailTemplate`, `Seller`, `LegalDocumentVersion`) are the production table names
+(`Products`, …) — never rename them.
 
 ## Backend
 
@@ -105,6 +105,18 @@ never rename them.
   with placeholders by the `2026-11-01-seller` migration. The e-mails' footer names it
   (`resolveSellerLine`, the domain's `SELLER` when the row is missing); the website still shows
   the domain's `SELLER` until it reads the row.
+- Legal texts (`LegalDocumentVersion`, `/api/legal-documents`, `src/legal/`): versions of the terms,
+  the privacy policy and the withdrawal form (`LEGAL_DOCUMENTS`), Czech and optional English text
+  in the legal Markdown subset with `LEGAL_PLACEHOLDERS`. Auto CRUD only lists them, signed in; a
+  draft is started, saved, deleted and published through `…/:document/draft` (each under the
+  document's advisory lock, one draft per document), and publishing — refused while
+  `legalTextProblems` finds an unknown placeholder or a missing anchor other pages link to —
+  freezes it as the current version, named by Prague's date (`pragueDate`, `.2` for a second one
+  that day, never before an earlier one) with a snapshot of the seller's details. Anyone reads
+  `…/:document/current`, `…/versions` and `…/versions/:version`. The
+  `2026-11-01-legal-documents` migration published version `2026-11-02` of each with the texts
+  the website had. The checkout stores the current terms version on the order and answers 412
+  (`TERMS_CHANGED`) when the shop sent another (`termsVersion`); the confirmation names its date.
 - Files: any signed-in admin uploads (only product / gallery images) and deletes any photo; photos
   are public.
 - Ordering (`src/catalogue/reorder-plugin.ts`, signed-in admin): `PUT /api/products/:id/images/order`
@@ -149,9 +161,10 @@ gated with the shop in `src/middleware.ts`; the footer links them and names the 
 are drafts in `src/content/legal/*.ts` (a small Markdown subset parsed by the domain's
 `parseLegalText`, rendered by `components/legal/LegalDocument`),
 `{{…}}` filled from `packages/domain/src/seller.ts`: the seller's details (**placeholders** —
-`SELLER.placeholder` shows a draft notice), `TERMS_VERSION`, `LEGAL_PATHS`. The checkout requires
-the terms box (`termsAccepted: true`, else 400) and each order stores `termsVersion` +
-`termsAcceptedAt`; changing what customers agree to means a new `TERMS_VERSION`.
+`SELLER.placeholder` shows a draft notice), `TERMS_EFFECTIVE_FROM`, `LEGAL_PATHS` — until it reads
+the versions the API serves (see _Backend_). The checkout requires the terms box
+(`termsAccepted: true`, else 400) and each order stores the API's current `termsVersion` +
+`termsAcceptedAt`; changing what customers agree to means publishing a new version.
 
 ## Admin
 
@@ -200,10 +213,10 @@ Branches: `main` = production, `dev` = test.
   Both run with `NODE_ENV=production`, so each needs `TRUST_PROXY=1` and a `JWT_SECRET` of at
   least 32 characters before it takes a build that checks them, or the API won't start.
 
-  After a change to the catalogue, the gallery, the stock or the seller the API calls the web's
-  `POST /api/revalidate` (`WEB_REVALIDATE_URL`, `WEB_REVALIDATE_SECRET` = the web's
-  `REVALIDATE_SECRET`), so admin edits show at once; set for `test` / the `dev` branch, not yet
-  for production — set it there before the shop goes live: without it the shop's pages
+  After a change to the catalogue, the gallery, the stock, the seller or a published legal text
+  the API calls the web's `POST /api/revalidate` (`WEB_REVALIDATE_URL`, `WEB_REVALIDATE_SECRET` =
+  the web's `REVALIDATE_SECRET`), so admin edits show at once; set for `test` / the `dev` branch,
+  not yet for production — set it there before the shop goes live: without it the shop's pages
   regenerate only hourly. `SITE_URL` (linked from e-mails) is `https://test.klotilda.cz` on `test`.
 
   `apps/api/Dockerfile`, build context the repository root, `NODE_AUTH_TOKEN` as a build argument
