@@ -8,6 +8,7 @@ import type { ProjectPlugin, Sequelize } from '@eleansphere/be-core';
 import {
   applyAction,
   availableActions,
+  isEmailTemplateKey,
   ORDER_ACTION_ROUTE,
   ORDER_ACTIONS,
   orderActionFields,
@@ -26,7 +27,9 @@ import type {
   OrderItem,
   OrderState,
 } from '@klotilda/domain';
-import { ORDER_ACTION_EMAILS } from '../emails/order-emails';
+import type { EmailContent } from '../emails/email-layout';
+import { resolveEmailText } from '../emails/email-templates';
+import { orderActionEmail } from '../emails/order-emails';
 import type { PlacedOrder } from '../emails/order-emails';
 import { sendEmail } from '../emails/send-email';
 import { asyncHandler } from '../http/async-handler';
@@ -80,6 +83,25 @@ async function findTrackingUrl(
     .get(shippingMethodEntity.config.name)
     .findOne({ where: { code: shippingMethod }, transaction });
   return trackingUrlFor(method?.get('trackingUrl') as string | null, trackingNumber) ?? null;
+}
+
+/** The customer's e-mail about the action, worded as the admin set it; none for some actions. */
+async function findActionEmail(
+  registry: ModelRegistry,
+  action: OrderAction,
+  saved: Order,
+  event: OrderEvent
+): Promise<{ enabled: boolean; to: string; content: EmailContent } | undefined> {
+  if (!isEmailTemplateKey(action)) return undefined;
+  const placed: PlacedOrder = { ...saved, items: parseOrderItems(saved) };
+  const { enabled, text } = await resolveEmailText(registry, action);
+  const content = orderActionEmail(
+    action,
+    placed,
+    { ...event, trackingUrl: saved.trackingUrl ?? undefined },
+    text
+  );
+  return { enabled, to: saved.customerEmail, content };
 }
 
 /**
@@ -146,20 +168,13 @@ export function createOrderActionsPlugin({
           });
 
           // The e-mail goes after the change is saved; how it went is noted on the same line.
-          const template = ORDER_ACTION_EMAILS[action];
-          if (template) {
-            const saved = order.toJSON() as Order;
-            const placed: PlacedOrder = { ...saved, items: parseOrderItems(saved) };
+          const email = await findActionEmail(registry, action, order.toJSON() as Order, event);
+          if (email) {
             event.email =
-              request.notify === false
+              request.notify === false || !email.enabled
                 ? 'skipped'
-                : await sendEmail(
-                    emailService,
-                    saved.customerEmail,
-                    template(placed, { ...event, trackingUrl: saved.trackingUrl ?? undefined }),
-                    siteUrl
-                  );
-            const history = parseOrderHistory(saved);
+                : await sendEmail(emailService, email.to, email.content, siteUrl);
+            const history = parseOrderHistory(order.toJSON() as Order);
             history[history.length - 1] = event;
             await order.update({ history: JSON.stringify(history) });
           }

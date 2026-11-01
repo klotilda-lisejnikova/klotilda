@@ -11,6 +11,7 @@ import {
   adminUserEntity,
   allEntities,
   categoryEntity,
+  emailTemplateEntity,
   ENTITIES_WITHOUT_CRUD_ROUTES,
   FILE_REF_TYPES,
   galleryItemEntity,
@@ -22,6 +23,7 @@ import {
 import { normalizeSlug, withCategory } from './catalogue/categories';
 import { createReorderPlugin } from './catalogue/reorder-plugin';
 import { CHECKOUT_RATE_LIMIT, createCheckoutPlugin } from './checkout/checkout-plugin';
+import { createEmailPreviewPlugin } from './emails/email-preview-plugin';
 import type { Environment, StorageSettings } from './env';
 import { authorizeFileAccess } from './files/authorize-file-access';
 import { createShopImages } from './files/shop-images';
@@ -36,6 +38,7 @@ import { createWebRevalidator } from './web/revalidate-web';
 const ACCESS_TOKEN_LIFETIME = '15m';
 const REFRESH_TOKEN_LIFETIME = '30d';
 const CREATE_METHOD = 'POST';
+const DELETE_METHOD = 'DELETE';
 
 /** Test and script hooks: replace infrastructure without touching the environment. */
 export interface AppConfigOverrides {
@@ -47,6 +50,10 @@ export interface AppConfigOverrides {
 
 /** Visitors see what is on offer; the signed-in admin sees everything, hidden rows too. */
 const activeUnlessSignedIn: AccessDecider = (req) => (req.user ? true : { active: true });
+
+/** The e-mail templates are a fixed set of rows: the admin edits them, never adds or removes one. */
+const signedInEditingOnly: AccessDecider = (req) =>
+  req.user !== undefined && req.method !== CREATE_METHOD && req.method !== DELETE_METHOD;
 
 /** Orders are placed only through `POST /api/checkout`; the admin updates and deletes them. */
 const signedInExceptCreating: AccessDecider = (req) =>
@@ -113,6 +120,9 @@ export function buildAppConfig(
       [orderEntity.config.name]: {
         access: { write: signedInExceptCreating },
       },
+      [emailTemplateEntity.config.name]: {
+        access: { write: signedInEditingOnly },
+      },
     },
     plugins: [
       models.plugin,
@@ -129,6 +139,11 @@ export function buildAppConfig(
         siteUrl: environment.siteUrl,
       }),
       createReorderPlugin({ registry: models, jwtSecret: environment.jwtSecret }),
+      createEmailPreviewPlugin({
+        jwtSecret: environment.jwtSecret,
+        bankAccount: environment.bankAccount,
+        siteUrl: environment.siteUrl,
+      }),
     ],
     email: {
       from: environment.emailFrom,

@@ -4,6 +4,11 @@ import {
   applyAction,
   availableActions,
   customerFields,
+  EMAIL_TEMPLATE_KEYS,
+  EMAIL_TEMPLATES,
+  fillPlaceholders,
+  hasBrokenPlaceholder,
+  isEmailTemplateKey,
   orderFields,
   parseOrderHistory,
   parseOrderItems,
@@ -11,6 +16,7 @@ import {
   toCode,
   toSlug,
   trackingUrlFor,
+  unknownPlaceholders,
 } from './index';
 import type { OrderState } from './index';
 
@@ -144,5 +150,44 @@ describe('Shipping methods', () => {
     expect(toCode('Osobní odběr – Brno')).toBe('osobni-odber-brno');
     expect(toCode('osobni_odber')).toBe('osobni_odber');
     expect(toCode(' ** ')).toBe('');
+  });
+});
+
+describe('E-mail templates', () => {
+  it('fill the placeholders they know, and leave the rest as written', () => {
+    expect(
+      fillPlaceholders('Objednávka {{vs}} pro {{ jmeno }}, {{cena}}, {{cislo_zasilky}}', {
+        vs: '1234567890',
+        jmeno: 'Jana',
+      })
+    ).toBe('Objednávka 1234567890 pro Jana, {{cena}}, {{cislo_zasilky}}');
+  });
+
+  it('name the placeholders an e-mail does not know', () => {
+    expect(unknownPlaceholders('{{vs}} {{cena}} {{cena}} {{cislo_zasilky}}', 'mark-paid')).toEqual([
+      'cena',
+      'cislo_zasilky',
+    ]);
+    expect(unknownPlaceholders('{{vs}} {{cislo_zasilky}}', 'ship')).toEqual([]);
+  });
+
+  it('start every e-mail with a text that uses only its own placeholders', () => {
+    for (const key of EMAIL_TEMPLATE_KEYS) {
+      const { subject, heading, body } = EMAIL_TEMPLATES[key];
+      expect(unknownPlaceholders(`${subject} ${heading} ${body}`, key)).toEqual([]);
+    }
+  });
+
+  it('spot braces that are not a whole placeholder', () => {
+    expect(hasBrokenPlaceholder('Objednávka {{vs}} pro {{ jmeno }}')).toBe(false);
+    expect(hasBrokenPlaceholder('Objednávka {{vs}')).toBe(true);
+    expect(hasBrokenPlaceholder('Balík {{cislo zasilky}}')).toBe(true);
+    expect(hasBrokenPlaceholder('Hotovo }}')).toBe(true);
+  });
+
+  it('know their keys, and nothing else', () => {
+    expect(isEmailTemplateKey('ship')).toBe(true);
+    expect(isEmailTemplateKey('mark-delivered')).toBe(false);
+    expect(isEmailTemplateKey('constructor')).toBe(false);
   });
 });

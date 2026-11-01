@@ -3,6 +3,7 @@ import { baseline } from './2026-09-27-baseline';
 import { categories } from './2026-09-28-categories';
 import { orderHistory } from './2026-09-29-order-history';
 import { orderTerms } from './2026-09-29-order-terms';
+import { emailTemplates } from './2026-11-01-email-templates';
 import { paymentMethods } from './2026-11-01-payment-methods';
 import { shippingMethods } from './2026-11-01-shipping-methods';
 
@@ -18,4 +19,5 @@ export const migrations: Migration[] = [
   orderTerms,
   shippingMethods,
   paymentMethods,
+  emailTemplates,
 ];
