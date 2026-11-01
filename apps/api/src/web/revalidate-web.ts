@@ -5,7 +5,6 @@ import {
   GALLERY_PATH,
   ORDERS_PATH,
   PRODUCTS_PATH,
-  SHIPPING_METHODS_PATH,
 } from '@klotilda/domain';
 
 /** The website's `POST /api/revalidate` and the secret it checks. */
@@ -19,20 +18,15 @@ const DEBOUNCE_MS = 1000;
 const FILES_PATH = '/api/files';
 
 /**
- * Requests that change what the website shows: the catalogue and the gallery, their photos, the
- * shipping methods (the terms list their prices), a placed order (stock goes down) and order actions (a cancelled order's stock comes back).
+ * Requests that change what the website shows: the catalogue and the gallery, their photos, a
+ * placed order (stock goes down) and order actions (a cancelled order's stock comes back).
  */
 function changesTheWebsite(method: string, path: string): boolean {
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false;
   return (
-    [
-      PRODUCTS_PATH,
-      CATEGORIES_PATH,
-      GALLERY_PATH,
-      FILES_PATH,
-      CHECKOUT_PATH,
-      SHIPPING_METHODS_PATH,
-    ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`)) ||
+    [PRODUCTS_PATH, CATEGORIES_PATH, GALLERY_PATH, FILES_PATH, CHECKOUT_PATH].some(
+      (prefix) => path === prefix || path.startsWith(`${prefix}/`)
+    ) ||
     (path.startsWith(`${ORDERS_PATH}/`) && path.includes('/actions/'))
   );
 }

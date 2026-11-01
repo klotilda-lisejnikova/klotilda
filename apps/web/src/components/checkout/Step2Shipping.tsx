@@ -12,7 +12,7 @@ interface Props {
 }
 
 /** A method's name and description in the page's language, Czech where English is missing. */
-export function shippingText(method: ShippingMethod, locale: string) {
+function shippingText(method: ShippingMethod, locale: string) {
   const english = locale === "en";
   return {
     name: (english && method.name_en) || method.name_cs,

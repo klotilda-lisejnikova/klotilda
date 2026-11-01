@@ -49,11 +49,12 @@ export const shippingMethods: Migration = {
       await sequelize.query(INSERT_METHOD, { bind: { ...method, sortOrder } });
     }
 
-    for (const column of ['shippingName', 'shippingKind', 'trackingUrl']) {
+    for (const column of ['shippingName', 'shippingKind']) {
       await sequelize.query(
         `ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "${column}" VARCHAR(255)`
       );
     }
+    await sequelize.query(`ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "trackingUrl" TEXT`);
     // An order placed with a method that no longer exists keeps its code as the name.
     await sequelize.query(
       `UPDATE "Orders" SET

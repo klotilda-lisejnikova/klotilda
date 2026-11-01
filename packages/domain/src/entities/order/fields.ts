@@ -67,7 +67,7 @@ export const orderFields = {
   /** The carrier's parcel number, set when the order is shipped. */
   trackingNumber: { type: 'STRING', maxLength: TRACKING_NUMBER_MAX_LENGTH, readOnly: true },
   /** Where the parcel is followed, made from the method's `trackingUrl` when shipped. */
-  trackingUrl: { type: 'STRING', readOnly: true },
+  trackingUrl: { type: 'TEXT', readOnly: true },
   /** What happened to the order, as `OrderEvent[]` JSON, oldest first. Empty on older orders. */
   history: { type: 'TEXT', readOnly: true },
   /** The terms (`TERMS_VERSION`) the customer agreed to at checkout, and when. */

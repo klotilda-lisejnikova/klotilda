@@ -3,13 +3,7 @@ import { TERMS_EFFECTIVE_FROM } from "@klotilda/domain";
 import { PRIVACY } from "@/content/legal/privacy";
 import { TERMS } from "@/content/legal/terms";
 import { WITHDRAWAL } from "@/content/legal/withdrawal";
-import {
-  fillLegalText,
-  SELLER_IS_PLACEHOLDER,
-  shippingPriceList,
-} from "@/lib/legal";
-import { loadStaticData } from "@/lib/static-data";
-import { listShippingMethods } from "@/services";
+import { fillLegalText, SELLER_IS_PLACEHOLDER } from "@/lib/legal";
 import LegalDocument from "./LegalDocument";
 import PrintButton from "./PrintButton";
 
@@ -22,29 +16,6 @@ export async function legalTitle(kind: LegalKind, locale: string) {
   return t(`${kind}.title`);
 }
 
-/** What the terms fill in from the API: the shipping methods on offer and their prices. */
-async function loadExtraValues(
-  kind: LegalKind,
-  language: "cs" | "en",
-): Promise<Record<string, string>> {
-  if (kind !== "terms") return {};
-  // A failed load says "shown at checkout" instead of failing the page: the text stays true,
-  // and the website may build before an API that serves the shipping methods is deployed.
-  const methods = await loadStaticData(
-    "TermsPage",
-    listShippingMethods,
-    [],
-  ).catch((err: unknown) => {
-    console.error("[TermsPage] Shipping methods could not be loaded:", err);
-    return [];
-  });
-  const prices = methods.map((method) => ({
-    name: (language === "en" && method.name_en) || method.name_cs,
-    price: method.price,
-  }));
-  return { shippingPrices: shippingPriceList(prices, language) };
-}
-
 /** A legal text on the paper background, in the home page's type. */
 export default async function LegalPage({
   kind,
@@ -54,11 +25,7 @@ export default async function LegalPage({
   locale: string;
 }) {
   const t = await getTranslations({ locale, namespace: "legal" });
-  const language = locale === "en" ? "en" : "cs";
-  const source = fillLegalText(
-    DOCUMENTS[kind][language],
-    await loadExtraValues(kind, language),
-  );
+  const source = fillLegalText(DOCUMENTS[kind][locale === "en" ? "en" : "cs"]);
 
   return (
     <section className="bg-paper print:bg-white">

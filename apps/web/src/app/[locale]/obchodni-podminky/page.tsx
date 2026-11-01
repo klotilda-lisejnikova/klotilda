@@ -1,12 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 import LegalPage, { legalTitle } from "@/components/legal/LegalPage";
 
-/**
- * Static; lists the shipping prices from the API, so it is rebuilt when the admin changes them
- * (`/api/revalidate`), or at the latest after an hour.
- */
-export const revalidate = 3600;
-
 interface Props {
   params: Promise<{ locale: string }>;
 }

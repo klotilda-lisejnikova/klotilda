@@ -1,5 +1,5 @@
 import { HttpError, ValidationError } from '@eleansphere/be-core';
-import type { CrudHook } from '@eleansphere/be-core';
+import type { CrudHook, Sequelize } from '@eleansphere/be-core';
 import { shippingMethodEntity, toShippingCode } from '@klotilda/domain';
 import type { ShippingKind } from '@klotilda/domain';
 import type { ModelRegistry } from '../models-registry';
@@ -21,14 +21,23 @@ export interface ChosenShipping {
   shippingPrice: number;
 }
 
-/** The active method of that code, or a 400 the shop shows as "the cart changed". */
-export async function findOfferedShipping(
+type Transaction = Awaited<ReturnType<Sequelize['transaction']>>;
+
+/**
+ * The active method of that code, read in the order's transaction with its row locked, so an
+ * admin hiding or repricing it at that moment waits for the order; else a 400 the shop shows as
+ * "the cart changed".
+ */
+export async function resolveOfferedShipping(
   registry: ModelRegistry,
-  code: string
+  code: string,
+  transaction: Transaction
 ): Promise<ChosenShipping> {
-  const method = await registry
-    .get(shippingMethodEntity.config.name)
-    .findOne({ where: { code, active: true } });
+  const method = await registry.get(shippingMethodEntity.config.name).findOne({
+    where: { code, active: true },
+    lock: transaction.LOCK.UPDATE,
+    transaction,
+  });
   if (!method) throw new HttpError(BAD_REQUEST, 'Tento způsob dopravy už není v nabídce');
   return {
     shippingName: String(method.get('name_cs')),

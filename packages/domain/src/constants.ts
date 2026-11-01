@@ -11,7 +11,7 @@ export const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'refunded'] as con
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 export const DEFAULT_PAYMENT_STATUS = 'pending' satisfies PaymentStatus;
 
-/** `ready`: waiting to be picked up in Prague (`osobni_odber`), where others are `shipped`. */
+/** `ready`: waiting to be picked up (a `pickup` shipping method), where others are `shipped`. */
 export const ORDER_STATUSES = [
   'new',
   'processing',

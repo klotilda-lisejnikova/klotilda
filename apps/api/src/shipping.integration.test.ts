@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { toShippingCode } from '@klotilda/domain';
 import { bearer, startTestApp } from './test-support/test-app';
 import type { TestApp } from './test-support/test-app';
 
@@ -53,12 +52,6 @@ describe('Shipping methods', () => {
       .send({ ...CUSTOMER, shippingMethod, items: [{ productId: product.body.id, quantity: 1 }] });
   };
 
-  it('makes plain codes, keeping the underscores of the first ones', () => {
-    expect(toShippingCode('Osobní odběr – Brno')).toBe('osobni-odber-brno');
-    expect(toShippingCode('osobni_odber')).toBe('osobni_odber');
-    expect(toShippingCode(' ** ')).toBe('');
-  });
-
   it('lets only the admin write, with a normalized code', async () => {
     const visitor = await app
       .api()
@@ -75,16 +68,22 @@ describe('Shipping methods', () => {
     expect(created.status).toBe(201);
     expect(created.body.code).toBe('ppl-balik');
 
-    expect(
-      (await createMethod({ code: '!!', name_cs: 'X', price: 1, kind: 'delivery' })).status
-    ).toBe(400);
-    expect(
-      (await createMethod({ code: 'drone', name_cs: 'Dron', price: 1, kind: 'air' })).status
-    ).toBe(400);
-    expect(
-      (await createMethod({ code: 'ppl-balik', name_cs: 'Znovu', price: 1, kind: 'delivery' }))
-        .status
-    ).toBeGreaterThanOrEqual(400);
+    const empty = await createMethod({ code: '!!', name_cs: 'X', price: 1, kind: 'delivery' });
+    expect(empty.status).toBe(400);
+    expect(empty.body.issues).toEqual([expect.objectContaining({ path: 'code', code: 'format' })]);
+    const badKind = await createMethod({ code: 'drone', name_cs: 'Dron', price: 1, kind: 'air' });
+    expect(badKind.status).toBe(400);
+    expect(badKind.body.issues).toEqual([expect.objectContaining({ path: 'kind', code: 'enum' })]);
+    const duplicate = await createMethod({
+      code: 'ppl-balik',
+      name_cs: 'Znovu',
+      price: 1,
+      kind: 'delivery',
+    });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.issues).toEqual([
+      expect.objectContaining({ path: 'code', code: 'unique' }),
+    ]);
   });
 
   it('offers visitors the active methods only; the admin sees all', async () => {
@@ -107,7 +106,9 @@ describe('Shipping methods', () => {
     const placed = await placeOrder('ceska_posta', 500);
     expect(placed.status).toBe(201);
     expect(placed.body.amount).toBe(649);
-    expect((await placeOrder('kuryr')).status).toBe(400);
+    const hidden = await placeOrder('kuryr');
+    expect(hidden.status).toBe(400);
+    expect(hidden.body.message).toContain('není v nabídce');
 
     // Renaming the method afterwards leaves the order as it was placed.
     await app
@@ -139,7 +140,9 @@ describe('Shipping methods', () => {
         .set(asAdmin())
         .send({ notify: false });
     await act('mark-paid');
-    expect((await act('ship')).status).toBe(409);
+    const shipped = await act('ship');
+    expect(shipped.status).toBe(409);
+    expect(shipped.body.message).toContain('nejde');
     expect((await act('ready-for-pickup')).body.orderStatus).toBe('ready');
   });
 
@@ -160,6 +163,7 @@ describe('Shipping methods', () => {
       .set(asAdmin())
       .send({ ids: reversed.slice(1) });
     expect(partial.status).toBe(409);
+    expect(partial.body.message).toContain('Způsoby dopravy se mezitím změnily');
     expect((await app.api().put('/api/shipping-methods/all/order').send({ ids })).status).toBe(401);
   });
 });

@@ -39,8 +39,8 @@ access, the DTO types, the typed clients and the admin's form schema (`formSchem
 `apps/admin/src/app/validation.ts`, the server's own rules with Czech messages). Changing the data
 model means changing `fields.ts` — plus a migration (below).
 
-Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the production table names
-(`Products`, …) — never rename them.
+Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `ShippingMethod`) are the
+production table names (`Products`, …) — never rename them.
 
 ## Backend
 
@@ -58,16 +58,18 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the
   `POST /api/checkout`** (`src/checkout/`), public and rate-limited: it takes the customer's
   details and `{ productId, quantity }` lines, charges the products' **own prices** and the
   price of the chosen **active** shipping method (400 otherwise), and takes the stock down
-  inside one transaction with the product rows locked (`FOR UPDATE`), so the last piece sells once. It answers the bank account, a random
-  variable symbol and a QR Platba code, and e-mails the customer and `ADMIN_EMAIL` (a failed
-  e-mail is only logged).
+  inside one transaction with the product and shipping method rows locked (`FOR UPDATE`), so the
+  last piece sells once. It answers the bank account, a random variable symbol and a QR Platba
+  code, and e-mails the customer and `ADMIN_EMAIL` (a failed e-mail is only logged).
 - Shipping methods (`ShippingMethod`, `/api/shipping-methods`): auto CRUD, rows the admin manages
   (code, names, description, price, `kind` `delivery` | `pickup`, an optional `trackingUrl` with
   `{number}`, `active`, `sortOrder`); visitors read only the active ones. The code is stored
   normalized (`toShippingCode`, `src/shipping/`). An order keeps the method's code and snapshots
   `shippingName`, `shippingKind` and `shippingPrice`, so editing or deleting a method changes no
-  order; the workflow decides ship vs ready-for-pickup by `shippingKind`, and shipping an order
-  stores its `trackingUrl`. The first three methods come from the `2026-11-01-shipping-methods`
+  placed order's price or name; the workflow decides ship vs ready-for-pickup by `shippingKind`.
+  The tracking link comes from the method as it is when the order is shipped (stored on the order
+  as `trackingUrl`): an order not yet shipped follows an edit of the method's template, and gets
+  no link once its method is deleted. The first three methods come from the `2026-11-01-shipping-methods`
   migration.
 - Order actions: `POST /api/orders/:id/actions/:action` (`src/orders/`), signed-in admin only. The
   steps and when each is allowed are in the domain (`availableActions`, `applyAction` in
@@ -105,8 +107,9 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the
 
 `apps/web/src/services/index.ts` wraps the domain clients: `listProducts`, `getProduct`,
 `listGallery`, `listShippingMethods`, `checkout`. The checkout reads the shipping methods live;
-the terms list their prices (`{{shippingPrices}}`, rebuilt on revalidation). Photos go through
-`mediaUrl()` (relative `/api/files/:id` without a bucket). `NEXT_PUBLIC_SHOP_ENABLED` gates the shop (see `src/lib/features.ts`). The image
+the terms name no shipping prices (the checkout shows them, the order states the one agreed).
+Photos go through `mediaUrl()` (relative `/api/files/:id` without a bucket).
+`NEXT_PUBLIC_SHOP_ENABLED` gates the shop (see `src/lib/features.ts`). The image
 optimizer takes only the API's host and `NEXT_PUBLIC_MEDIA_URL` (the bucket's public URL, the API's
 `R2_PUBLIC_BASE_URL`), which a Vercel production build requires. `next.config.ts` sets the
 security headers of every page.

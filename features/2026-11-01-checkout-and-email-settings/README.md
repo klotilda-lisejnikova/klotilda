@@ -20,8 +20,10 @@ slug), `name_cs`, `name_en`, `description_cs/en`, `price` (CZK), `kind` (`delive
   or deleted. The workflow (`ship` vs `ready-for-pickup`) reads `shippingKind`, not the code.
 - Migration: create the table, seed today's three methods with today's prices, add the two order
   columns and backfill them (`osobni_odber` → `pickup`, the rest → `delivery`).
-- Web: step 2 of the checkout lists the active methods from the API instead of the constant; the
-  terms page's prices come from the same data.
+- Web: step 2 of the checkout lists the active methods from the API instead of the constant. The
+  terms no longer list shipping prices (they would change with every admin edit without a new
+  `TERMS_VERSION`); they point to the checkout and the order's own price. `TERMS_VERSION`
+  2026-11-01.
 - Shipping an order stores its `trackingUrl` (from the method's template), so the link survives
   the method being edited; the migration backfills it for orders already shipped.
 
@@ -63,6 +65,11 @@ slide-over menu.
 3. E-mail templates: entity, migration with the defaults, renderer with placeholders, admin with preview.
 
 Each step is its own PR into `dev`, verified on the test sites.
+
+## Follow-ups
+
+- The optimistic reorder (cancel, snapshot, move, roll back) is now the same on the categories
+  and shipping pages; lift it into `app/reorder.ts` once a third list needs it or either changes.
 
 ## Decided
 

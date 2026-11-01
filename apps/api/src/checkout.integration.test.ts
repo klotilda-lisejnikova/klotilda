@@ -170,6 +170,7 @@ describe('Checkout', () => {
       items: [{ productId: vase.id, quantity: 1 }],
     });
     expect(response.status).toBe(400);
+    expect(response.body.message).toBe('Tento způsob dopravy už není v nabídce');
     expect(await stockOf(vase.id)).toBe(1);
   });
 });
