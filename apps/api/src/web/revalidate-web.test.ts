@@ -66,6 +66,13 @@ describe('Website revalidation', () => {
     await vi.waitFor(() => expect(calls).toHaveLength(1), { timeout: 3000 });
   });
 
+  it("tells the website when the site's texts change", async () => {
+    await quiet();
+    calls.length = 0;
+    send('PATCH', '/api/site-texts/stx1');
+    await vi.waitFor(() => expect(calls).toHaveLength(1), { timeout: 3000 });
+  });
+
   it('tells the website when a legal text is published, not while its draft is edited', async () => {
     await quiet();
     calls.length = 0;

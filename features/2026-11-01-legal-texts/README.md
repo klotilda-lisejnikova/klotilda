@@ -1,7 +1,7 @@
 # Legal texts and seller details in the admin
 
 **Ticket:** none yet
-**Status:** active — steps 1–4 on `dev`, step 5 in review
+**Status:** shipped (2026-11-01)
 
 The owner wants the shop's texts editable in the admin, the terms (obchodní podmínky) first ("dále
 co by mělo být konfigurovatelné jsou texty obchodní podmínky atd."). Today they are code:
@@ -128,9 +128,9 @@ souhlasí s touto verzí; zveřejněnou verzi už nejde změnit").
    checkout's version check. _(done)_
 4. The web reads them and the seller: legal pages, version pages, the footer, checkout link and
    412 handling, e-mail link; the admin's "údaje jsou úplné" switch. _(done)_
-5. Admin "Právní texty": versions, draft editor with preview, publish. _(in review)_
-6. The website's own texts (home page, "o mně", contact) in the admin; planned once 1–5 are on
-   `dev`.
+5. Admin "Právní texty": versions, draft editor with preview, publish. _(done)_
+6. The website's own texts (home page, "o mně", contact) in the admin: its own plan,
+   [site texts](../2026-11-01-site-texts/README.md). _(done)_
 
 Each a PR into `dev`, verified on the test sites; the API side of a step deploys before the web
 reads it.

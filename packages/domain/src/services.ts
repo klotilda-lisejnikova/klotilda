@@ -10,6 +10,7 @@ import { paymentMethodEntity } from './entities/payment-method';
 import { productEntity } from './entities/product';
 import { sellerEntity } from './entities/seller';
 import { shippingMethodEntity } from './entities/shipping-method';
+import { siteTextEntity } from './entities/site-text';
 
 /** Admin accounts sign in and out; there is no registration or profile. */
 export class KlotildaAuthService extends AuthService<AdminUser> {}
@@ -31,6 +32,7 @@ export function createServices(baseUrl: string, tokenSource: AccessTokenSource) 
       emailTemplates: emailTemplateEntity,
       seller: sellerEntity,
       legalDocuments: legalDocumentVersionEntity,
+      siteTexts: siteTextEntity,
     },
     baseUrl,
     tokenSource

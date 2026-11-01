@@ -105,6 +105,12 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
   with placeholders by the `2026-11-01-seller` migration. The e-mails' footer names it
   (`resolveSellerLine`, the domain's `SELLER` when the row is missing), and so does the website's;
   a legal version published while `complete` was off says it is a draft.
+- The website's texts (`SiteText`, `/api/site-texts`): one row per `SITE_TEXT_KEYS`, each the path
+  of the web's next-intl message it replaces (the home page's wording, the contact e-mail and
+  Instagram, the page description), Czech and optional English text (empty: the Czech one shows).
+  Anyone reads them, the signed-in admin PATCHes them (`signedInEditingOnly`); seeded from the
+  translation files by the `2026-11-01-site-texts` migration. The contact e-mail is the address
+  visitors write to, kept apart from the seller's, which the legal texts name.
 - Legal texts (`LegalDocumentVersion`, `/api/legal-documents`, `src/legal/`): versions of the terms,
   the privacy policy and the withdrawal form (`LEGAL_DOCUMENTS`), Czech and optional English text
   in the legal Markdown subset with `LEGAL_PLACEHOLDERS`. Auto CRUD only lists them, signed in; a
@@ -148,7 +154,11 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
 
 `apps/web/src/services/index.ts` wraps the domain clients: `listProducts`, `getProduct`,
 `listGallery`, `listShippingMethods`, `listPaymentMethods`, `getSeller`, `getLegalVersion`,
-`listLegalVersions`, `checkout`. The checkout reads the
+`listLegalVersions`, `listSiteTexts`, `checkout`. Every page's messages are the translation
+files with the admin's `SiteText` rows laid over them (`src/i18n/request.ts`, the domain's
+`withSiteTexts`, which keeps the typed text literal for ICU), read through `unstable_cache`
+(`lib/site-texts.ts`, tag `site-texts`, hourly), so every page render depends on the API like the
+gallery does: a failed read keeps the last good page. The checkout reads the
 shipping and payment methods live and offers only the payment methods that fit the chosen shipping;
 the terms name no prices of either (the checkout shows them, the order states the ones agreed).
 Photos go through `mediaUrl()` (relative `/api/files/:id` without a bucket).
@@ -184,8 +194,9 @@ product. The overview counts through the API and charts the paid revenue of the 
 the month of the order (`app/revenue.ts`). Every `UFormField` keeps a line free for its message
 (`vite.config.ts`), so a message that appears or goes never moves a button from under the pointer.
 The sidebar's "Nastavení" group holds the shop's settings (Doprava, Platby, E-maily,
-Prodávající, Právní texty: the shipping and payment methods, the e-mail texts with a live preview
-in a sandboxed `iframe`, the seller's details, and per legal document its published versions and
+Prodávající, Texty webu, Právní texty: the shipping and payment methods, the e-mail texts with a
+live preview in a sandboxed `iframe`, the seller's details, the website's texts in Czech and
+English side by side, and per legal document its published versions and
 one draft, edited beside a preview the domain's parser renders with today's seller, published
 after a confirmation); it is not on the phone's bottom bar, only in the slide-over.
 `vercel.json` sends a Content-Security-Policy that allows only the admin's own scripts (hence
@@ -220,11 +231,12 @@ Branches: `main` = production, `dev` = test.
   Both run with `NODE_ENV=production`, so each needs `TRUST_PROXY=1` and a `JWT_SECRET` of at
   least 32 characters before it takes a build that checks them, or the API won't start.
 
-  After a change to the catalogue, the gallery, the stock, the seller or a published legal text
-  the API calls the web's `POST /api/revalidate` (`WEB_REVALIDATE_URL`, `WEB_REVALIDATE_SECRET` =
-  the web's `REVALIDATE_SECRET`), so admin edits show at once; set for `test` / the `dev` branch,
-  not yet for production — set it there before the shop goes live: without it the shop's pages
-  regenerate only hourly. `SITE_URL` (linked from e-mails) is `https://test.klotilda.cz` on `test`.
+  After a change to the catalogue, the gallery, the stock, the seller, the site's texts or a
+  published legal text the API calls the web's `POST /api/revalidate` (`WEB_REVALIDATE_URL`,
+  `WEB_REVALIDATE_SECRET` = the web's `REVALIDATE_SECRET`), so admin edits show at once; set for
+  `test` / the `dev` branch, not yet for production — set it there before the shop goes live:
+  without it the shop's pages regenerate only hourly. `SITE_URL` (linked from e-mails) is
+  `https://test.klotilda.cz` on `test`.
 
   `apps/api/Dockerfile`, build context the repository root, `NODE_AUTH_TOKEN` as a build argument
   (the placeholder in `tooling/user.npmrc`; never name the token in a `RUN` line). Migrations run

@@ -69,6 +69,11 @@ export const router = createRouter({
           component: () => import('@/pages/SellerPage.vue'),
         },
         {
+          path: 'texts',
+          name: 'site-texts',
+          component: () => import('@/pages/SiteTextsPage.vue'),
+        },
+        {
           path: 'legal',
           name: 'legal-documents',
           component: () => import('@/pages/LegalDocumentsPage.vue'),
