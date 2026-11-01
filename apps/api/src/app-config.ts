@@ -36,6 +36,8 @@ import { createLegalDocumentsPlugin } from './legal/legal-documents-plugin';
 import { createModelRegistry } from './models-registry';
 import { migrations } from './migrations';
 import { createOrderActionsPlugin } from './orders/order-actions-plugin';
+import { createPacketaValidator } from './shipping/pickup-points';
+import type { PickupPointValidator } from './shipping/pickup-points';
 import { createWebRevalidator } from './web/revalidate-web';
 
 const ACCESS_TOKEN_LIFETIME = '15m';
@@ -49,6 +51,7 @@ export interface AppConfigOverrides {
   emailTransport?: EmailTransport;
   storageAdapter?: StorageAdapter;
   rateLimit?: RateLimitConfig | 'off';
+  pickupPoints?: PickupPointValidator;
 }
 
 /** Visitors see what is on offer; the signed-in admin sees everything, hidden rows too. */
@@ -144,6 +147,8 @@ export function buildAppConfig(
         adminEmail: environment.adminEmail,
         siteUrl: environment.siteUrl,
         rateLimit: rateLimitsOff ? 'off' : (overrides.rateLimit ?? CHECKOUT_RATE_LIMIT),
+        pickupPoints:
+          overrides.pickupPoints ?? createPacketaValidator({ apiKey: environment.packetaApiKey }),
       }),
       createOrderActionsPlugin({
         registry: models,

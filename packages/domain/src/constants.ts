@@ -7,6 +7,17 @@ export const SHIPPING_KINDS = ['delivery', 'pickup'] as const;
 export type ShippingKind = (typeof SHIPPING_KINDS)[number];
 
 /**
+ * A carrier whose pickup point the customer chooses at checkout, on the carrier's own map: a
+ * shipping method with one sends the parcel to that point, not to the customer's address.
+ */
+export const PICKUP_NETWORKS = ['packeta'] as const;
+export type PickupNetwork = (typeof PICKUP_NETWORKS)[number];
+
+/** A staffed pickup point, or a parcel box the customer opens with a code (Zásilkovna's Z-BOX). */
+export const PICKUP_POINT_TYPES = ['point', 'box'] as const;
+export type PickupPointType = (typeof PICKUP_POINT_TYPES)[number];
+
+/**
  * How an order is paid, which decides what the shop and the admin do: a bank transfer before the
  * order goes out (variable symbol, QR code), or cash when the customer picks it up (only with a
  * `pickup` shipping method). The methods themselves are rows the admin manages (`PaymentMethod`).

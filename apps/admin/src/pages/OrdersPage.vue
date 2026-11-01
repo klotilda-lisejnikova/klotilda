@@ -246,6 +246,7 @@ function reportBulkOutcome({ done, failed, emailFailed }: BulkOutcome) {
           <p class="text-xs text-muted">
             {{ formatDateTime(order.createdAt) }} · VS {{ order.variableSymbol }} ·
             {{ order.shippingName }}
+            <template v-if="order.pickupPointName"> ({{ order.pickupPointName }})</template>
           </p>
         </div>
         <UBadge
@@ -351,6 +352,16 @@ function reportBulkOutcome({ done, failed, emailFailed }: BulkOutcome) {
           size="sm"
           class="ml-2"
         />
+      </template>
+      <template #shippingName-cell="{ row }">
+        <p>{{ row.original.shippingName }}</p>
+        <p
+          v-if="row.original.pickupPointName"
+          class="max-w-48 truncate text-xs text-muted"
+          :title="row.original.pickupPointName"
+        >
+          {{ row.original.pickupPointName }}
+        </p>
       </template>
       <template #status-cell="{ row }">
         <div class="flex flex-wrap gap-1">

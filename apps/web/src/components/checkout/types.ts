@@ -1,3 +1,5 @@
+import type { PickupNetwork } from "@klotilda/domain";
+import type { ChosenPickupPoint } from "@/lib/packeta-widget";
 import type { ShippingKind } from "@/services";
 
 export interface CheckoutData {
@@ -15,6 +17,10 @@ export interface CheckoutData {
   shippingPrice: number;
   /** Whether it is a pickup: cash is offered only then. */
   shippingKind: ShippingKind | null;
+  /** The carrier whose pickup point the parcel goes to; `null` sends it to the address. */
+  pickupNetwork: PickupNetwork | null;
+  /** The point chosen on the carrier's map, for a method with a `pickupNetwork`. */
+  pickupPoint: ChosenPickupPoint | null;
   /** The chosen payment method's code, name and fee, the same way. */
   paymentMethod: string;
   paymentName: string;
@@ -36,6 +42,8 @@ export const INITIAL_CHECKOUT: CheckoutData = {
   shippingName: "",
   shippingPrice: 0,
   shippingKind: null,
+  pickupNetwork: null,
+  pickupPoint: null,
   paymentMethod: "",
   paymentName: "",
   paymentFee: 0,

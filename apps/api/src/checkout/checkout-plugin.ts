@@ -26,7 +26,12 @@ import { findCurrentVersion } from '../legal/legal-documents';
 import type { ModelRegistry } from '../models-registry';
 import { createQrPaymentDataUrl, createVariableSymbol } from './qr-payment';
 import { resolveOfferedPayment } from '../payments/payment-methods';
-import { resolveOfferedShipping } from '../shipping/shipping-methods';
+import type { PickupPointValidator } from '../shipping/pickup-points';
+import {
+  pickupPointFor,
+  resolveOfferedShipping,
+  resolvePickupPoint,
+} from '../shipping/shipping-methods';
 import { readCheckoutRequest } from './read-checkout-request';
 
 const CREATED = 201;
@@ -45,6 +50,8 @@ export interface CheckoutPluginOptions {
   /** Linked from the e-mails. */
   siteUrl: string;
   rateLimit: RateLimitConfig | 'off';
+  /** Asks the carrier about the pickup point the customer chose. */
+  pickupPoints: PickupPointValidator;
 }
 
 type Transaction = Awaited<ReturnType<Sequelize['transaction']>>;
@@ -179,6 +186,7 @@ export function createCheckoutPlugin({
   adminEmail,
   siteUrl,
   rateLimit,
+  pickupPoints,
 }: CheckoutPluginOptions): ProjectPlugin {
   return {
     registerRoutes(app, sequelize, _models, emailService) {
@@ -191,17 +199,23 @@ export function createCheckoutPlugin({
             items,
             termsAccepted: _accepted,
             termsVersion: shownTerms,
+            pickupPointId,
             ...customer
           } = readCheckoutRequest(req.body);
+          const checkedPoint = await resolvePickupPoint(registry, pickupPoints, {
+            shippingMethod: customer.shippingMethod,
+            pickupPointId,
+          });
 
           const placedEvent: OrderEvent = { type: 'placed', at: new Date().toISOString() };
           const order: PlacedOrder = await sequelize.transaction(async (transaction) => {
             const termsVersion = await resolveAgreedTermsVersion(registry, shownTerms, transaction);
-            const shipping = await resolveOfferedShipping(
+            const { shipping, pickupNetwork } = await resolveOfferedShipping(
               registry,
               customer.shippingMethod,
               transaction
             );
+            const pickupPoint = pickupPointFor(pickupNetwork, checkedPoint);
             const payment = await resolveOfferedPayment(
               registry,
               customer.paymentMethod,
@@ -217,6 +231,7 @@ export function createCheckoutPlugin({
               id: generateId(orderEntity.config.prefix),
               ...customer,
               ...shipping,
+              ...pickupPoint,
               ...payment,
               totalAmount: itemsTotal + shipping.shippingPrice + payment.paymentFee,
               variableSymbol: createVariableSymbol(),

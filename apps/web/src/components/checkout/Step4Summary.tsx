@@ -12,15 +12,18 @@ import { CheckoutData } from "./types";
 
 /**
  * `cartChanged`: the shop refused the lines as they were; `termsChanged`: new terms were published
- * meanwhile; `failed`: anything else.
+ * meanwhile; `pickupUnavailable`: Zásilkovna couldn't confirm the pickup point just now; `failed`:
+ * anything else.
  */
-export type SubmitError = "cartChanged" | "termsChanged" | "failed";
+export type SubmitError =
+  "cartChanged" | "termsChanged" | "pickupUnavailable" | "failed";
 
 const ERROR_MESSAGES = {
   cartChanged: "errorChanged",
   termsChanged: "errorTermsChanged",
+  pickupUnavailable: "pickupPoint.checkFailed",
   failed: "error",
-} as const;
+} as const satisfies Record<SubmitError, string>;
 
 interface Props {
   data: CheckoutData;
@@ -103,6 +106,12 @@ export default function Step4Summary({
               : `${data.shippingPrice} ${t("currency")}`}
           </span>
         </div>
+        {data.pickupPoint && (
+          <p className="-mt-1 text-xs text-stone-500">
+            {t("pickupPoint.summary", { name: data.pickupPoint.name })}
+            {data.pickupPoint.address && `, ${data.pickupPoint.address}`}
+          </p>
+        )}
         <div className="flex justify-between text-sm text-stone-500">
           <span>
             {t("summary.payment")} — {data.paymentName}

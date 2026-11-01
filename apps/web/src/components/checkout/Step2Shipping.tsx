@@ -1,6 +1,8 @@
 import { useLocale, useTranslations } from "next-intl";
+import { resolvePickupNetwork } from "@klotilda/domain";
 import { ShippingMethod } from "@/services";
 import MethodOption from "./MethodOption";
+import PickupPointPicker from "./PickupPointPicker";
 import { methodText } from "./method-text";
 import { CheckoutData } from "./types";
 
@@ -10,6 +12,10 @@ interface Props {
   methods: ShippingMethod[] | null | "error";
   /** The method chosen before is no longer offered. */
   gone: boolean;
+  /** The method chosen before now sends to a pickup point, or no longer does. */
+  changed: boolean;
+  /** The shop refused the pickup point chosen before; another is needed. */
+  pointRefused: boolean;
   onChange: (data: Partial<CheckoutData>) => void;
   onNext: () => void;
   onBack: () => void;
@@ -19,6 +25,8 @@ export default function Step2Shipping({
   data,
   methods,
   gone,
+  changed,
+  pointRefused,
   onChange,
   onNext,
   onBack,
@@ -26,15 +34,22 @@ export default function Step2Shipping({
   const t = useTranslations("checkout");
   const locale = useLocale();
   const offered = Array.isArray(methods) ? methods : [];
-  const chosen = offered.some((method) => method.code === data.shippingMethod);
+  const chosen = offered.find((method) => method.code === data.shippingMethod);
+  const needsPoint = Boolean(data.pickupNetwork);
+  const ready = Boolean(chosen) && (!needsPoint || data.pickupPoint !== null);
 
-  const select = (method: ShippingMethod) =>
+  const select = (method: ShippingMethod) => {
+    if (method.code === data.shippingMethod) return;
     onChange({
       shippingMethod: method.code,
       shippingName: methodText(method, locale).name,
       shippingPrice: method.price,
       shippingKind: method.kind,
+      pickupNetwork: resolvePickupNetwork(method),
+      // A point belongs to the method it was chosen for.
+      pickupPoint: null,
     });
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -46,6 +61,11 @@ export default function Step2Shipping({
       {gone && (
         <p className="text-sm text-amber-800" role="alert">
           {t("shipping.gone")}
+        </p>
+      )}
+      {changed && (
+        <p className="text-sm text-amber-800" role="alert">
+          {t("shipping.changed")}
         </p>
       )}
       {Array.isArray(methods) && methods.length === 0 && (
@@ -73,6 +93,13 @@ export default function Step2Shipping({
           />
         ))}
       </div>
+      {chosen && needsPoint && (
+        <PickupPointPicker
+          point={data.pickupPoint}
+          refused={pointRefused}
+          onPick={(pickupPoint) => onChange({ pickupPoint })}
+        />
+      )}
 
       <div className="flex gap-3">
         <button
@@ -83,7 +110,7 @@ export default function Step2Shipping({
         </button>
         <button
           onClick={onNext}
-          disabled={!chosen}
+          disabled={!ready}
           className="bg-moss hover:bg-moss-deep flex-1 py-3 text-sm tracking-widest text-[#fafaf8] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           {t("next")}

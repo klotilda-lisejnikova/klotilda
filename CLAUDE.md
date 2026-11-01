@@ -74,6 +74,15 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
   on the order as `trackingUrl`): an order not yet shipped follows an edit of the method's template,
   and gets no link once its method is deleted. The first three methods come from the
   `2026-11-01-shipping-methods` migration.
+- Pickup points: a `delivery` method with a `pickupNetwork` (`packeta`; Zásilkovna is one, from
+  the `2026-11-01-pickup-points` migration) sends the parcel to the pickup point or Z-BOX the
+  customer chose on the carrier's map, not to the address. The checkout takes only the point's id
+  (`pickupPointId`), asks Zásilkovna about it before the order's transaction
+  (`src/shipping/pickup-points.ts`, its widget `validate` endpoint with `PACKETA_API_KEY`) and
+  stores the point's name, address and type (`point` / `box`) from that answer; a missing,
+  malformed or refused point is a 400 on `pickupPointId`, Zásilkovna unreachable or no key a 503
+  for that method alone. Any other method ignores the id. The e-mails and the admin's order detail
+  show the point (the id is what the artist enters in Packeta's client section).
 - Payment methods (`PaymentMethod`, `/api/payment-methods`): the same kind of rows (code, names,
   description, `fee`, `active`, `sortOrder`) with a `kind` the code acts on: `bank_transfer`
   (variable symbol, QR code, ships once paid) or `cash` (only with a `pickup` shipping method,
@@ -150,6 +159,10 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
 `listLegalVersions`, `checkout`. The checkout reads the
 shipping and payment methods live and offers only the payment methods that fit the chosen shipping;
 the terms name no prices of either (the checkout shows them, the order states the ones agreed).
+A method with a pickup network asks for the point on Zásilkovna's map (`src/lib/packeta-widget.ts`,
+their script loaded only when the customer opens it, `NEXT_PUBLIC_PACKETA_API_KEY`; without the
+key the method shows as unavailable and step 2 can't go on) and sends only its id; a point the API refuses sends the customer
+back to step 2, a 503 asks to try again. The footer says the shop delivers with Zásilkovna.
 Photos go through `mediaUrl()` (relative `/api/files/:id` without a bucket).
 `NEXT_PUBLIC_SHOP_ENABLED` gates the shop (see `src/lib/features.ts`). The image
 optimizer takes only the API's host and `NEXT_PUBLIC_MEDIA_URL` (the bucket's public URL, the API's

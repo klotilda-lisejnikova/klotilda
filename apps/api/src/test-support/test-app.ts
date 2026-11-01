@@ -13,6 +13,7 @@ import { adminUserEntity } from '@klotilda/domain';
 import { buildAppConfig } from '../app-config';
 import type { AppConfigOverrides } from '../app-config';
 import type { Environment } from '../env';
+import type { PickupPointValidator } from '../shipping/pickup-points';
 
 export const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ?? 'postgres://klotilda:klotilda@localhost:5435/klotilda';
@@ -38,9 +39,37 @@ export const testEnvironment: Environment = {
   webRevalidation: undefined,
   storage: { kind: 'memory' },
   bankAccount: { iban: 'CZ6508000000192000145399', display: '192000145399/0800' },
+  packetaApiKey: undefined,
 };
 
 export const bearer = (token: string) => `Bearer ${token}`;
+
+/** The pickup point the tests choose; `TEST_PICKUP_POINTS` knows it. */
+export const TEST_PICKUP_POINT_ID = '1234';
+
+/**
+ * Stands in for Zásilkovna: knows `TEST_PICKUP_POINT_ID` as a staffed point and `5678` as a Z-BOX,
+ * refuses any other point.
+ */
+export const TEST_PICKUP_POINTS: PickupPointValidator = async (_network, pointId) => {
+  if (pointId === TEST_PICKUP_POINT_ID) {
+    return {
+      pickupPointId: pointId,
+      pickupPointName: 'Praha 1, Dlouhá 12 (Papírnictví)',
+      pickupPointAddress: 'Dlouhá 12, 110 00 Praha',
+      pickupPointType: 'point',
+    };
+  }
+  if (pointId === '5678') {
+    return {
+      pickupPointId: pointId,
+      pickupPointName: 'Z-BOX Praha 4, Budějovická',
+      pickupPointAddress: 'Budějovická 1667/64, 140 00 Praha',
+      pickupPointType: 'box',
+    };
+  }
+  return { refused: true, reasons: ['NotFound'] };
+};
 
 export interface TestApp {
   core: CoreInstance;
@@ -55,7 +84,8 @@ export interface TestApp {
 
 /**
  * A fresh API on a Postgres schema of its own (dropped again by `close`), migrated like
- * production, with in-memory e-mail and files and without rate limits.
+ * production, with in-memory e-mail and files, `TEST_PICKUP_POINTS` instead of Zásilkovna and
+ * without rate limits.
  */
 export async function startTestApp(
   overrides: Omit<AppConfigOverrides, 'schema' | 'emailTransport'> = {}
@@ -69,6 +99,7 @@ export async function startTestApp(
     buildAppConfig(testEnvironment, {
       storageAdapter: new MemoryStorageAdapter(),
       rateLimit: 'off',
+      pickupPoints: TEST_PICKUP_POINTS,
       ...overrides,
       schema,
       emailTransport: outbox,

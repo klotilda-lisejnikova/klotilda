@@ -5,10 +5,12 @@ import {
   ORDER_STATUSES,
   PAYMENT_KINDS,
   PAYMENT_STATUSES,
+  PICKUP_POINT_TYPES,
   SHIPPING_KINDS,
 } from '../../constants';
 import { CODE_MAX_LENGTH } from '../../codes';
 import { LEGAL_VERSION_MAX_LENGTH } from '../legal-document/fields';
+import { PICKUP_POINT_ID_MAX_LENGTH } from '../../pickup-points';
 
 const NAME_MAX_LENGTH = 100;
 const EMAIL_MAX_LENGTH = 254;
@@ -33,6 +35,11 @@ export const customerFields = {
   shippingMethod: { type: 'STRING', required: true, maxLength: CODE_MAX_LENGTH },
   /** A `PaymentMethod`'s code; the checkout refuses one that isn't offered or doesn't fit. */
   paymentMethod: { type: 'STRING', required: true, maxLength: CODE_MAX_LENGTH },
+  /**
+   * The carrier's id of the pickup point chosen on its map, for a method with a `pickupNetwork`
+   * (else ignored). The checkout asks the carrier about it and stores what the carrier answers.
+   */
+  pickupPointId: { type: 'STRING', maxLength: PICKUP_POINT_ID_MAX_LENGTH },
   notes: { type: 'TEXT', maxLength: NOTES_MAX_LENGTH },
 } as const satisfies Fields;
 
@@ -54,6 +61,11 @@ export const orderFields = {
   shippingName: { type: 'STRING', required: true, readOnly: true },
   shippingKind: { type: 'ENUM', values: SHIPPING_KINDS, required: true, readOnly: true },
   shippingPrice: { type: 'FLOAT', default: 0, readOnly: true },
+  /** The pickup point as the carrier described it when ordered; empty without one. */
+  pickupPointName: { type: 'STRING', readOnly: true },
+  /** Its street, zip and city, one line. */
+  pickupPointAddress: { type: 'STRING', readOnly: true },
+  pickupPointType: { type: 'ENUM', values: PICKUP_POINT_TYPES, readOnly: true },
   /** The payment method's name, kind and fee when ordered, the same way. */
   paymentName: { type: 'STRING', required: true, readOnly: true },
   paymentKind: { type: 'ENUM', values: PAYMENT_KINDS, required: true, readOnly: true },

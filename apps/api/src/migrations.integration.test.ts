@@ -172,6 +172,11 @@ describe('Migrations', () => {
       expect(await core.models.LegalDocumentVersion.count({ where: { status: 'published' } })).toBe(
         3
       );
+      // Zásilkovna sends to the pickup point the customer chooses; older orders have none.
+      expect(
+        methods.body.data.map((method: { pickupNetwork: string | null }) => method.pickupNetwork)
+      ).toEqual(['packeta', null, null]);
+      expect(order?.get('pickupPointId')).toBeNull();
     } finally {
       await core.close();
     }

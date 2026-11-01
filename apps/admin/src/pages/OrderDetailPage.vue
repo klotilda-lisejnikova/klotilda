@@ -52,11 +52,16 @@ const forwardActions = computed(() =>
   actions.value.filter((action) => !SECONDARY_ACTIONS.includes(action))
 );
 const trackingUrl = computed(() => order.value?.trackingUrl ?? undefined);
-const address = computed(() =>
-  order.value
-    ? `${order.value.customerFirstName} ${order.value.customerLastName}\n${order.value.street}\n${order.value.zip} ${order.value.city}`
-    : ''
-);
+/** What a parcel is addressed with: the pickup point and its id, or the customer's address. */
+const address = computed(() => {
+  if (!order.value) return '';
+  const { customerFirstName, customerLastName, pickupPointName, pickupPointId } = order.value;
+  const name = `${customerFirstName} ${customerLastName}`;
+  if (pickupPointName) {
+    return `${name}\n${pickupPointName}\n${order.value.pickupPointAddress ?? ''}\nID místa ${pickupPointId ?? ''}`;
+  }
+  return `${name}\n${order.value.street}\n${order.value.zip} ${order.value.city}`;
+});
 
 function saved(updated: Order, title: string) {
   queryClient.setQueryData(['order', props.id], updated);
@@ -261,6 +266,49 @@ async function copy(text: string, what: string) {
     </div>
 
     <div class="space-y-4">
+      <UCard v-if="order.pickupPointName">
+        <template #header>
+          <h2 class="font-semibold">
+            Výdejní místo
+            <UBadge
+              v-if="order.pickupPointType === 'box'"
+              label="Z-BOX"
+              color="neutral"
+              variant="subtle"
+              size="sm"
+              class="ml-1 align-middle"
+            />
+          </h2>
+        </template>
+        <p class="text-sm font-medium text-highlighted">{{ order.pickupPointName }}</p>
+        <p v-if="order.pickupPointAddress" class="text-sm text-muted">
+          {{ order.pickupPointAddress }}
+        </p>
+        <dl class="mt-3 grid grid-cols-[auto_1fr_auto] items-center gap-x-3 text-sm">
+          <dt class="text-muted">ID místa</dt>
+          <dd class="font-medium text-highlighted tabular-nums">{{ order.pickupPointId }}</dd>
+          <UButton
+            icon="i-lucide-copy"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            aria-label="Kopírovat ID výdejního místa"
+            @click="copy(order.pickupPointId ?? '', 'ID výdejního místa')"
+          />
+        </dl>
+        <p class="mt-3 text-xs text-muted">
+          Zásilku zadejte v
+          <a
+            href="https://client.packeta.com"
+            target="_blank"
+            rel="noopener"
+            class="text-primary hover:underline"
+            >klientské sekci Zásilkovny</a
+          >
+          s tímto ID místa.
+        </p>
+      </UCard>
+
       <UCard>
         <template #header><h2 class="font-semibold">Platba</h2></template>
         <dl class="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-2 text-sm">

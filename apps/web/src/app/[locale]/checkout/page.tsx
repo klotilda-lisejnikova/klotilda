@@ -4,7 +4,12 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { ApiError } from "@eleansphere/entity-core";
 import { Link } from "@/i18n/navigation";
-import { paymentFitsShipping, TERMS_CHANGED } from "@klotilda/domain";
+import {
+  paymentFitsShipping,
+  resolvePickupNetwork,
+  TERMS_CHANGED,
+} from "@klotilda/domain";
+import type { CheckoutRequest } from "@klotilda/domain";
 import {
   checkout,
   CheckoutResponse,
@@ -34,6 +39,9 @@ import { CheckoutData, INITIAL_CHECKOUT } from "@/components/checkout/types";
 
 /** The API refuses an order whose lines no longer match the shop (sold out, gone, bad quantity). */
 const CART_OUT_OF_DATE = [400, 409];
+/** Zásilkovna couldn't confirm the pickup point just now; the same order may go a moment later. */
+const SERVICE_UNAVAILABLE = 503;
+const PICKUP_POINT_FIELD: keyof CheckoutRequest = "pickupPointId";
 /** The last step lists every line itself. */
 const SUMMARY_STEP = 3;
 const SHIPPING_STEP = 1;
@@ -86,6 +94,17 @@ function useLoaded<T>(load: () => Promise<T[]>) {
   return [list, setList] as const;
 }
 
+/** The API refused the pickup point itself (missing, malformed, or Zásilkovna said no). */
+function refusesPickupPoint(err: ApiError): boolean {
+  const issues = (err.body as { issues?: { path?: string }[] } | undefined)
+    ?.issues;
+  return (
+    err.status === 400 &&
+    Array.isArray(issues) &&
+    issues.some((issue) => issue.path === PICKUP_POINT_FIELD)
+  );
+}
+
 export default function CheckoutPage() {
   const t = useTranslations("checkout");
   const mounted = useMounted();
@@ -111,6 +130,10 @@ export default function CheckoutPage() {
   /** Set when the chosen method went away meanwhile: its step says so and asks for another. */
   const [shippingGone, setShippingGone] = useState(false);
   const [paymentGone, setPaymentGone] = useState(false);
+  /** Set when the chosen method now sends to a pickup point, or no longer does. */
+  const [shippingChanged, setShippingChanged] = useState(false);
+  /** Set when the shop refused the chosen pickup point: step 2 asks for another. */
+  const [pointRefused, setPointRefused] = useState(false);
 
   const changed = items.filter((item) => item.issue);
 
@@ -135,8 +158,23 @@ export default function CheckoutPage() {
         shippingName: "",
         shippingPrice: 0,
         shippingKind: null,
+        pickupNetwork: null,
+        pickupPoint: null,
       });
       setShippingGone(true);
+      setStep(SHIPPING_STEP);
+      return;
+    }
+    const network = resolvePickupNetwork(ship);
+    if (network !== data.pickupNetwork) {
+      // The method now sends to a point, or no longer does: choose again.
+      update({
+        shippingPrice: ship.price,
+        shippingKind: ship.kind,
+        pickupNetwork: network,
+        pickupPoint: null,
+      });
+      setShippingChanged(true);
       setStep(SHIPPING_STEP);
       return;
     }
@@ -163,6 +201,24 @@ export default function CheckoutPage() {
     setError("termsChanged");
   };
 
+  /**
+   * The shop wants another pickup point: back to step 2 with the method as the API offers it now,
+   * which may have started sending to points since the page loaded.
+   */
+  const pickupPointRefused = async () => {
+    const shipping = await listShippingMethods().catch(() => null);
+    const ship = shipping?.find(
+      (method) => method.code === data.shippingMethod,
+    );
+    if (shipping) setShippingMethods(shipping);
+    update({
+      pickupPoint: null,
+      ...(ship && { pickupNetwork: resolvePickupNetwork(ship) }),
+    });
+    setPointRefused(true);
+    setStep(SHIPPING_STEP);
+  };
+
   const handleSubmit = async () => {
     if (
       items.some(isBlocked) ||
@@ -184,6 +240,8 @@ export default function CheckoutPage() {
         city: data.city,
         zip: data.zip,
         shippingMethod: data.shippingMethod,
+        // The API asks Zásilkovna about the id and keeps the point as Zásilkovna describes it.
+        pickupPointId: data.pickupNetwork ? data.pickupPoint?.id : undefined,
         paymentMethod: data.paymentMethod,
         items: items.map((i) => ({
           productId: i.productId,
@@ -198,6 +256,15 @@ export default function CheckoutPage() {
     } catch (err) {
       if (err instanceof ApiError && err.status === TERMS_CHANGED) {
         await termsChanged();
+      } else if (err instanceof ApiError && refusesPickupPoint(err)) {
+        await pickupPointRefused();
+      } else if (
+        err instanceof ApiError &&
+        err.status === SERVICE_UNAVAILABLE &&
+        data.pickupPoint
+      ) {
+        // Asked before anything else, Zásilkovna is what a 503 means for an order with a point.
+        setError("pickupUnavailable");
       } else if (
         err instanceof ApiError &&
         CART_OUT_OF_DATE.includes(err.status)
@@ -278,8 +345,13 @@ export default function CheckoutPage() {
           data={data}
           methods={shippingMethods}
           gone={shippingGone}
+          changed={shippingChanged}
+          pointRefused={pointRefused}
           onChange={(patch) => {
             setShippingGone(false);
+            setShippingChanged(false);
+            if (patch.pickupPoint || patch.shippingMethod)
+              setPointRefused(false);
             update(patch);
           }}
           onNext={() => setStep(PAYMENT_STEP)}

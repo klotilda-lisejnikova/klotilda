@@ -13,6 +13,7 @@ import type {
   OrderItem,
   PaymentKind,
   PaymentStatus,
+  PickupPointType,
   ShippingKind,
 } from '@klotilda/domain';
 import { formatCzk } from './email-layout';
@@ -30,6 +31,11 @@ export interface PlacedOrder {
   shippingName: string;
   shippingKind: ShippingKind;
   shippingPrice: number;
+  /** The carrier's pickup point the parcel goes to, instead of the address; empty without one. */
+  pickupPointId?: string | null;
+  pickupPointName?: string | null;
+  pickupPointAddress?: string | null;
+  pickupPointType?: PickupPointType | null;
   paymentName: string;
   paymentKind: PaymentKind;
   paymentFee: number;
@@ -65,6 +71,28 @@ const agreedTermsPath = ({ termsVersion }: PlacedOrder) =>
 
 const address = (order: PlacedOrder) => `${order.street}, ${order.zip} ${order.city}`;
 
+/** The pickup point as one line, `Praha 4, Budějovická (Albert), Budějovická 1667/64, 140 00 Praha`. */
+const pickupPoint = (order: PlacedOrder): string | undefined =>
+  order.pickupPointName
+    ? [order.pickupPointName, order.pickupPointAddress].filter(Boolean).join(', ')
+    : undefined;
+
+/** Where the parcel goes: the chosen pickup point, else the customer's address. */
+function destinationBlock(order: PlacedOrder): EmailBlock {
+  const point = pickupPoint(order);
+  return point
+    ? { kind: 'facts', rows: [['Výdejní místo', point]] }
+    : { kind: 'facts', rows: [['Doručení na adresu', address(order)]] };
+}
+
+/** How the customer collects from a pickup point once the parcel is there. */
+function collectingText(order: PlacedOrder): string | undefined {
+  if (!pickupPoint(order)) return undefined;
+  return order.pickupPointType === 'box'
+    ? 'Až zásilka dorazí do Z-BOXu, přijde vám SMS a e-mail s kódem pro otevření schránky. Vyzvednout si ji můžete do 7 dnů.'
+    : 'Až zásilka dorazí na výdejní místo, přijde vám SMS a e-mail s heslem pro vyzvednutí. Vyzvednout si ji můžete do 7 dnů.';
+}
+
 function itemsBlock(order: PlacedOrder): EmailBlock {
   return {
     kind: 'items',
@@ -92,6 +120,7 @@ function placeholderValues(
     prijmeni: order.customerLastName,
     castka: formatCzk(order.totalAmount),
     doprava: order.shippingName,
+    vydejni_misto: pickupPoint(order) ?? '',
     platba: order.paymentName,
     cislo_zasilky: details.trackingNumber ?? '',
   };
@@ -169,7 +198,7 @@ export function orderReceivedEmail(
             kind: 'paragraph',
             text: 'Až bude objednávka připravená, ozveme se, kde a kdy si ji vyzvednete.',
           }
-        : { kind: 'facts', rows: [['Doručení na adresu', address(order)]] },
+        : destinationBlock(order),
       {
         kind: 'paragraph',
         text: `Objednávku jste odeslali podle ${agreedTerms(order)}. Zboží můžete do 14 dnů od převzetí vrátit bez udání důvodu.`,
@@ -200,6 +229,12 @@ export function newOrderEmail(order: PlacedOrder, text: EmailText): EmailContent
           ['Zákazník', `${order.customerFirstName} ${order.customerLastName}`],
           ['E-mail', order.customerEmail],
           ['Adresa', address(order)],
+          ...(order.pickupPointName
+            ? ([
+                ['Výdejní místo', pickupPoint(order) ?? ''],
+                ['ID výdejního místa', order.pickupPointId ?? ''],
+              ] satisfies [string, string][])
+            : []),
           ['Variabilní symbol', order.variableSymbol],
           ['Platba', order.paymentName],
         ],
@@ -257,7 +292,8 @@ const ACTION_BLOCKS: Record<ActionEmailKey, ActionBlocks> = {
       ? [{ kind: 'button', label: 'Sledovat zásilku', href: trackingUrl } satisfies EmailBlock]
       : []),
     ...noteBlocks(message),
-    { kind: 'facts', rows: [['Doručení na adresu', address(order)]] },
+    destinationBlock(order),
+    ...paragraphs(collectingText(order)),
   ],
 
   // The admin's message says where and when; without one the customer is asked to arrange it.

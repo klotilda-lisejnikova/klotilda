@@ -6,6 +6,7 @@ import type {
   OrderStatus,
   PaymentKind,
   PaymentStatus,
+  PickupNetwork,
   ShippingKind,
 } from '@klotilda/domain';
 import type { BadgeProps } from '@nuxt/ui';
@@ -15,6 +16,11 @@ type BadgeColor = NonNullable<BadgeProps['color']>;
 export const SHIPPING_KIND_LABELS: Record<ShippingKind, string> = {
   delivery: 'Doručení dopravcem',
   pickup: 'Osobní odběr',
+};
+
+/** In the genitive: „výdejní místa Zásilkovny“. */
+export const PICKUP_NETWORK_LABELS: Record<PickupNetwork, string> = {
+  packeta: 'Zásilkovny',
 };
 
 export const PAYMENT_KIND_LABELS: Record<PaymentKind, string> = {
@@ -147,6 +153,7 @@ export const EMAIL_PLACEHOLDER_LABELS: Record<EmailPlaceholder, string> = {
   prijmeni: 'příjmení zákazníka',
   castka: 'celková částka, např. 1 299 Kč',
   doprava: 'název dopravy',
+  vydejni_misto: 'výdejní místo Zásilkovny s adresou (prázdné, když objednávka žádné nemá)',
   platba: 'název způsobu platby',
   cislo_zasilky: 'číslo zásilky',
 };
