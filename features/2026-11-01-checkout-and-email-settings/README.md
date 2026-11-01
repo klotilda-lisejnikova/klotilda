@@ -1,7 +1,7 @@
 # Payment, shipping and e-mail settings in the admin
 
 **Ticket:** none yet
-**Status:** active — steps 1 and 2 (shipping, payment methods) on `dev`, step 3 (e-mails) in review
+**Status:** shipped (2026-11-01) — all three steps on `dev`; not on `main`
 
 The owner wants the admin to define (1) which payment methods and which shipping options the shop
 offers, and (2) the e-mails the API sends automatically. Today all three are code: `SHIPPING_PRICES`
@@ -76,7 +76,7 @@ slide-over menu.
 
 1. Shipping methods: entity, migration, checkout, workflow by kind, admin page, web step 2. _(on `dev`)_
 2. Payment methods: entity, migration, checkout + QR only for bank transfer, workflow, admin, web step 3. _(on `dev`)_
-3. E-mail templates: entity, migration with the defaults, renderer with placeholders, admin with preview. _(in review)_
+3. E-mail templates: entity, migration with the defaults, renderer with placeholders, admin with preview. _(on `dev`)_
 
 Each step is its own PR into `dev`, verified on the test sites.
 
