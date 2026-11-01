@@ -130,6 +130,8 @@ export default function CheckoutPage() {
   /** Set when the chosen method went away meanwhile: its step says so and asks for another. */
   const [shippingGone, setShippingGone] = useState(false);
   const [paymentGone, setPaymentGone] = useState(false);
+  /** Set when the chosen method now sends to a pickup point, or no longer does. */
+  const [shippingChanged, setShippingChanged] = useState(false);
   /** Set when the shop refused the chosen pickup point: step 2 asks for another. */
   const [pointRefused, setPointRefused] = useState(false);
 
@@ -156,6 +158,8 @@ export default function CheckoutPage() {
         shippingName: "",
         shippingPrice: 0,
         shippingKind: null,
+        pickupNetwork: null,
+        pickupPoint: null,
       });
       setShippingGone(true);
       setStep(SHIPPING_STEP);
@@ -170,6 +174,7 @@ export default function CheckoutPage() {
         pickupNetwork: network,
         pickupPoint: null,
       });
+      setShippingChanged(true);
       setStep(SHIPPING_STEP);
       return;
     }
@@ -196,6 +201,24 @@ export default function CheckoutPage() {
     setError("termsChanged");
   };
 
+  /**
+   * The shop wants another pickup point: back to step 2 with the method as the API offers it now,
+   * which may have started sending to points since the page loaded.
+   */
+  const pickupPointRefused = async () => {
+    const shipping = await listShippingMethods().catch(() => null);
+    const ship = shipping?.find(
+      (method) => method.code === data.shippingMethod,
+    );
+    if (shipping) setShippingMethods(shipping);
+    update({
+      pickupPoint: null,
+      ...(ship && { pickupNetwork: resolvePickupNetwork(ship) }),
+    });
+    setPointRefused(true);
+    setStep(SHIPPING_STEP);
+  };
+
   const handleSubmit = async () => {
     if (
       items.some(isBlocked) ||
@@ -218,7 +241,7 @@ export default function CheckoutPage() {
         zip: data.zip,
         shippingMethod: data.shippingMethod,
         // The API asks Zásilkovna about the id and keeps the point as Zásilkovna describes it.
-        pickupPointId: data.pickupPoint?.id,
+        pickupPointId: data.pickupNetwork ? data.pickupPoint?.id : undefined,
         paymentMethod: data.paymentMethod,
         items: items.map((i) => ({
           productId: i.productId,
@@ -234,9 +257,7 @@ export default function CheckoutPage() {
       if (err instanceof ApiError && err.status === TERMS_CHANGED) {
         await termsChanged();
       } else if (err instanceof ApiError && refusesPickupPoint(err)) {
-        update({ pickupPoint: null });
-        setPointRefused(true);
-        setStep(SHIPPING_STEP);
+        await pickupPointRefused();
       } else if (
         err instanceof ApiError &&
         err.status === SERVICE_UNAVAILABLE &&
@@ -324,10 +345,13 @@ export default function CheckoutPage() {
           data={data}
           methods={shippingMethods}
           gone={shippingGone}
+          changed={shippingChanged}
           pointRefused={pointRefused}
           onChange={(patch) => {
             setShippingGone(false);
-            if (patch.pickupPoint) setPointRefused(false);
+            setShippingChanged(false);
+            if (patch.pickupPoint || patch.shippingMethod)
+              setPointRefused(false);
             update(patch);
           }}
           onNext={() => setStep(PAYMENT_STEP)}

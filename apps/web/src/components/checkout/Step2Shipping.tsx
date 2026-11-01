@@ -12,6 +12,8 @@ interface Props {
   methods: ShippingMethod[] | null | "error";
   /** The method chosen before is no longer offered. */
   gone: boolean;
+  /** The method chosen before now sends to a pickup point, or no longer does. */
+  changed: boolean;
   /** The shop refused the pickup point chosen before; another is needed. */
   pointRefused: boolean;
   onChange: (data: Partial<CheckoutData>) => void;
@@ -23,6 +25,7 @@ export default function Step2Shipping({
   data,
   methods,
   gone,
+  changed,
   pointRefused,
   onChange,
   onNext,
@@ -58,6 +61,11 @@ export default function Step2Shipping({
       {gone && (
         <p className="text-sm text-amber-800" role="alert">
           {t("shipping.gone")}
+        </p>
+      )}
+      {changed && (
+        <p className="text-sm text-amber-800" role="alert">
+          {t("shipping.changed")}
         </p>
       )}
       {Array.isArray(methods) && methods.length === 0 && (

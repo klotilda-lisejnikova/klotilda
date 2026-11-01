@@ -51,7 +51,8 @@
       "loading": "Načítám způsoby dopravy…",
       "unavailable": "Způsoby dopravy se nepodařilo načíst. Zkuste to prosím za chvíli znovu.",
       "gone": "Zvolený způsob dopravy už není v nabídce. Vyberte prosím jiný.",
-      "none": "Momentálně nelze vybrat žádný způsob dopravy. Zkuste to prosím později."
+      "none": "Momentálně nelze vybrat žádný způsob dopravy. Zkuste to prosím později.",
+      "changed": "Zvolená doprava se mezitím změnila. Zkontrolujte prosím výběr."
     },
     "pickupPoint": {
       "choose": "Vybrat výdejní místo",

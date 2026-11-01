@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   ChosenPickupPoint,
@@ -19,6 +19,14 @@ export default function PickupPointPicker({ point, refused, onPick }: Props) {
   const locale = useLocale();
   const [opening, setOpening] = useState(false);
   const [failed, setFailed] = useState(false);
+  // A map that opens after the customer left this method must not choose for another.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   if (!PACKETA_API_KEY) {
     return (
@@ -32,12 +40,12 @@ export default function PickupPointPicker({ point, refused, onPick }: Props) {
     setOpening(true);
     setFailed(false);
     try {
-      const chosen = await pickPacketaPoint(locale);
-      if (chosen) onPick(chosen);
+      const chosen = await pickPacketaPoint(locale, () => mounted.current);
+      if (chosen && mounted.current) onPick(chosen);
     } catch {
-      setFailed(true);
+      if (mounted.current) setFailed(true);
     } finally {
-      setOpening(false);
+      if (mounted.current) setOpening(false);
     }
   };
 

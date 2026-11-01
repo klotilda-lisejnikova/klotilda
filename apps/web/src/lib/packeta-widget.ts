@@ -44,6 +44,9 @@ declare global {
   }
 }
 
+/** How long the script may take before the customer is told to try again. */
+const LOAD_TIMEOUT_MS = 15_000;
+
 let loading: Promise<PacketaWidget> | null = null;
 
 /** Loads Packeta's script once, when the map is first wanted; a failure may be retried. */
@@ -53,14 +56,21 @@ function loadWidget(): Promise<PacketaWidget> {
     const script = document.createElement("script");
     script.src = PACKETA_WIDGET_SCRIPT;
     script.async = true;
-    script.onload = () =>
-      window.Packeta
-        ? resolve(window.Packeta.Widget)
-        : reject(new Error("Packeta widget missing"));
-    script.onerror = () => {
+    const fail = (reason: string) => {
+      clearTimeout(timer);
       script.remove();
-      reject(new Error("Packeta widget failed to load"));
+      reject(new Error(reason));
     };
+    const timer = setTimeout(
+      () => fail("Packeta widget took too long"),
+      LOAD_TIMEOUT_MS,
+    );
+    script.onload = () => {
+      if (!window.Packeta) return fail("Packeta widget missing");
+      clearTimeout(timer);
+      resolve(window.Packeta.Widget);
+    };
+    script.onerror = () => fail("Packeta widget failed to load");
     document.head.appendChild(script);
   }).catch((err: unknown) => {
     loading = null;
@@ -80,12 +90,14 @@ function toChosenPoint(point: PacketaPoint): ChosenPickupPoint {
 
 /**
  * Opens Packeta's map over the page; resolves the chosen point, or `null` when the customer closes
- * it. Rejects when the map can't be loaded.
+ * it or is no longer `wanted` once the script has loaded. Rejects when the map can't be loaded.
  */
 export async function pickPacketaPoint(
   locale: string,
+  wanted: () => boolean,
 ): Promise<ChosenPickupPoint | null> {
   const widget = await loadWidget();
+  if (!wanted()) return null;
   return new Promise((resolve) =>
     widget.pick(
       PACKETA_API_KEY,
