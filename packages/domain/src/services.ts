@@ -4,12 +4,14 @@ import type { AdminUser } from './entities/admin-user';
 import { categoryEntity } from './entities/category';
 import { emailTemplateEntity } from './entities/email-template';
 import { galleryItemEntity } from './entities/gallery-item';
+import { legalDocumentVersionEntity } from './entities/legal-document';
 import { orderEntity } from './entities/order';
 import { paymentMethodEntity } from './entities/payment-method';
 import { productEntity } from './entities/product';
 import { reviewEntity } from './entities/review';
 import { sellerEntity } from './entities/seller';
 import { shippingMethodEntity } from './entities/shipping-method';
+import { siteTextEntity } from './entities/site-text';
 
 /** Admin accounts sign in and out; there is no registration or profile. */
 export class KlotildaAuthService extends AuthService<AdminUser> {}
@@ -30,6 +32,8 @@ export function createServices(baseUrl: string, tokenSource: AccessTokenSource) 
       paymentMethods: paymentMethodEntity,
       emailTemplates: emailTemplateEntity,
       seller: sellerEntity,
+      legalDocuments: legalDocumentVersionEntity,
+      siteTexts: siteTextEntity,
       reviews: reviewEntity,
     },
     baseUrl,

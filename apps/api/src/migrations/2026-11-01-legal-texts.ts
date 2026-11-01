@@ -1,12 +1,9 @@
 /**
- * The shop's terms, the complaints procedure included (the `{{complaintsAnchor}}` section).
- * A DRAFT written from the Czech Civil Code for a small shop of originals paid by bank transfer;
- * have it checked before the shop opens. `{{…}}` are filled in by `fillLegalText` (lib/legal.ts).
- * A change to what the customer agrees to needs a new `TERMS_VERSION` (packages/domain seller.ts).
+ * The legal pages' texts as the website showed them when they moved to the database: version
+ * 2026-11-02 of each, published by `2026-11-01-legal-documents`. Frozen, like the migration.
  */
 
-const cs = `
-## 1. Úvodní ustanovení {#uvod}
+export const TERMS_CS = `## 1. Úvodní ustanovení {#uvod}
 
 Tyto obchodní podmínky upravují prodej zboží v internetovém obchodě na webu klotilda.cz (dále jen „e-shop“) a vzájemná práva a povinnosti prodávající a kupujícího.
 
@@ -95,11 +92,9 @@ Jak prodávající zpracovává osobní údaje kupujících, popisují [zásady 
 
 Prodávající může tyto obchodní podmínky měnit. Na objednávku se vždy použijí podmínky ve znění platném v okamžiku jejího odeslání; to znění dostane kupující v potvrzení objednávky odkazem a může si je na této stránce uložit nebo vytisknout.
 
-Tyto obchodní podmínky platí od {{effectiveFrom}}.
-`;
+Tyto obchodní podmínky platí od {{effectiveFrom}}.`;
 
-const en = `
-> This is a translation for convenience. The contract is made in Czech, and the [Czech version](/cs{{termsPath}}) of these terms is the binding one.
+export const TERMS_EN = `> This is a translation for convenience. The contract is made in Czech, and the [Czech version](/cs{{termsPath}}) of these terms is the binding one.
 
 ## 1. Introduction {#uvod}
 
@@ -190,7 +185,164 @@ How the seller processes buyers' personal data is described in the [privacy poli
 
 The seller may change these terms. An order is always governed by the terms in force when it was sent; the order confirmation links to them, and they can be saved or printed from this page.
 
-These terms apply from {{effectiveFrom}}.
-`;
+These terms apply from {{effectiveFrom}}.`;
 
-export const TERMS = { cs, en };
+export const PRIVACY_CS = `## Kdo vaše údaje zpracovává
+
+Správcem osobních údajů je {{sellerName}}, IČO {{sellerIco}}, se sídlem {{sellerAddress}} (dále jen „prodávající“). S dotazy k osobním údajům pište na [{{sellerEmail}}](mailto:{{sellerEmail}}).
+
+## Jaké údaje a proč
+
+Když nakoupíte v e-shopu, zpracováváme údaje, které vyplníte v objednávce: jméno a příjmení, e-mail, telefon (pokud ho uvedete), doručovací adresu, obsah objednávky, poznámku k ní a údaje o platbě (způsob platby, částku a variabilní symbol).
+
+- **Vyřízení objednávky** — uzavření a splnění kupní smlouvy, doručení, komunikace o objednávce, odstoupení a reklamace (čl. 6 odst. 1 písm. b) GDPR).
+- **Účetní a daňové povinnosti** — doklady o prodeji (čl. 6 odst. 1 písm. c) GDPR).
+- **Ochrana našich práv** — pro případ sporu z objednávky (čl. 6 odst. 1 písm. f) GDPR, oprávněný zájem).
+
+Obchodní sdělení (newsletter) neposíláme a vaše údaje neprodáváme ani nepředáváme k marketingu.
+
+## Jak dlouho
+
+Údaje z objednávky uchováváme po dobu jejího vyřízení a dále po dobu, po kterou mohou vzniknout nároky ze smlouvy (zpravidla 4 roky od dodání). Údaje na účetních dokladech uchováváme po dobu stanovenou zákonem, nejdéle 10 let.
+
+## Kdo k nim má přístup
+
+Údaje zpracovává prodávající. Pro provoz e-shopu využíváme tyto zpracovatele, kteří s údaji smějí nakládat jen podle našich pokynů:
+
+- **Vercel Inc.** — provoz webových stránek;
+- **Railway Corporation** — provoz serveru a databáze s objednávkami;
+- **Cloudflare, Inc.** — uložení fotografií zboží (osobní údaje neobsahují);
+- **poskytovatel e-mailové schránky** — odesílání e-mailů k objednávce.
+
+Dopravcům (Zásilkovna s.r.o., Česká pošta, s.p.) předáváme jméno, doručovací adresu, e-mail a telefon, aby vám mohli zásilku doručit.
+
+Vercel, Railway a Cloudflare jsou americké společnosti; údaje mohou být zpracovány i mimo EU. Předání se opírá o rámec EU–USA pro ochranu osobních údajů (Data Privacy Framework), případně o standardní smluvní doložky schválené Evropskou komisí.
+
+## Cookies a měření návštěvnosti
+
+Web nepoužívá reklamní ani sledovací cookies, proto se vás na souhlas neptá. Obsah košíku si web ukládá ve vašem prohlížeči (localStorage), aby vám nezmizel; nikam se neodesílá, dokud neodešlete objednávku. Návštěvnost měříme nástrojem Vercel Web Analytics, který cookies nepoužívá a návštěvníky neidentifikuje.
+
+## Vaše práva
+
+Máte právo na přístup ke svým údajům, na jejich opravu nebo výmaz, na omezení zpracování, na přenositelnost údajů a právo vznést námitku proti zpracování založenému na oprávněném zájmu. Stačí napsat na [{{sellerEmail}}](mailto:{{sellerEmail}}).
+
+Pokud se domníváte, že údaje zpracováváme v rozporu s předpisy, můžete podat stížnost u Úřadu pro ochranu osobních údajů ([uoou.gov.cz](https://uoou.gov.cz)).
+
+Tyto zásady platí od {{effectiveFrom}}.`;
+
+export const PRIVACY_EN = `> This is a translation for convenience; the [Czech version](/cs{{privacyPath}}) is the binding one.
+
+## Who processes your data
+
+The controller of your personal data is {{sellerName}}, company ID (IČO) {{sellerIco}}, {{sellerAddress}} (the "seller"). For any question about your data, write to [{{sellerEmail}}](mailto:{{sellerEmail}}).
+
+## What data and why
+
+When you buy in the shop, we process what you fill in the order: first and last name, e-mail, phone (if given), delivery address, the order's content and note, and payment details (the payment method, the amount and variable symbol).
+
+- **Handling the order** — making and performing the purchase contract, delivery, communication about the order, withdrawals and complaints (Art. 6(1)(b) GDPR).
+- **Accounting and tax duties** — records of the sale (Art. 6(1)(c) GDPR).
+- **Protecting our rights** — in case of a dispute over an order (Art. 6(1)(f) GDPR, legitimate interest).
+
+We send no newsletters, and we neither sell your data nor pass it on for marketing.
+
+## How long
+
+We keep order data while the order is handled and then for as long as claims under the contract may arise (usually 4 years after delivery). Data on accounting records is kept for the period the law requires, at most 10 years.
+
+## Who can see it
+
+The seller processes the data. To run the shop we use these processors, who may handle the data only on our instructions:
+
+- **Vercel Inc.** — hosting the website;
+- **Railway Corporation** — hosting the server and the order database;
+- **Cloudflare, Inc.** — storing product photos (no personal data);
+- **our e-mail provider** — sending the order e-mails.
+
+Carriers (Zásilkovna s.r.o., Česká pošta, s.p.) receive your name, delivery address, e-mail and phone so they can deliver the parcel.
+
+Vercel, Railway and Cloudflare are US companies; data may be processed outside the EU. Such transfers rely on the EU–US Data Privacy Framework or on standard contractual clauses approved by the European Commission.
+
+## Cookies and analytics
+
+The site uses no advertising or tracking cookies, so it doesn't ask for consent. Your cart is kept in your browser (localStorage) so it doesn't disappear; it is sent nowhere until you place an order. We count visits with Vercel Web Analytics, which uses no cookies and does not identify visitors.
+
+## Your rights
+
+You have the right to access your data, to have it corrected or erased, to restrict its processing, to data portability, and to object to processing based on legitimate interest. Just write to [{{sellerEmail}}](mailto:{{sellerEmail}}).
+
+If you believe we process your data unlawfully, you may complain to the Czech Office for Personal Data Protection ([uoou.gov.cz](https://uoou.gov.cz)).
+
+This policy applies from {{effectiveFrom}}.`;
+
+export const WITHDRAWAL_CS = `Od smlouvy můžete do 14 dnů od převzetí zboží odstoupit bez udání důvodu (podrobnosti v [obchodních podmínkách]({{termsPath}}#odstoupeni)). Stačí nám napsat e-mail na [{{sellerEmail}}](mailto:{{sellerEmail}}) — nebo vyplnit tento formulář a poslat ho e-mailem či poštou. Uveďte prosím i číslo účtu, na který vám máme vrátit peníze.
+
+## Oznámení o odstoupení od smlouvy
+
+**Adresát:**
+{{sellerName}}
+{{sellerAddress}}
+IČO: {{sellerIco}}
+E-mail: {{sellerEmail}}
+
+Oznamuji/oznamujeme (*), že tímto odstupuji/odstupujeme (*) od smlouvy o nákupu tohoto zboží:
+______________________________________________
+
+Číslo objednávky (variabilní symbol):
+______________________________________________
+
+Datum objednání (*) / datum obdržení (*):
+______________________________________________
+
+Jméno a příjmení spotřebitele/spotřebitelů:
+______________________________________________
+
+Adresa spotřebitele/spotřebitelů:
+______________________________________________
+
+Číslo účtu pro vrácení peněz:
+______________________________________________
+
+Podpis spotřebitele/spotřebitelů (pouze pokud je tento formulář zasílán v listinné podobě):
+______________________________________________
+
+Datum:
+______________________________________________
+
+(*) Nehodící se škrtněte nebo údaje doplňte.`;
+
+export const WITHDRAWAL_EN = `You may withdraw from the contract without giving a reason within 14 days of receiving the goods (details in the [terms]({{termsPath}}#odstoupeni)). An e-mail to [{{sellerEmail}}](mailto:{{sellerEmail}}) is enough — or fill in this form and send it by e-mail or post. Please include the bank account for the refund.
+
+## Notice of withdrawal from the contract
+
+**To:**
+{{sellerName}}
+{{sellerAddress}}
+Company ID (IČO): {{sellerIco}}
+E-mail: {{sellerEmail}}
+
+I/We (*) hereby give notice that I/we (*) withdraw from my/our (*) contract of sale of the following goods:
+______________________________________________
+
+Order number (variable symbol):
+______________________________________________
+
+Ordered on (*) / received on (*):
+______________________________________________
+
+Name of consumer(s):
+______________________________________________
+
+Address of consumer(s):
+______________________________________________
+
+Bank account for the refund:
+______________________________________________
+
+Signature of consumer(s) (only if this form is sent on paper):
+______________________________________________
+
+Date:
+______________________________________________
+
+(*) Delete as appropriate.`;

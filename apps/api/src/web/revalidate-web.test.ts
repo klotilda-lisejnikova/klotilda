@@ -66,6 +66,24 @@ describe('Website revalidation', () => {
     await vi.waitFor(() => expect(calls).toHaveLength(1), { timeout: 3000 });
   });
 
+  it("tells the website when the site's texts change", async () => {
+    await quiet();
+    calls.length = 0;
+    send('PATCH', '/api/site-texts/stx1');
+    await vi.waitFor(() => expect(calls).toHaveLength(1), { timeout: 3000 });
+  });
+
+  it('tells the website when a legal text is published, not while its draft is edited', async () => {
+    await quiet();
+    calls.length = 0;
+    send('PUT', '/api/legal-documents/terms/draft');
+    send('POST', '/api/legal-documents/terms/draft');
+    await quiet();
+    expect(calls).toEqual([]);
+    send('POST', '/api/legal-documents/terms/draft/publish');
+    await vi.waitFor(() => expect(calls).toHaveLength(1), { timeout: 3000 });
+  });
+
   it('tells the website when the admin decides on a review, not when one is written', async () => {
     await quiet();
     calls.length = 0;

@@ -3,10 +3,12 @@ import {
   CATEGORIES_PATH,
   CHECKOUT_PATH,
   GALLERY_PATH,
+  LEGAL_DOCUMENTS_PATH,
   ORDERS_PATH,
   PRODUCTS_PATH,
   REVIEWS_PATH,
   SELLER_PATH,
+  SITE_TEXTS_PATH,
 } from '@klotilda/domain';
 
 /** The website's `POST /api/revalidate` and the secret it checks. */
@@ -29,17 +31,25 @@ function isReviewDecision(method: string, path: string): boolean {
 
 /**
  * Requests that change what the website shows: the catalogue and the gallery, their photos, the
- * seller's details, a placed order (stock goes down), order actions (a cancelled order's stock
- * comes back) and the admin's decisions on a review (`PATCH` / `DELETE /api/reviews/:id`; a review
- * just written waits unseen, and the routes under `/all/` change nothing shown).
+ * seller's details, the site's texts, a published legal text, a placed order (stock goes down),
+ * order actions (a cancelled order's stock comes back) and the admin's decisions on a review
+ * (`PATCH` / `DELETE /api/reviews/:id`). A legal draft's saves don't: the website never shows one;
+ * nor does a review just written, which waits unseen, or the review routes under `/all/`.
  */
 function changesTheWebsite(method: string, path: string): boolean {
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false;
   return (
-    [PRODUCTS_PATH, CATEGORIES_PATH, GALLERY_PATH, FILES_PATH, CHECKOUT_PATH, SELLER_PATH].some(
-      (prefix) => path === prefix || path.startsWith(`${prefix}/`)
-    ) ||
+    [
+      PRODUCTS_PATH,
+      CATEGORIES_PATH,
+      GALLERY_PATH,
+      FILES_PATH,
+      CHECKOUT_PATH,
+      SELLER_PATH,
+      SITE_TEXTS_PATH,
+    ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`)) ||
     (path.startsWith(`${ORDERS_PATH}/`) && path.includes('/actions/')) ||
+    (path.startsWith(`${LEGAL_DOCUMENTS_PATH}/`) && path.endsWith('/draft/publish')) ||
     isReviewDecision(method, path)
   );
 }

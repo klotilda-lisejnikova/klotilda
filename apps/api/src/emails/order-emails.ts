@@ -1,9 +1,11 @@
 import {
   COMPLAINTS_ANCHOR,
   fillPlaceholders,
+  formatCzechDate,
   LEGAL_PATHS,
+  legalVersionDate,
+  legalVersionPath,
   MAX_RATING,
-  TERMS_EFFECTIVE_FROM,
 } from '@klotilda/domain';
 import type {
   EmailPlaceholder,
@@ -36,6 +38,8 @@ export interface PlacedOrder {
   variableSymbol: string;
   paymentStatus: PaymentStatus;
   items: OrderItem[];
+  /** The terms version the order was placed under; orders from before versions have none. */
+  termsVersion?: string | null;
 }
 
 /** What the admin added to the action. */
@@ -53,6 +57,16 @@ export interface ActionDetails {
 const isPickup = (order: PlacedOrder) => order.shippingKind === 'pickup';
 /** Paid in cash at the pickup, never by transfer: no account, no refund to one. */
 const isCash = (order: PlacedOrder) => order.paymentKind === 'cash';
+
+/** "obchodních podmínek platných od 2. 11. 2026", by the order's own version. */
+const agreedTerms = ({ termsVersion }: PlacedOrder) =>
+  termsVersion
+    ? `obchodních podmínek platných od ${formatCzechDate(legalVersionDate(termsVersion))}`
+    : 'obchodních podmínek';
+
+/** The page of exactly the terms the order was placed under; the current ones for an older order. */
+const agreedTermsPath = ({ termsVersion }: PlacedOrder) =>
+  termsVersion ? legalVersionPath('terms', termsVersion) : LEGAL_PATHS.terms;
 
 const address = (order: PlacedOrder) => `${order.street}, ${order.zip} ${order.city}`;
 
@@ -163,13 +177,13 @@ export function orderReceivedEmail(
         : { kind: 'facts', rows: [['Doručení na adresu', address(order)]] },
       {
         kind: 'paragraph',
-        text: `Objednávku jste odeslali podle obchodních podmínek platných od ${TERMS_EFFECTIVE_FROM}. Zboží můžete do 14 dnů od převzetí vrátit bez udání důvodu.`,
+        text: `Objednávku jste odeslali podle ${agreedTerms(order)}. Zboží můžete do 14 dnů od převzetí vrátit bez udání důvodu.`,
       },
       {
         kind: 'links',
         links: [
-          { label: 'Obchodní podmínky', href: LEGAL_PATHS.terms },
-          { label: 'Reklamace', href: `${LEGAL_PATHS.terms}#${COMPLAINTS_ANCHOR}` },
+          { label: 'Obchodní podmínky', href: agreedTermsPath(order) },
+          { label: 'Reklamace', href: `${agreedTermsPath(order)}#${COMPLAINTS_ANCHOR}` },
           { label: 'Formulář pro odstoupení', href: LEGAL_PATHS.withdrawal },
         ],
       },

@@ -1,13 +1,26 @@
 import { useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { COMPLAINTS_ANCHOR, LEGAL_PATHS } from "@klotilda/domain";
+import {
+  COMPLAINTS_ANCHOR,
+  LEGAL_PATHS,
+  legalVersionPath,
+} from "@klotilda/domain";
 import { Link } from "@/i18n/navigation";
 import CartLine from "@/components/shop/CartLine";
 import { cartTotal, isBlocked, type CartItem } from "@/store/cart.store";
 import { CheckoutData } from "./types";
 
-/** `cartChanged`: the shop refused the lines as they were; `failed`: anything else. */
-export type SubmitError = "cartChanged" | "failed";
+/**
+ * `cartChanged`: the shop refused the lines as they were; `termsChanged`: new terms were published
+ * meanwhile; `failed`: anything else.
+ */
+export type SubmitError = "cartChanged" | "termsChanged" | "failed";
+
+const ERROR_MESSAGES = {
+  cartChanged: "errorChanged",
+  termsChanged: "errorTermsChanged",
+  failed: "error",
+} as const;
 
 interface Props {
   data: CheckoutData;
@@ -17,6 +30,8 @@ interface Props {
   onBack: () => void;
   loading: boolean;
   error: SubmitError | null;
+  /** The terms version in force, linked exactly; `null` while it loads, `"error"` if unreadable. */
+  termsVersion: string | null | "error";
 }
 
 export default function Step4Summary({
@@ -27,6 +42,7 @@ export default function Step4Summary({
   onBack,
   loading,
   error,
+  termsVersion,
 }: Props) {
   const t = useTranslations("checkout");
   const tCart = useTranslations("cart");
@@ -44,6 +60,11 @@ export default function Step4Summary({
     }
     onSubmit();
   };
+
+  const termsKnown = termsVersion !== null && termsVersion !== "error";
+  const termsPath = termsKnown
+    ? legalVersionPath("terms", termsVersion)
+    : LEGAL_PATHS.terms;
 
   // Opens in a new tab: the filled-in checkout stays where it is.
   const legalLink = (href: string, chunks: ReactNode) => (
@@ -134,9 +155,9 @@ export default function Step4Summary({
           />
           <span>
             {t.rich("summary.terms", {
-              terms: (chunks) => legalLink(LEGAL_PATHS.terms, chunks),
+              terms: (chunks) => legalLink(termsPath, chunks),
               complaints: (chunks) =>
-                legalLink(`${LEGAL_PATHS.terms}#${COMPLAINTS_ANCHOR}`, chunks),
+                legalLink(`${termsPath}#${COMPLAINTS_ANCHOR}`, chunks),
             })}
           </span>
         </label>
@@ -156,6 +177,12 @@ export default function Step4Summary({
         </p>
       </div>
 
+      {termsVersion === "error" && (
+        <p className="text-sm text-rose-600" role="alert">
+          {t("error")}
+        </p>
+      )}
+
       {blocked ? (
         <p className="text-sm text-rose-600" role="alert">
           {tCart("blocked")}
@@ -163,7 +190,7 @@ export default function Step4Summary({
       ) : (
         error && (
           <p className="text-sm text-rose-600" role="alert">
-            {error === "cartChanged" ? t("errorChanged") : t("error")}
+            {t(ERROR_MESSAGES[error])}
           </p>
         )
       )}
@@ -180,7 +207,7 @@ export default function Step4Summary({
         <button
           type="button"
           onClick={submit}
-          disabled={loading || blocked}
+          disabled={loading || blocked || !termsKnown}
           className="bg-moss hover:bg-moss-deep flex-1 py-3 text-sm tracking-widest text-[#fafaf8] uppercase transition-colors disabled:opacity-40"
         >
           {loading ? t("loading") : t("summary.confirm")}

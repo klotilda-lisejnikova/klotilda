@@ -40,7 +40,7 @@ access, the DTO types, the typed clients and the admin's form schema (`formSchem
 model means changing `fields.ts` — plus a migration (below).
 
 Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `ShippingMethod`,
-`PaymentMethod`, `EmailTemplate`, `Seller`, `Review`) are the production table names
+`PaymentMethod`, `EmailTemplate`, `Seller`, `LegalDocumentVersion`, `Review`) are the production table names
 (`Products`, …) — never rename them.
 
 ## Backend
@@ -104,8 +104,27 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
 - The seller (`Seller`, `/api/seller`): one row (name, IČO, address, e-mail, phone, registration,
   `complete`), anyone reads it, the signed-in admin PATCHes it (`signedInEditingOnly`); seeded
   with placeholders by the `2026-11-01-seller` migration. The e-mails' footer names it
-  (`resolveSellerLine`, the domain's `SELLER` when the row is missing); the website still shows
-  the domain's `SELLER` until it reads the row.
+  (`resolveSellerLine`, the domain's `SELLER` when the row is missing), and so does the website's;
+  a legal version published while `complete` was off says it is a draft.
+- The website's texts (`SiteText`, `/api/site-texts`): one row per `SITE_TEXT_KEYS`, each the path
+  of the web's next-intl message it replaces (the home page's wording, the contact e-mail and
+  Instagram, the page description), Czech and optional English text (empty: the Czech one shows).
+  Anyone reads them, the signed-in admin PATCHes them (`signedInEditingOnly`); seeded from the
+  translation files by the `2026-11-01-site-texts` migration. The contact e-mail is the address
+  visitors write to, kept apart from the seller's, which the legal texts name.
+- Legal texts (`LegalDocumentVersion`, `/api/legal-documents`, `src/legal/`): versions of the terms,
+  the privacy policy and the withdrawal form (`LEGAL_DOCUMENTS`), Czech and optional English text
+  in the legal Markdown subset with `LEGAL_PLACEHOLDERS`. Auto CRUD only lists them, signed in; a
+  draft is started, saved, deleted and published through `…/:document/draft` (each under the
+  document's advisory lock, one draft per document), and publishing — sent with the texts the
+  admin saw (409 when the draft holds others), refused while
+  `legalTextProblems` finds an unknown placeholder or a missing anchor other pages link to —
+  freezes it as the current version, named by Prague's date (`pragueDate`, `-2` for a second one
+  that day, never before an earlier one) with a snapshot of the seller's details. Anyone reads
+  `…/:document/current`, `…/versions` and `…/versions/:version`. The
+  `2026-11-01-legal-documents` migration published version `2026-11-02` of each with the texts
+  the website had. The checkout stores the current terms version on the order and answers 412
+  (`TERMS_CHANGED`) when the shop sent another (`termsVersion`); the confirmation names its date.
 - Reviews (`Review`, `src/reviews/`): one per order, written only through a link the
   `mark-delivered` e-mail carries (or `POST /api/orders/:id/review-request`, the admin sending it
   again): `/recenze/napsat?token=`, the order id and an expiry (`REVIEW_LINK_LIFETIME_DAYS`)
@@ -148,7 +167,12 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
 ## Website
 
 `apps/web/src/services/index.ts` wraps the domain clients: `listProducts`, `getProduct`,
-`listGallery`, `listShippingMethods`, `listPaymentMethods`, `checkout`. The checkout reads the
+`listGallery`, `listShippingMethods`, `listPaymentMethods`, `getSeller`, `getLegalVersion`,
+`listLegalVersions`, `listSiteTexts`, `checkout`. Every page's messages are the translation
+files with the admin's `SiteText` rows laid over them (`src/i18n/request.ts`, the domain's
+`withSiteTexts`, which keeps the typed text literal for ICU), read through `unstable_cache`
+(`lib/site-texts.ts`, tag `site-texts`, hourly), so every page render depends on the API like the
+gallery does: a failed read keeps the last good page. The checkout reads the
 shipping and payment methods live and offers only the payment methods that fit the chosen shipping;
 the terms name no prices of either (the checkout shows them, the order states the ones agreed).
 Photos go through `mediaUrl()` (relative `/api/files/:id` without a bucket).
@@ -159,13 +183,17 @@ security headers of every page.
 
 Legal pages — `/obchodni-podminky` (terms, complaints under `#reklamace`), `/ochrana-osobnich-udaju`,
 `/odstoupeni-od-smlouvy` (the model withdrawal form, printable) — same path in both languages,
-gated with the shop in `src/middleware.ts`; the footer links them and names the seller. The texts
-are drafts in `src/content/legal/*.ts` (a small Markdown subset parsed by the domain's
-`parseLegalText`, rendered by `components/legal/LegalDocument`),
-`{{…}}` filled from `packages/domain/src/seller.ts`: the seller's details (**placeholders** —
-`SELLER.placeholder` shows a draft notice), `TERMS_VERSION`, `LEGAL_PATHS`. The checkout requires
-the terms box (`termsAccepted: true`, else 400) and each order stores `termsVersion` +
-`termsAcceptedAt`; changing what customers agree to means a new `TERMS_VERSION`.
+gated with the shop in `src/middleware.ts`; the footer links them and names the seller (the
+`Seller` row, read by `getSeller`). Each page shows the API's version in force
+(`components/legal/LegalPage`, `lib/legal.ts`: the domain's `parseLegalText`, rendered by
+`components/legal/LegalDocument`, `{{…}}` filled from the version's own seller snapshot) and links
+the earlier ones; each version has its own page, `/obchodni-podminky/<version>`, built on its
+first visit. A version published before the seller's details were marked complete says it is a
+draft. The
+checkout requires the terms box (`termsAccepted: true`, else 400), links the exact version in force
+and sends it as `termsVersion`; a 412 (`TERMS_CHANGED`) unticks the box and links the new one.
+Each order stores the version and `termsAcceptedAt`, and the confirmation links that version's
+page. Changing what customers agree to means publishing a new version.
 
 ## Admin
 
@@ -180,8 +208,11 @@ product. The overview counts through the API and charts the paid revenue of the 
 the month of the order (`app/revenue.ts`). Every `UFormField` keeps a line free for its message
 (`vite.config.ts`), so a message that appears or goes never moves a button from under the pointer.
 The sidebar's "Nastavení" group holds the shop's settings (Doprava, Platby, E-maily,
-Prodávající: the shipping and payment methods, the e-mail texts with a live preview in a sandboxed
-`iframe`, and the seller's details); it is not on the phone's bottom bar, only in the slide-over.
+Prodávající, Texty webu, Právní texty: the shipping and payment methods, the e-mail texts with a
+live preview in a sandboxed `iframe`, the seller's details, the website's texts in Czech and
+English side by side, and per legal document its published versions and
+one draft, edited beside a preview the domain's parser renders with today's seller, published
+after a confirmation); it is not on the phone's bottom bar, only in the slide-over.
 `vercel.json` sends a Content-Security-Policy that allows only the admin's own scripts (hence
 `public/color-scheme.js` instead of an inline script) and API calls only to `*.up.railway.app`.
 
@@ -214,11 +245,12 @@ Branches: `main` = production, `dev` = test.
   Both run with `NODE_ENV=production`, so each needs `TRUST_PROXY=1` and a `JWT_SECRET` of at
   least 32 characters before it takes a build that checks them, or the API won't start.
 
-  After a change to the catalogue, the gallery, the stock or the seller the API calls the web's
-  `POST /api/revalidate` (`WEB_REVALIDATE_URL`, `WEB_REVALIDATE_SECRET` = the web's
-  `REVALIDATE_SECRET`), so admin edits show at once; set for `test` / the `dev` branch, not yet
-  for production — set it there before the shop goes live: without it the shop's pages
-  regenerate only hourly. `SITE_URL` (linked from e-mails) is `https://test.klotilda.cz` on `test`.
+  After a change to the catalogue, the gallery, the stock, the seller, the site's texts or a
+  published legal text the API calls the web's `POST /api/revalidate` (`WEB_REVALIDATE_URL`,
+  `WEB_REVALIDATE_SECRET` = the web's `REVALIDATE_SECRET`), so admin edits show at once; set for
+  `test` / the `dev` branch, not yet for production — set it there before the shop goes live:
+  without it the shop's pages regenerate only hourly. `SITE_URL` (linked from e-mails) is
+  `https://test.klotilda.cz` on `test`.
 
   `apps/api/Dockerfile`, build context the repository root, `NODE_AUTH_TOKEN` as a build argument
   (the placeholder in `tooling/user.npmrc`; never name the token in a `RUN` line). Migrations run

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { instagramUrl } from "@klotilda/domain";
 import { getContactTranslations } from "@/i18n/home";
 import FadeIn from "@/components/ui/FadeIn";
 
@@ -33,7 +34,7 @@ export default function ContactSection() {
         >
           <a
             href={`mailto:${contact.email}`}
-            className="group flex items-center gap-5 text-stone-600 transition-colors hover:text-moss"
+            className="group hover:text-moss flex items-center gap-5 text-stone-600 transition-colors"
           >
             <div className="group-hover:border-moss group-hover:bg-moss/12 flex h-14 w-14 items-center justify-center rounded-full border border-stone-200 transition-[scale,background-color,border-color] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-112">
               <svg
@@ -64,10 +65,10 @@ export default function ContactSection() {
           />
 
           <a
-            href="https://instagram.com/klotilda.lisejnikova"
+            href={instagramUrl(contact.instagram)}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex items-center gap-5 text-stone-600 transition-colors hover:text-moss"
+            className="group hover:text-moss flex items-center gap-5 text-stone-600 transition-colors"
           >
             <div className="group-hover:border-moss group-hover:bg-moss/12 flex h-14 w-14 items-center justify-center rounded-full border border-stone-200 transition-[scale,background-color,border-color] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-112">
               <svg

@@ -2,12 +2,14 @@ import { adminUserEntity } from './entities/admin-user';
 import { categoryEntity } from './entities/category';
 import { emailTemplateEntity } from './entities/email-template';
 import { galleryItemEntity } from './entities/gallery-item';
+import { legalDocumentVersionEntity } from './entities/legal-document';
 import { orderEntity } from './entities/order';
 import { paymentMethodEntity } from './entities/payment-method';
 import { productEntity } from './entities/product';
 import { reviewEntity } from './entities/review';
 import { sellerEntity } from './entities/seller';
 import { shippingMethodEntity } from './entities/shipping-method';
+import { siteTextEntity } from './entities/site-text';
 
 export * from './codes';
 export * from './constants';
@@ -53,6 +55,13 @@ export {
   type SellerDetails,
 } from './entities/seller';
 export { sellerFields } from './entities/seller/fields';
+export * from './entities/site-text';
+export { siteTextFields } from './entities/site-text/fields';
+export * from './entities/legal-document';
+export {
+  LEGAL_VERSION_MAX_LENGTH,
+  legalDocumentVersionFields,
+} from './entities/legal-document/fields';
 export {
   PRODUCT_IMAGE_ORDER_ROUTE,
   productEntity,
@@ -81,6 +90,7 @@ export {
   orderEntity,
   ORDERS_PATH,
   parseOrderHistory,
+  TERMS_CHANGED,
   parseOrderItems,
   type CheckoutItem,
   type CheckoutRequest,
@@ -159,6 +169,8 @@ export const allEntities = {
   paymentMethod: paymentMethodEntity,
   emailTemplate: emailTemplateEntity,
   seller: sellerEntity,
+  legalDocumentVersion: legalDocumentVersionEntity,
+  siteText: siteTextEntity,
   review: reviewEntity,
 };
 

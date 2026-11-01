@@ -6,7 +6,7 @@ import {
   DEFAULT_PAYMENT_STATUS,
   orderEntity,
   productEntity,
-  TERMS_VERSION,
+  TERMS_CHANGED,
 } from '@klotilda/domain';
 import type {
   CheckoutItem,
@@ -22,6 +22,7 @@ import type { PlacedOrder } from '../emails/order-emails';
 import { sendEmail } from '../emails/send-email';
 import type { BankAccount } from '../env';
 import { asyncHandler } from '../http/async-handler';
+import { findCurrentVersion } from '../legal/legal-documents';
 import type { ModelRegistry } from '../models-registry';
 import { createQrPaymentDataUrl, createVariableSymbol } from './qr-payment';
 import { resolveOfferedPayment } from '../payments/payment-methods';
@@ -31,6 +32,7 @@ import { readCheckoutRequest } from './read-checkout-request';
 const CREATED = 201;
 const BAD_REQUEST = 400;
 const CONFLICT = 409;
+const UNAVAILABLE = 503;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 /** Plenty for a customer retrying a form; a script placing orders to hold the stock hits it. */
 export const CHECKOUT_RATE_LIMIT: RateLimitConfig = { windowMs: RATE_LIMIT_WINDOW_MS, max: 10 };
@@ -75,6 +77,27 @@ async function reserveStock(
       return { productId, name, price: Number(product.get('price')), quantity };
     })
   );
+}
+
+/**
+ * The terms version the order is placed under: the current one, which must be the one the shop
+ * showed when it says which (412 otherwise, so the customer reads the new terms first).
+ */
+async function resolveAgreedTermsVersion(
+  registry: ModelRegistry,
+  shown: string | undefined,
+  transaction: Transaction
+): Promise<string> {
+  const current = await findCurrentVersion(registry, 'terms', transaction);
+  if (!current) throw new HttpError(UNAVAILABLE, 'No terms are published');
+  const version = String(current.get('version'));
+  if (shown !== undefined && shown !== version) {
+    throw new HttpError(
+      TERMS_CHANGED,
+      'Obchodní podmínky se mezitím změnily. Přečtěte si prosím novou verzi.'
+    );
+  }
+  return version;
 }
 
 /**
@@ -164,10 +187,16 @@ export function createCheckoutPlugin({
         CHECKOUT_PATH,
         ...limits,
         asyncHandler(async (req, res) => {
-          const { items, termsAccepted: _accepted, ...customer } = readCheckoutRequest(req.body);
+          const {
+            items,
+            termsAccepted: _accepted,
+            termsVersion: shownTerms,
+            ...customer
+          } = readCheckoutRequest(req.body);
 
           const placedEvent: OrderEvent = { type: 'placed', at: new Date().toISOString() };
           const order: PlacedOrder = await sequelize.transaction(async (transaction) => {
+            const termsVersion = await resolveAgreedTermsVersion(registry, shownTerms, transaction);
             const shipping = await resolveOfferedShipping(
               registry,
               customer.shippingMethod,
@@ -193,13 +222,13 @@ export function createCheckoutPlugin({
               variableSymbol: createVariableSymbol(),
               paymentStatus: DEFAULT_PAYMENT_STATUS as PaymentStatus,
               orderStatus: DEFAULT_ORDER_STATUS,
+              termsVersion,
             };
             await registry.get(orderEntity.config.name).create(
               {
                 ...placed,
                 items: JSON.stringify(orderItems),
                 history: JSON.stringify([placedEvent]),
-                termsVersion: TERMS_VERSION,
                 termsAcceptedAt: placedEvent.at,
               },
               { transaction }

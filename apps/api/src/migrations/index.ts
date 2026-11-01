@@ -4,10 +4,12 @@ import { categories } from './2026-09-28-categories';
 import { orderHistory } from './2026-09-29-order-history';
 import { orderTerms } from './2026-09-29-order-terms';
 import { emailTemplates } from './2026-11-01-email-templates';
+import { legalDocuments } from './2026-11-01-legal-documents';
 import { paymentMethods } from './2026-11-01-payment-methods';
 import { reviews } from './2026-11-01-reviews';
 import { seller } from './2026-11-01-seller';
 import { shippingMethods } from './2026-11-01-shipping-methods';
+import { siteTexts } from './2026-11-01-site-texts';
 
 /**
  * Every change to the database schema, in the order it was made; the API applies the pending ones
@@ -23,5 +25,7 @@ export const migrations: Migration[] = [
   paymentMethods,
   emailTemplates,
   seller,
+  legalDocuments,
+  siteTexts,
   reviews,
 ];

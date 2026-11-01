@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue';
 import { useToast } from '@nuxt/ui/composables';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
+import { useMutation, useQueryClient } from '@tanstack/vue-query';
 import { sellerFields, sellerLine } from '@klotilda/domain';
 import type { Seller } from '@klotilda/domain';
 import PageHeader from '@/components/PageHeader.vue';
@@ -9,6 +9,7 @@ import SaveBar from '@/components/SaveBar.vue';
 import { services } from '@/app/api';
 import { describeError } from '@/app/errors';
 import { emptyToNull, pick } from '@/app/form-values';
+import { SELLER_QUERY_KEY, useSeller } from '@/app/seller';
 import { useUnsavedChanges } from '@/app/unsaved-changes';
 import { formSchema, VALIDATE_ON } from '@/app/validation';
 
@@ -19,21 +20,12 @@ interface SellerForm {
   email: string;
   phone: string;
   registration: string;
+  complete: boolean;
 }
-
-const SELLER_QUERY_KEY = ['seller'];
 
 const toast = useToast();
 const queryClient = useQueryClient();
-const {
-  data: seller,
-  isPending,
-  isError,
-} = useQuery({
-  queryKey: SELLER_QUERY_KEY,
-  queryFn: async (): Promise<Seller | null> =>
-    (await services.seller.getAll({ limit: 1 })).data[0] ?? null,
-});
+const { data: seller, isPending, isError } = useSeller();
 
 const form = reactive<SellerForm>({
   name: '',
@@ -42,6 +34,7 @@ const form = reactive<SellerForm>({
   email: '',
   phone: '',
   registration: '',
+  complete: false,
 });
 const changes = useUnsavedChanges(form);
 const schema = formSchema(sellerFields, 'patch');
@@ -55,6 +48,7 @@ function toForm(loaded: Seller): SellerForm {
     email: loaded.email,
     phone: loaded.phone ?? '',
     registration: loaded.registration ?? '',
+    complete: loaded.complete ?? false,
   };
 }
 
@@ -85,8 +79,9 @@ const save = useMutation({
   <PageHeader title="Prodávající" />
 
   <p class="mb-4 max-w-2xl text-sm text-muted">
-    Kdo prodává. Zákon vyžaduje jméno, IČO a sídlo. E-shop je píše pod každý e-mail; v patičce webu
-    a v obchodních podmínkách se změna projeví po nejbližší aktualizaci webu.
+    Kdo prodává. Zákon vyžaduje jméno, IČO a sídlo. E-shop je píše pod každý e-mail a do patičky
+    webu. Právní texty uvádějí údaje, které platily, když se daná verze zveřejnila; nové údaje
+    převezme až další zveřejněná verze.
   </p>
 
   <UAlert v-if="isError" title="Údaje se nepodařilo načíst." color="error" variant="soft" />
@@ -133,8 +128,14 @@ const save = useMutation({
         </UFormField>
       </div>
       <p class="mt-4 text-sm text-muted">
-        Pod e-maily: <span class="text-highlighted">{{ line }}</span>
+        Pod e-maily a v patičce webu: <span class="text-highlighted">{{ line }}</span>
       </p>
+      <USwitch
+        v-model="form.complete"
+        label="Údaje jsou úplné"
+        description="Dokud nejsou, právní stránky webu upozorňují, že jde o návrh."
+        class="mt-4"
+      />
     </UCard>
     <SaveBar
       :dirty="changes.dirty.value"

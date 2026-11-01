@@ -1,12 +1,15 @@
 import type {
   EmailPlaceholder,
   EmailTemplateKey,
+  LegalDocumentKey,
+  LegalPlaceholder,
   OrderAction,
   OrderEvent,
   OrderStatus,
   PaymentKind,
   PaymentStatus,
   ShippingKind,
+  SiteTextKey,
 } from '@klotilda/domain';
 import type { BadgeProps } from '@nuxt/ui';
 
@@ -160,4 +163,70 @@ export const EMAIL_PLACEHOLDER_LABELS: Record<EmailPlaceholder, string> = {
   doprava: 'název dopravy',
   platba: 'název způsobu platby',
   cislo_zasilky: 'číslo zásilky',
+};
+
+export const LEGAL_DOCUMENT_LABELS: Record<LegalDocumentKey, { name: string; about: string }> = {
+  terms: {
+    name: 'Obchodní podmínky',
+    about: 'Smlouva se zákazníkem. Zákazník s nimi souhlasí při objednávce.',
+  },
+  privacy: {
+    name: 'Ochrana osobních údajů',
+    about: 'Jaké údaje e-shop o zákaznících zpracovává, proč a jak dlouho.',
+  },
+  withdrawal: {
+    name: 'Odstoupení od smlouvy',
+    about: 'Vzorový formulář pro vrácení zboží do 14 dnů.',
+  },
+};
+
+export const LEGAL_PLACEHOLDER_LABELS: Record<LegalPlaceholder, string> = {
+  sellerName: 'jméno prodávajícího',
+  sellerIco: 'IČO',
+  sellerAddress: 'sídlo',
+  sellerEmail: 'e-mail prodávajícího',
+  sellerPhone: 'telefon (prázdný, není-li vyplněný)',
+  sellerRegistration: 'zápis (prázdný, není-li vyplněný)',
+  effectiveFrom: 'den, od kterého verze platí',
+  termsPath: 'adresa obchodních podmínek (pro odkaz)',
+  privacyPath: 'adresa stránky o osobních údajích',
+  withdrawalPath: 'adresa formuláře pro odstoupení',
+  complaintsAnchor: 'značka oddílu o reklamacích (#reklamace)',
+};
+
+/** How the admin shows a website text: where on the site it is, and how it is typed. */
+export interface SiteTextLabel {
+  section: string;
+  label: string;
+  help?: string;
+  /** Paragraphs rather than a line. */
+  long?: boolean;
+}
+
+export const SITE_TEXT_LABELS: Record<SiteTextKey, SiteTextLabel> = {
+  'home.hero.subtitle': { section: 'Úvod', label: 'Podtitul pod jménem' },
+  'home.about.title': { section: 'O mně', label: 'Nadpis' },
+  'home.about.bio1': { section: 'O mně', label: 'První odstavec', long: true },
+  'home.about.bio2': {
+    section: 'O mně',
+    label: 'Druhý odstavec',
+    help: 'Nepovinný. Prázdný se na webu nezobrazí.',
+    long: true,
+  },
+  'home.gallery.subtitle': { section: 'Galerie', label: 'Podtitul' },
+  'home.cta.title': { section: 'E-shop', label: 'Nadpis upoutávky na e-shop' },
+  'home.cta.subtitle': { section: 'E-shop', label: 'Text upoutávky' },
+  'home.contact.subtitle': { section: 'Kontakt', label: 'Podtitul' },
+  'home.contact.email': { section: 'Kontakt', label: 'E-mail' },
+  'home.contact.instagram': {
+    section: 'Kontakt',
+    label: 'Instagram',
+    help: 'Jméno účtu, např. @klotilda.lisejnikova. Odkaz z něj web složí sám.',
+  },
+  'metadata.description': {
+    section: 'Vyhledávače',
+    label: 'Popis webu',
+    help: 'Text, který ukazují vyhledávače a sociální sítě pod názvem stránky.',
+    long: true,
+  },
 };

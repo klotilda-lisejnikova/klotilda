@@ -15,12 +15,14 @@ import {
   ENTITIES_WITHOUT_CRUD_ROUTES,
   FILE_REF_TYPES,
   galleryItemEntity,
+  legalDocumentVersionEntity,
   orderEntity,
   paymentMethodEntity,
   productEntity,
   reviewEntity,
   sellerEntity,
   shippingMethodEntity,
+  siteTextEntity,
 } from '@klotilda/domain';
 import { normalizeSlug, withCategory } from './catalogue/categories';
 import { createReorderPlugin } from './catalogue/reorder-plugin';
@@ -32,6 +34,7 @@ import { createShopImages } from './files/shop-images';
 import { normalizeCode } from './http/normalize-code';
 import { rejectEmptyQueryObjects } from './http/query-guard';
 import { securityHeaders } from './http/security-headers';
+import { createLegalDocumentsPlugin } from './legal/legal-documents-plugin';
 import { createModelRegistry } from './models-registry';
 import { migrations } from './migrations';
 import { createOrderActionsPlugin } from './orders/order-actions-plugin';
@@ -58,9 +61,15 @@ export interface AppConfigOverrides {
 /** Visitors see what is on offer; the signed-in admin sees everything, hidden rows too. */
 const activeUnlessSignedIn: AccessDecider = (req) => (req.user ? true : { active: true });
 
-/** The e-mail templates and the seller are fixed rows: the admin edits them, never adds or removes one. */
+/**
+ * The e-mail templates, the seller and the site texts are fixed rows: the admin edits them, never
+ * adds or removes one.
+ */
 const signedInEditingOnly: AccessDecider = (req) =>
   req.user !== undefined && req.method !== CREATE_METHOD && req.method !== DELETE_METHOD;
+
+/** Legal versions change only through `src/legal/`, which keeps a published one frozen. */
+const nobody: AccessDecider = () => false;
 
 /**
  * Orders are placed only through `POST /api/checkout`, reviews only through the link from the
@@ -140,6 +149,12 @@ export function buildAppConfig(
       [sellerEntity.config.name]: {
         access: { write: signedInEditingOnly },
       },
+      [siteTextEntity.config.name]: {
+        access: { write: signedInEditingOnly },
+      },
+      [legalDocumentVersionEntity.config.name]: {
+        access: { write: nobody },
+      },
     },
     plugins: [
       models.plugin,
@@ -156,6 +171,7 @@ export function buildAppConfig(
         siteUrl: environment.siteUrl,
       }),
       createReorderPlugin({ registry: models, jwtSecret: environment.jwtSecret }),
+      createLegalDocumentsPlugin({ registry: models, jwtSecret: environment.jwtSecret }),
       createReviewsPlugin({
         registry: models,
         jwtSecret: environment.jwtSecret,
