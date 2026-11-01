@@ -12,6 +12,7 @@
     "start": "node dist/index.cjs",
     "seed:admin": "tsx src/scripts/seed-admin.ts",
     "seed:demo": "tsx src/scripts/seed-demo.ts",
+    "seed:reviews": "tsx src/scripts/seed-reviews.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

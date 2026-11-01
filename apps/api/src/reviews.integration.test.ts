@@ -87,7 +87,9 @@ describe('Reviews', () => {
     await act(orderId, 'mark-delivered');
     const [email] = app.outbox.sent.slice(before);
     expect(email.to).toBe(CUSTOMER.customerEmail);
-    const link = /https:\/\/klotilda\.test\/recenze\/napsat\?token=([^"&\s]+)/.exec(email.html);
+    const link = /https:\/\/klotilda\.test\/shop\/recenze\/napsat\?token=([^"&\s]+)/.exec(
+      email.html
+    );
     expect(link).not.toBeNull();
 
     const answer = await invitation(decodeURIComponent(link![1]));
@@ -233,7 +235,7 @@ describe('Reviews', () => {
     const before = app.outbox.sent.length;
     const answer = await request();
     expect(answer.status).toBe(200);
-    expect(app.outbox.sent.slice(before)[0].html).toContain('/recenze/napsat?token=');
+    expect(app.outbox.sent.slice(before)[0].html).toContain('/shop/recenze/napsat?token=');
     const history = JSON.parse(answer.body.history) as { type: string; email?: string }[];
     expect(history.at(-1)).toMatchObject({ type: 'review-request', email: 'sent' });
 

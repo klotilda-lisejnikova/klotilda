@@ -127,7 +127,7 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
   (`TERMS_CHANGED`) when the shop sent another (`termsVersion`); the confirmation names its date.
 - Reviews (`Review`, `src/reviews/`): one per order, written only through a link the
   `mark-delivered` e-mail carries (or `POST /api/orders/:id/review-request`, the admin sending it
-  again): `/recenze/napsat?token=`, the order id and an expiry (`REVIEW_LINK_LIFETIME_DAYS`)
+  again): `/shop/recenze/napsat?token=`, the order id and an expiry (`REVIEW_LINK_LIFETIME_DAYS`)
   signed with a key derived from `JWT_SECRET` (`review-link.ts`), nothing stored. Public and
   rate-limited: `GET /api/reviews/all/invitation?token=` (the order's pieces, a suggested name)
   and `POST` there (stars, text, name, `locale`, `consent: true`; 404 for a forged or expired link,
@@ -177,12 +177,12 @@ gallery does: a failed read keeps the last good page. The checkout reads the
 shipping and payment methods live and offers only the payment methods that fit the chosen shipping;
 the terms name no prices of either (the checkout shows them, the order states the ones agreed).
 Photos go through `mediaUrl()` (relative `/api/files/:id` without a bucket).
-Reviews (gated with the shop): `/recenze` lists the published ones with the shop's average, the
-home page shows the newest three and a product page the ones naming that piece (`lib/reviews.ts`:
-none while the API has no reviews route); `/recenze/napsat?token=` (`noindex`, rendered per
-request) is the form behind the e-mail's link, calling the API from the visitor's browser so the
-rate limit counts each customer on their own; the language switch keeps its token, and the
-analytics leave it out (`components/ui/SiteAnalytics.tsx`).
+Reviews belong to the shop, not the site's menu: the shop page shows the average and links
+`/shop/recenze`, which lists the published ones, and a product page shows the ones naming that
+piece (`lib/reviews.ts`: none while the API has no reviews route); `/shop/recenze/napsat?token=`
+(`noindex`, rendered per request) is the form behind the e-mail's link, calling the API from the
+visitor's browser so the rate limit counts each customer on their own; the language switch keeps
+its token, and the analytics leave it out (`components/ui/SiteAnalytics.tsx`).
 `NEXT_PUBLIC_SHOP_ENABLED` gates the shop (see `src/lib/features.ts`). The image
 optimizer takes only the API's host and `NEXT_PUBLIC_MEDIA_URL` (the bucket's public URL, the API's
 `R2_PUBLIC_BASE_URL`), which a Vercel production build requires. `next.config.ts` sets the
@@ -235,6 +235,7 @@ pnpm dev                  # API :3001, web :3002, admin :5175
 pnpm lint / typecheck / test / build
 pnpm --filter @klotilda/api seed:admin               # create an admin / new password (asks for it)
 pnpm --filter @klotilda/api seed:admin -- --list     # or --remove <e-mail>; only the admin table, no migrations
+pnpm --filter @klotilda/api seed:reviews            # made-up reviews on made-up delivered orders (test DB); -- --remove
 pnpm release patch|minor|major   # bump the version, commit, tag vX.Y.Z; then git push --follow-tags
 ```
 

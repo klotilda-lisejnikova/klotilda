@@ -22,7 +22,7 @@ export const PUBLIC_REVIEWS_MAX_LIMIT = 50;
 export const REVIEW_REQUEST_ROUTE = '/api/orders/:id/review-request';
 
 /** The website's page the e-mail links to, with the token as `?token=`. */
-export const REVIEW_WRITE_PATH = '/recenze/napsat';
+export const REVIEW_WRITE_PATH = '/shop/recenze/napsat';
 /** How long the link from the e-mail lets the customer write the review. */
 export const REVIEW_LINK_LIFETIME_DAYS = 180;
 /** The longest token the API reads; a real one is far shorter. */
