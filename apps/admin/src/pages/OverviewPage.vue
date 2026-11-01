@@ -2,23 +2,39 @@
 import { computed } from 'vue';
 import { useQuery } from '@tanstack/vue-query';
 import type { PaginatedResponse } from '@eleansphere/entity-core';
-import type { Order, ProductWithImages } from '@klotilda/domain';
+import type { ProductWithImages } from '@klotilda/domain';
 import PageHeader from '@/components/PageHeader.vue';
+import RevenueChart from '@/components/RevenueChart.vue';
+import StatTile from '@/components/StatTile.vue';
 import { fileUrl, services } from '@/app/api';
+import { fetchAllPages } from '@/app/all-pages';
 import { formatCzk, formatDateTime, inMonth, plural } from '@/app/format';
-import { daysSince, ORDER_STAGES, UNPAID_WARNING_DAYS } from '@/app/order-stages';
 import { SHIPPING_LABELS } from '@/app/labels';
+import {
+  daysSince,
+  isPaymentOverdue,
+  ORDER_STAGES,
+  overdueCutoff,
+  UNPAID_WARNING_DAYS,
+} from '@/app/order-stages';
+import { PRODUCT_STATUSES } from '@/app/product-statuses';
+import { lastMonths, REVENUE_MONTHS, revenueByMonth } from '@/app/revenue';
 
 /** How many orders each list on the overview shows. */
 const LIST_LENGTH = 5;
-/** Enough for a month of a small shop's paid orders. */
-const MONTH_ORDERS_LIMIT = 200;
-const PRODUCTS_LIMIT = 200;
+/** How many sold-out products the overview shows; the rest are a click away. */
+const SOLD_OUT_SHOWN = 12;
+const NOT_LOADED = '–';
 
 const stage = (value: string) => ORDER_STAGES.find((candidate) => candidate.value === value)!;
 const AWAITING_PAYMENT = stage('awaiting-payment');
 const TO_PREPARE = stage('to-prepare');
+const productStatus = (value: string) =>
+  PRODUCT_STATUSES.find((candidate) => candidate.value === value)!;
+const FOR_SALE = productStatus('for-sale');
+const SOLD_OUT = productStatus('sold-out');
 
+// ── Orders waiting for the artist ───────────────────────────────────
 /** Oldest first: what has waited longest comes up top. */
 const useStageList = (filter: (typeof ORDER_STAGES)[number]['filter'], key: string) =>
   useQuery({
@@ -29,100 +45,109 @@ const useStageList = (filter: (typeof ORDER_STAGES)[number]['filter'], key: stri
 const awaitingPayment = useStageList(AWAITING_PAYMENT.filter, AWAITING_PAYMENT.value);
 const toPrepare = useStageList(TO_PREPARE.filter, TO_PREPARE.value);
 
-const { data: paidOrders } = useQuery({
-  queryKey: ['orders', 'overview', 'paid'],
+/** How many unpaid orders the lists flag as overdue (`isPaymentOverdue`). */
+const overdue = useQuery({
+  queryKey: ['orders', 'overview', 'overdue'],
   queryFn: () =>
     services.orders.getAll({
-      filter: { paymentStatus: ['paid'] },
-      sort: '-createdAt',
-      limit: MONTH_ORDERS_LIMIT,
+      filter: { ...AWAITING_PAYMENT.filter, createdAt: { lte: overdueCutoff().toISOString() } },
+      limit: 1,
     }),
 });
 
-/** Paid orders placed this calendar month. */
-const month = computed(() => {
-  const now = new Date();
-  const orders = (paidOrders.value?.data ?? []).filter((order) => {
-    const placed = new Date(order.createdAt);
-    return placed.getFullYear() === now.getFullYear() && placed.getMonth() === now.getMonth();
-  });
-  return {
-    count: orders.length,
-    revenue: orders.reduce((sum, order) => sum + order.totalAmount, 0),
-    name: inMonth(now),
-  };
+// ── Revenue ─────────────────────────────────────────────────────────
+/** The chart's months, fixed when the page opens. */
+const months = lastMonths(new Date(), REVENUE_MONTHS);
+
+/** Every paid order placed within the chart's months, oldest first. */
+const paidOrders = useQuery({
+  queryKey: ['orders', 'overview', 'paid', months[0].toISOString()],
+  queryFn: () =>
+    fetchAllPages((page, limit) =>
+      services.orders.getAll({
+        filter: { paymentStatus: ['paid'], createdAt: { gte: months[0].toISOString() } },
+        sort: 'createdAt',
+        page,
+        limit,
+      })
+    ),
 });
 
-const { data: products } = useQuery({
-  queryKey: ['products', 'overview'],
+const revenue = computed(() =>
+  paidOrders.data.value ? revenueByMonth(paidOrders.data.value, months) : undefined
+);
+const thisMonth = computed(() => revenue.value?.[revenue.value.length - 1]);
+
+// ── Products ────────────────────────────────────────────────────────
+const forSale = useQuery({
+  queryKey: ['products', 'overview', FOR_SALE.value],
+  queryFn: () => services.products.getAll({ filter: FOR_SALE.filter, limit: 1 }),
+});
+
+/** Still shown in the shop, but nothing left to sell: hide them or add pieces. */
+const soldOut = useQuery({
+  queryKey: ['products', 'overview', SOLD_OUT.value],
   queryFn: () =>
-    services.products.getAll({ limit: PRODUCTS_LIMIT }) as Promise<
+    services.products.getAll({ filter: SOLD_OUT.filter, limit: SOLD_OUT_SHOWN }) as Promise<
       PaginatedResponse<ProductWithImages>
     >,
 });
-const onOffer = computed(
-  () => (products.value?.data ?? []).filter((p) => p.active && p.stockCount > 0).length
-);
-/** Still shown in the shop, but nothing left to sell: hide it or add pieces. */
-const soldOut = computed(() =>
-  (products.value?.data ?? []).filter((p) => p.active && p.stockCount === 0)
-);
+
+// ── Tiles ───────────────────────────────────────────────────────────
+const FAILED_HINT = 'Nepodařilo se načíst';
+
+const overdueHint = computed(() => {
+  if (overdue.isError.value) return FAILED_HINT;
+  const count = overdue.data.value?.total ?? 0;
+  return count ? `${count} déle než ${UNPAID_WARNING_DAYS} dní` : undefined;
+});
 
 const stats = computed(() => [
   {
     label: 'Čeká na platbu',
-    value: awaitingPayment.data.value?.total ?? '–',
     icon: 'i-lucide-hourglass',
+    value: awaitingPayment.data.value?.total ?? NOT_LOADED,
+    loading: awaitingPayment.isPending.value,
+    hint: awaitingPayment.isError.value ? FAILED_HINT : overdueHint.value,
+    alert: !awaitingPayment.isError.value && !overdue.isError.value && Boolean(overdueHint.value),
     to: { name: 'orders' },
   },
   {
     label: 'K odeslání',
-    value: toPrepare.data.value?.total ?? '–',
     icon: 'i-lucide-package-open',
+    value: toPrepare.data.value?.total ?? NOT_LOADED,
+    loading: toPrepare.isPending.value,
+    hint: toPrepare.isError.value ? FAILED_HINT : undefined,
     to: { name: 'orders', query: { stage: TO_PREPARE.value } },
   },
   {
-    label: `Zaplaceno ${month.value.name}`,
-    value: paidOrders.value ? formatCzk(month.value.revenue) : '–',
-    hint: paidOrders.value
-      ? plural(month.value.count, 'objednávka', 'objednávky', 'objednávek')
-      : undefined,
+    label: `Zaplaceno ${inMonth(months[months.length - 1])}`,
     icon: 'i-lucide-banknote',
+    value: thisMonth.value ? formatCzk(thisMonth.value.revenue) : NOT_LOADED,
+    loading: paidOrders.isPending.value,
+    hint: paidOrders.isError.value
+      ? FAILED_HINT
+      : plural(thisMonth.value?.orders ?? 0, 'objednávka', 'objednávky', 'objednávek'),
   },
   {
     label: 'V nabídce',
-    value: products.value ? onOffer.value : '–',
-    hint: products.value ? 'produktů skladem' : undefined,
     icon: 'i-lucide-store',
-    to: { name: 'products' },
+    value: forSale.data.value?.total ?? NOT_LOADED,
+    loading: forSale.isPending.value,
+    hint: forSale.isError.value ? FAILED_HINT : 'produktů skladem',
+    to: { name: 'products', query: { status: FOR_SALE.value } },
   },
 ]);
-
-const waitingTooLong = (order: Order) => daysSince(order.createdAt) >= UNPAID_WARNING_DAYS;
 </script>
 
 <template>
   <PageHeader title="Přehled" />
 
   <div class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-    <component
-      :is="stat.to ? 'RouterLink' : 'div'"
-      v-for="stat in stats"
-      :key="stat.label"
-      :to="stat.to"
-      class="rounded-lg bg-default p-4 ring ring-default transition"
-      :class="{ 'hover:ring-primary': stat.to }"
-    >
-      <div class="flex items-center gap-2 text-sm text-muted">
-        <UIcon :name="stat.icon" class="size-4 shrink-0" />
-        <span class="truncate">{{ stat.label }}</span>
-      </div>
-      <p class="mt-2 text-2xl font-semibold text-highlighted tabular-nums">{{ stat.value }}</p>
-      <p v-if="stat.hint" class="text-xs text-muted">{{ stat.hint }}</p>
-    </component>
+    <StatTile v-for="stat in stats" :key="stat.icon" v-bind="stat" />
   </div>
 
-  <div class="grid gap-4 lg:grid-cols-2">
+  <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
     <UCard
       v-for="list in [
         { title: 'Čeká na platbu', query: awaitingPayment, stage: AWAITING_PAYMENT.value },
@@ -145,6 +170,9 @@ const waitingTooLong = (order: Order) => daysSince(order.createdAt) >= UNPAID_WA
         </div>
       </template>
       <USkeleton v-if="list.query.isPending.value" class="m-4 h-24" />
+      <p v-else-if="list.query.isError.value" class="px-4 py-6 text-center text-sm text-error">
+        Objednávky se nepodařilo načíst.
+      </p>
       <p
         v-else-if="!list.query.data.value?.data.length"
         class="px-4 py-6 text-center text-sm text-muted"
@@ -166,7 +194,7 @@ const waitingTooLong = (order: Order) => daysSince(order.createdAt) >= UNPAID_WA
               </p>
             </div>
             <UBadge
-              v-if="list.stage === AWAITING_PAYMENT.value && waitingTooLong(order)"
+              v-if="isPaymentOverdue(order)"
               :label="`${daysSince(order.createdAt)} dní`"
               icon="i-lucide-clock-alert"
               color="error"
@@ -179,22 +207,50 @@ const waitingTooLong = (order: Order) => daysSince(order.createdAt) >= UNPAID_WA
     </UCard>
   </div>
 
-  <UCard v-if="soldOut.length" class="mt-4" :ui="{ body: 'p-0 sm:p-0' }">
+  <USkeleton v-if="paidOrders.isPending.value" class="mt-4 h-64" />
+  <UAlert
+    v-else-if="paidOrders.isError.value"
+    class="mt-4"
+    title="Tržby se nepodařilo načíst."
+    color="error"
+    variant="soft"
+  />
+  <RevenueChart v-else-if="revenue" class="mt-4" :months="revenue" />
+
+  <UCard v-if="soldOut.data.value?.data.length" class="mt-4" :ui="{ body: 'p-0 sm:p-0' }">
     <template #header>
-      <h2 class="font-semibold">Vyprodané, ale pořád v nabídce</h2>
-      <p class="text-sm text-muted">
-        Na webu mají štítek „Vyprodáno“. Skryjte je, nebo doplňte kusy.
-      </p>
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="font-semibold">Vyprodané, ale pořád v nabídce</h2>
+          <p class="text-sm text-muted">
+            Na webu mají štítek „Vyprodáno“. Skryjte je, nebo doplňte kusy.
+          </p>
+        </div>
+        <UButton
+          :to="{ name: 'products', query: { status: SOLD_OUT.value } }"
+          :label="`Vše (${soldOut.data.value.total})`"
+          trailing-icon="i-lucide-arrow-right"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          class="shrink-0"
+        />
+      </div>
     </template>
     <ul class="grid grid-cols-3 gap-3 p-4 sm:grid-cols-4 lg:grid-cols-6">
-      <li v-for="product in soldOut" :key="product.id">
+      <li v-for="product in soldOut.data.value.data" :key="product.id">
         <RouterLink :to="{ name: 'product', params: { id: product.id } }" class="group block">
-          <div class="aspect-[3/4] overflow-hidden rounded-md bg-elevated">
+          <div class="relative aspect-[3/4] overflow-hidden rounded-md bg-elevated">
             <img
               v-if="product.images[0]"
               :src="fileUrl(product.images[0])"
               alt=""
               class="h-full w-full object-cover opacity-70 transition group-hover:opacity-100"
+            />
+            <UIcon
+              v-else
+              name="i-lucide-image"
+              class="absolute inset-0 m-auto size-6 text-dimmed"
             />
           </div>
           <p class="mt-1 truncate text-sm group-hover:underline">{{ product.name_cs }}</p>

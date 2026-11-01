@@ -12,6 +12,8 @@ import { CATEGORIES_QUERY_KEY, useCategories } from '@/app/categories';
 import { describeError } from '@/app/errors';
 import { emptyToNull } from '@/app/form-values';
 import { plural } from '@/app/format';
+import { focusMoveButton, moveButtonKey, moveItem, useDragReorder } from '@/app/reorder';
+import type { MoveDirection } from '@/app/reorder';
 import { formSchema, VALIDATE_ON } from '@/app/validation';
 
 interface CategoryForm {
@@ -34,7 +36,8 @@ const { categories, isPending, isError } = useCategories();
 
 /** How many products and gallery pictures sit in each category: one in use can't be deleted. */
 const { data: usage } = useQuery({
-  queryKey: ['category-usage', () => categories.value.map((category) => category.id)],
+  // Sorted ids: a reorder alone doesn't count again.
+  queryKey: ['category-usage', () => categories.value.map((category) => category.id).sort()],
   enabled: () => categories.value.length > 0,
   queryFn: async (): Promise<Record<string, Usage>> => {
     const counts = await Promise.all(
@@ -64,9 +67,10 @@ function describeUsage(category: Category): string {
   return counts.gallery ? `${products} · ${counts.gallery} v galerii` : products;
 }
 
-function refresh() {
+/** Products and gallery pictures carry their category; a reorder leaves the usage counts alone. */
+function refresh({ usage = true } = {}) {
   void queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
-  void queryClient.invalidateQueries({ queryKey: ['category-usage'] });
+  if (usage) void queryClient.invalidateQueries({ queryKey: ['category-usage'] });
   void queryClient.invalidateQueries({ queryKey: ['products'] });
   void queryClient.invalidateQueries({ queryKey: ['gallery'] });
 }
@@ -125,25 +129,45 @@ const save = useMutation({
 });
 
 // ── Order and deleting ──────────────────────────────────────────────
+interface Reorder {
+  ordered: Category[];
+  /** An arrow's move: its button gets the focus back. */
+  arrow?: { id: string; direction: MoveDirection };
+}
+
+/**
+ * The new order, saved at once (`reorder`): the list shows it before the answer and goes back to
+ * the saved one if the save fails.
+ */
 const reorder = useMutation({
-  mutationFn: async (ordered: Category[]) => {
-    const changed = ordered.filter((category, index) => category.sortOrder !== index);
-    await Promise.all(
-      changed.map((category) =>
-        services.categories.update(category.id, { sortOrder: ordered.indexOf(category) })
-      )
-    );
+  mutationFn: ({ ordered }: Reorder) =>
+    services.categories.reorder(ordered.map((category) => category.id)),
+  onMutate: async ({ ordered, arrow }) => {
+    await queryClient.cancelQueries({ queryKey: CATEGORIES_QUERY_KEY });
+    const previous = queryClient.getQueryData<Category[]>(CATEGORIES_QUERY_KEY);
+    queryClient.setQueryData<Category[]>(CATEGORIES_QUERY_KEY, ordered);
+    if (arrow) void focusMoveButton(arrow.id, arrow.direction);
+    return { previous };
   },
-  onSettled: refresh,
-  onError: (err) => toast.add({ title: describeError(err), color: 'error' }),
+  onError: (err, _reorder, context) => {
+    queryClient.setQueryData(CATEGORIES_QUERY_KEY, context?.previous);
+    toast.add({ title: describeError(err), color: 'error' });
+  },
+  onSettled: () => refresh({ usage: false }),
 });
 
-function move(index: number, by: -1 | 1) {
-  const ordered = [...categories.value];
-  const [moved] = ordered.splice(index, 1);
-  ordered.splice(index + by, 0, moved);
-  reorder.mutate(ordered);
+function move(from: number, to: number, arrow?: Reorder['arrow']) {
+  if (reorder.isPending.value) return;
+  reorder.mutate({ ordered: moveItem(categories.value, from, to), arrow });
 }
+
+function moveByArrow(index: number, direction: MoveDirection) {
+  const category = categories.value[index];
+  if (!category) return;
+  move(index, direction === 'back' ? index - 1 : index + 1, { id: category.id, direction });
+}
+
+const drag = useDragReorder<'categories'>((_group, from, to) => move(from, to));
 
 const remove = useMutation({
   mutationFn: (category: Category) => services.categories.delete(category.id),
@@ -171,7 +195,7 @@ const remove = useMutation({
 
   <p class="mb-4 max-w-2xl text-sm text-muted">
     Kategorie nabízí e-shop jako filtry a galerie jako štítky u fotek. Na webu se ukážou jen ty, ve
-    kterých je něco v nabídce, v pořadí jako tady.
+    kterých je něco v nabídce, v pořadí jako tady. Pořadí změníte přetažením nebo šipkami.
   </p>
 
   <UAlert v-if="isError" title="Kategorie se nepodařilo načíst." color="error" variant="soft" />
@@ -184,30 +208,47 @@ const remove = useMutation({
   <ul
     v-else
     class="max-w-3xl divide-y divide-default overflow-hidden rounded-lg bg-default ring ring-default"
+    @dragover.prevent
+    @drop.prevent
   >
     <li
       v-for="(category, index) in categories"
       :key="category.id"
-      class="flex items-center gap-3 px-4 py-3"
+      class="flex items-center gap-3 bg-default px-4 py-3 transition"
+      :class="{
+        'opacity-40': drag.isDragged('categories', index),
+        'bg-elevated': drag.isTarget('categories', index),
+      }"
+      data-drag-item
+      v-bind="drag.target('categories', index)"
     >
+      <span
+        class="hidden shrink-0 cursor-grab text-dimmed sm:block"
+        aria-hidden="true"
+        v-bind="drag.source('categories', index)"
+      >
+        <UIcon name="i-lucide-grip-vertical" class="block size-4" />
+      </span>
       <div class="flex shrink-0 flex-col">
         <UButton
           icon="i-lucide-chevron-up"
           color="neutral"
           variant="ghost"
           size="xs"
-          :disabled="index === 0 || reorder.isPending.value"
+          :disabled="index === 0"
           :aria-label="`Posunout ${category.name_cs} výš`"
-          @click="move(index, -1)"
+          :data-move="moveButtonKey(category.id, 'back')"
+          @click="moveByArrow(index, 'back')"
         />
         <UButton
           icon="i-lucide-chevron-down"
           color="neutral"
           variant="ghost"
           size="xs"
-          :disabled="index === categories.length - 1 || reorder.isPending.value"
+          :disabled="index === categories.length - 1"
           :aria-label="`Posunout ${category.name_cs} níž`"
-          @click="move(index, 1)"
+          :data-move="moveButtonKey(category.id, 'forward')"
+          @click="moveByArrow(index, 'forward')"
         />
       </div>
 

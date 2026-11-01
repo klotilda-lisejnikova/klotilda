@@ -1,10 +1,13 @@
 import { defineEntity, withImages } from '@eleansphere/entity-core';
 import type { FileDto } from '@eleansphere/entity-core';
 import { FILE_REF_TYPES } from '../../constants';
+import type { ReorderRequest } from '../../ordering';
 import type { CategorySummary } from '../category';
 import { productFields } from './fields';
 
 export const PRODUCTS_PATH = '/api/products';
+/** `PUT` with `{ ids }`, every photo of the product: they are shown in that order from then on. */
+export const PRODUCT_IMAGE_ORDER_ROUTE = '/api/products/:id/images/order';
 
 /**
  * The artist's originals for sale. Anyone reads the active ones; the admin reads all and writes.
@@ -17,14 +20,24 @@ export const productEntity = defineEntity({
   access: { read: 'public', write: 'auth' },
   fields: productFields,
   query: {
-    filter: { categoryId: 'eq', active: 'eq' },
+    filter: { categoryId: 'eq', active: 'eq', stockCount: 'range' },
     sort: ['createdAt', 'price', 'name_cs'],
     defaultSort: '-createdAt',
     search: ['name_cs', 'name_en'],
     defaultLimit: 50,
     maxLimit: 200,
   },
-  extend: (Base) => class extends withImages(Base, FILE_REF_TYPES.product) {},
+  extend: (Base) =>
+    class extends withImages(Base, FILE_REF_TYPES.product) {
+      /** Puts the product's photos in the order of `ids`; the first is the main one. */
+      reorderImages(id: string, ids: string[]) {
+        const request: ReorderRequest = { ids };
+        return this.put<void>(
+          PRODUCT_IMAGE_ORDER_ROUTE.replace(':id', encodeURIComponent(id)),
+          request
+        );
+      }
+    },
 });
 
 export type Product = InstanceType<typeof productEntity.Dto>;

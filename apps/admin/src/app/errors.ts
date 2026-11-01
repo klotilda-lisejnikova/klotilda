@@ -6,7 +6,8 @@ const CONFLICT = 409;
 export function describeError(err: unknown): string {
   if (!(err instanceof ApiError)) return 'Nepovedlo se spojit se serverem. Zkuste to znovu.';
   if (err.isAuthError) return 'Přihlášení vypršelo. Přihlaste se prosím znovu.';
-  if (err.status === CONFLICT) return err.message;
+  // The explanation the server sent (Czech), not the bare status text "Conflict".
+  if (err.status === CONFLICT) return err.detail ?? err.message;
   if (err.issues?.length) return 'Zkontrolujte prosím vyplněné údaje.';
   return 'Něco se pokazilo. Zkuste to prosím znovu.';
 }

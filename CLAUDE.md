@@ -70,6 +70,11 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the
   site's colours and as plain text (`src/emails/email-layout.ts`); `SITE_URL` is linked in them.
 - Files: any signed-in admin uploads (only product / gallery images) and deletes any photo; photos
   are public.
+- Ordering (`src/catalogue/reorder-plugin.ts`, signed-in admin): `PUT /api/products/:id/images/order`
+  (a product's photos, `File.sortOrder`; the first is the main one) and
+  `PUT /api/gallery/rows/:row/order` (one gallery row) and `PUT /api/categories/all/order` (every
+  category). Each takes `{ ids }`, every row of the list once (else 409), and saves the order in one
+  transaction.
 - Auth: be-core's login with rotating refresh tokens; accounts come from `seed:admin`
   (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`). There is no registration.
 - E-mail: Resend's HTTP API when `RESEND_API_KEY` is set — Railway blocks outbound SMTP below the
@@ -80,6 +85,8 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`) are the
   `JWT_SECRET` shorter than 32 characters.
 - Every answer carries `SECURITY_HEADERS` (`src/http/security-headers.ts`): nothing the API serves
   runs scripts or is framed.
+  A query parameter that parses to an empty object (`stockCount[__proto__]=1`) is refused with a
+  400 before any route (`src/http/query-guard.ts`).
 - Schema: `syncMode: 'migrate'`. `2026-09-27-baseline` is the DDL `sync()` generated, frozen,
   `IF NOT EXISTS` throughout — on production (built by the older be-core's `sync()`) it only adds
   the `Files` indexes and `RefreshTokens`. A model change needs a new migration:
@@ -107,11 +114,17 @@ the terms box (`termsAccepted: true`, else 400) and each order stores `termsVers
 ## Admin
 
 `src/app/api.ts` (session + services), `src/app/session.ts`, `src/pages/*`. Photos are scaled down
-to WebP (2048 px) in the browser before upload (`resize-image.ts`). Every `UFormField` keeps a line
-free for its message (`vite.config.ts`), so a message that appears or goes never moves a button
-from under the pointer. `vercel.json` sends a Content-Security-Policy that allows only the admin's
-own scripts (hence `public/color-scheme.js` instead of an inline script) and API calls only to
-`*.up.railway.app`.
+to WebP (2048 px) in the browser before upload (`resize-image.ts`); product photos, gallery
+pictures within a row and categories are reordered by dragging or with arrow buttons
+(`app/reorder.ts`). The product and gallery forms keep a save bar in view, send only the fields
+that changed, and ask before unsaved changes are dropped (`app/unsaved-changes.ts`: leaving the
+page, signing out, closing the tab). The products list is a table or cards (remembered per browser)
+with an "in the shop" switch on every product. The overview counts through the API and charts the
+paid revenue of the last 12 months by the month of the order (`app/revenue.ts`). Every `UFormField`
+keeps a line free for its message (`vite.config.ts`), so a message that appears or goes never moves
+a button from under the pointer.
+`vercel.json` sends a Content-Security-Policy that allows only the admin's own scripts (hence
+`public/color-scheme.js` instead of an inline script) and API calls only to `*.up.railway.app`.
 
 ## Commands
 

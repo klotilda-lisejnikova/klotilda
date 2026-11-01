@@ -18,10 +18,12 @@ import {
   productEntity,
 } from '@klotilda/domain';
 import { normalizeSlug, withCategory } from './catalogue/categories';
+import { createReorderPlugin } from './catalogue/reorder-plugin';
 import { CHECKOUT_RATE_LIMIT, createCheckoutPlugin } from './checkout/checkout-plugin';
 import type { Environment, StorageSettings } from './env';
 import { authorizeFileAccess } from './files/authorize-file-access';
 import { createShopImages } from './files/shop-images';
+import { rejectEmptyQueryObjects } from './http/query-guard';
 import { securityHeaders } from './http/security-headers';
 import { createModelRegistry } from './models-registry';
 import { migrations } from './migrations';
@@ -77,7 +79,11 @@ export function buildAppConfig(
     port: environment.port,
     trustProxy: environment.trustProxy,
     cors: { origin: environment.corsOrigins },
-    middleware: [securityHeaders, createWebRevalidator(environment.webRevalidation)],
+    middleware: [
+      securityHeaders,
+      rejectEmptyQueryObjects,
+      createWebRevalidator(environment.webRevalidation),
+    ],
     modelConfigs: toModelConfigs(allEntities, { custom: ENTITIES_WITHOUT_CRUD_ROUTES }),
     routes: {
       [categoryEntity.config.name]: {
@@ -111,6 +117,7 @@ export function buildAppConfig(
         jwtSecret: environment.jwtSecret,
         siteUrl: environment.siteUrl,
       }),
+      createReorderPlugin({ registry: models, jwtSecret: environment.jwtSecret }),
     ],
     email: {
       from: environment.emailFrom,

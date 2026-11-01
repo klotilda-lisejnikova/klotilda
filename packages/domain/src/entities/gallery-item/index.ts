@@ -2,12 +2,15 @@ import { defineEntity, withImages } from '@eleansphere/entity-core';
 import type { FileDto } from '@eleansphere/entity-core';
 import { FILE_REF_TYPES } from '../../constants';
 import type { GalleryRow } from '../../constants';
+import type { ReorderRequest } from '../../ordering';
 import type { CategorySummary } from '../category';
 import { galleryItemFields } from './fields';
 
 export const GALLERY_PATH = '/api/gallery';
 /** Row by row, then as the admin ordered them. */
 export const GALLERY_ORDER = 'row,sortOrder,createdAt';
+/** `PUT` with `{ ids }`, every picture of the row: they are shown in that order from then on. */
+export const GALLERY_ROW_ORDER_ROUTE = '/api/gallery/rows/:row/order';
 
 /**
  * The landing page's gallery. Anyone reads the active pictures; the admin reads all and writes.
@@ -26,7 +29,14 @@ export const galleryItemEntity = defineEntity({
     defaultLimit: 200,
     maxLimit: 200,
   },
-  extend: (Base) => class extends withImages(Base, FILE_REF_TYPES.galleryItem) {},
+  extend: (Base) =>
+    class extends withImages(Base, FILE_REF_TYPES.galleryItem) {
+      /** Puts the pictures of one row in the order of `ids`. */
+      reorderRow(row: GalleryRow, ids: string[]) {
+        const request: ReorderRequest = { ids };
+        return this.put<void>(GALLERY_ROW_ORDER_ROUTE.replace(':row', String(row)), request);
+      }
+    },
 });
 
 export type GalleryItem = InstanceType<typeof galleryItemEntity.Dto>;

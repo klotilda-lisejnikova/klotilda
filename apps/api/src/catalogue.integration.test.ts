@@ -4,6 +4,18 @@ import { bearer, PNG_SIGNATURE, startTestApp } from './test-support/test-app';
 import type { TestApp } from './test-support/test-app';
 
 const VASE = { name_cs: 'Váza', price: 1200 };
+/** Enough reorders at once that rows locked in no fixed order deadlock. */
+const CONCURRENT_REORDERS = 40;
+
+/** A refusal, by its status and by what it says. */
+function expectRefusal(
+  response: { status: number; body: unknown },
+  status: number,
+  message: string
+) {
+  expect(response.status).toBe(status);
+  expect((response.body as { message?: string }).message).toContain(message);
+}
 
 describe('Products and the gallery', () => {
   let app: TestApp;
@@ -70,6 +82,33 @@ describe('Products and the gallery', () => {
       .query({ limit: 200 })
       .set('Authorization', bearer(token));
     expect(adminList.body.data.map((product: { id: string }) => product.id)).toContain(hidden.id);
+  });
+
+  it('lists the products by what is left in stock', async () => {
+    const soldOut = await createProduct({ ...VASE, name_cs: 'Vyprodaná', stockCount: 0 });
+    const inStock = await createProduct({ ...VASE, name_cs: 'Skladem', stockCount: 2 });
+    const listed = async (query: object) => {
+      const response = await app
+        .api()
+        .get('/api/products')
+        .query({ limit: 200, ...query })
+        .set('Authorization', bearer(token));
+      expect(response.status).toBe(200);
+      return response.body.data.map((product: { id: string }) => product.id);
+    };
+
+    const none = await listed({ stockCount: 0 });
+    expect(none).toContain(soldOut.id);
+    expect(none).not.toContain(inStock.id);
+    const some = await listed({ 'stockCount[gte]': 1 });
+    expect(some).toContain(inStock.id);
+    expect(some).not.toContain(soldOut.id);
+  });
+
+  it('refuses a range filter that parses to nothing, for anyone', async () => {
+    for (const query of ['stockCount[__proto__]=1', 'stockCount[__proto__][x]=1']) {
+      expectRefusal(await app.api().get(`/api/products?${query}`), 400, 'stockCount');
+    }
   });
 
   it('checks fields by the shared rules', async () => {
@@ -148,6 +187,55 @@ describe('Products and the gallery', () => {
     expect((await del()).status).toBe(204);
   });
 
+  it('reorders all categories at once, and only all of them', async () => {
+    await createCategory({ slug: 'razitka', name_cs: 'Razítka' });
+    const listed = async () =>
+      (await app.api().get('/api/categories')).body.data.map(
+        (category: { id: string }) => category.id
+      );
+    const orderAll = (ids: unknown, signedIn = true) => {
+      const request = app.api().put('/api/categories/all/order');
+      if (signedIn) request.set('Authorization', bearer(token));
+      return request.send({ ids });
+    };
+    const reversed = [...(await listed())].reverse();
+
+    expect((await orderAll(reversed)).status).toBe(204);
+    expect(await listed()).toEqual(reversed);
+
+    expectRefusal(await orderAll(reversed, false), 401, 'Authorization token is missing');
+    expectRefusal(await orderAll(reversed.slice(1)), 409, 'Kategorie se mezitím změnily');
+    expectRefusal(
+      await orderAll([...reversed, 'cat_missing']),
+      409,
+      'Kategorie se mezitím změnily'
+    );
+    expectRefusal(await orderAll([...reversed, reversed[0]]), 400, 'Expected { ids }');
+  });
+
+  it('saves many reorders of one list at once without deadlocking', async () => {
+    const ids: string[] = (await app.api().get('/api/categories')).body.data.map(
+      (category: { id: string }) => category.id
+    );
+    const rotations = Array.from({ length: CONCURRENT_REORDERS }, (_, turn) => [
+      ...ids.slice(turn % ids.length),
+      ...ids.slice(0, turn % ids.length),
+    ]);
+    const statuses = await Promise.all(
+      rotations.map(
+        async (order, turn) =>
+          (
+            await app
+              .api()
+              .put('/api/categories/all/order')
+              .set('Authorization', bearer(token))
+              .send({ ids: turn % 2 ? [...order].reverse() : order })
+          ).status
+      )
+    );
+    expect(statuses.filter((status) => status !== 204)).toEqual([]);
+  });
+
   it('attaches photos, and removes them with the product', async () => {
     const product = await createProduct(VASE);
     const upload = await app
@@ -169,6 +257,58 @@ describe('Products and the gallery', () => {
         .status
     ).toBe(204);
     expect((await app.api().get(`/api/files/${upload.body.id}`)).status).toBe(404);
+  });
+
+  const uploadPhoto = async (refType: string, refId: string) => {
+    const response = await app
+      .api()
+      .post('/api/files')
+      .set('Authorization', bearer(token))
+      .field('refType', refType)
+      .field('refId', refId)
+      .field('role', 'image')
+      .attach('file', PNG_SIGNATURE, { filename: 'x.png', contentType: 'image/png' });
+    expect(response.status).toBe(201);
+    return response.body.id as string;
+  };
+
+  const orderPhotos = (productId: string, ids: unknown, signedIn = true) => {
+    const request = app.api().put(`/api/products/${productId}/images/order`);
+    if (signedIn) request.set('Authorization', bearer(token));
+    return request.send({ ids });
+  };
+
+  it("reorders a product's photos, and only all of them", async () => {
+    const product = await createProduct(VASE);
+    const [first, second, third] = [
+      await uploadPhoto('Product', product.id),
+      await uploadPhoto('Product', product.id),
+      await uploadPhoto('Product', product.id),
+    ];
+    const elsewhere = await uploadPhoto('Product', (await createProduct(VASE)).id);
+
+    expect((await orderPhotos(product.id, [third, first, second])).status).toBe(204);
+    const read = await app.api().get(`/api/products/${product.id}`);
+    expect(read.body.images.map((image: { id: string }) => image.id)).toEqual([
+      third,
+      first,
+      second,
+    ]);
+
+    expectRefusal(
+      await orderPhotos(product.id, [third, first, second], false),
+      401,
+      'Authorization token is missing'
+    );
+    expectRefusal(await orderPhotos(product.id, [first, second]), 409, 'Fotky se mezitím změnily');
+    expectRefusal(
+      await orderPhotos(product.id, [first, second, elsewhere]),
+      409,
+      'Fotky se mezitím změnily'
+    );
+    expectRefusal(await orderPhotos(product.id, [first, first, second]), 400, 'Expected { ids }');
+    expectRefusal(await orderPhotos(product.id, 'nope'), 400, 'Expected { ids }');
+    expectRefusal(await orderPhotos('prod_missing', [first]), 404, 'Product not found');
   });
 
   it('refuses uploads from visitors and outside the shop', async () => {
@@ -226,5 +366,44 @@ describe('Products and the gallery', () => {
       'B',
     ]);
     expect(list.body.data[0].images).toEqual([]);
+  });
+
+  it('reorders a gallery row, and only all of it', async () => {
+    const create = async (body: object) => {
+      const response = await app
+        .api()
+        .post('/api/gallery')
+        .set('Authorization', bearer(token))
+        .send(body);
+      return response.body.id as string;
+    };
+    const rowOf = async (row: number) =>
+      (await app.api().get('/api/gallery').set('Authorization', bearer(token))).body.data
+        .filter((item: { row: number }) => item.row === row)
+        .map((item: { id: string }) => item.id);
+    const orderRow = (row: number | string, ids: unknown, signedIn = true) => {
+      const request = app.api().put(`/api/gallery/rows/${row}/order`);
+      if (signedIn) request.set('Authorization', bearer(token));
+      return request.send({ ids });
+    };
+
+    await create({ title_cs: 'Druhá řada', row: 2 });
+    const row1 = await rowOf(1);
+    const hidden = await create({ title_cs: 'Nová skrytá', row: 1, sortOrder: 0, active: false });
+    const reversed = [hidden, ...row1].reverse();
+
+    expect((await orderRow(1, reversed)).status).toBe(204);
+    expect(await rowOf(1)).toEqual(reversed);
+
+    expectRefusal(await orderRow(1, reversed, false), 401, 'Authorization token is missing');
+    expectRefusal(await orderRow(1, row1), 409, 'Galerie se mezitím změnila');
+    expectRefusal(
+      await orderRow(1, [...reversed, ...(await rowOf(2))]),
+      409,
+      'Galerie se mezitím změnila'
+    );
+    expectRefusal(await orderRow(1, [...reversed, reversed[0]]), 400, 'Expected { ids }');
+    expectRefusal(await orderRow(3, reversed), 404, 'No such gallery row');
+    expectRefusal(await orderRow('x', reversed), 404, 'No such gallery row');
   });
 });

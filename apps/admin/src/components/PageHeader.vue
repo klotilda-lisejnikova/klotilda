@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from 'vue-router';
+import { PAGE_ACTIONS_ID, PAGE_HEADING_ID } from './page-header';
 
 defineProps<{
   title: string;
@@ -9,7 +10,8 @@ defineProps<{
 </script>
 
 <template>
-  <header class="mb-6 flex flex-wrap items-center gap-3">
+  <!-- Rendered into the layout's top bar, which stays in place while the page scrolls. -->
+  <Teleport defer :to="`#${PAGE_HEADING_ID}`">
     <UButton
       v-if="back"
       :to="back"
@@ -18,7 +20,9 @@ defineProps<{
       variant="ghost"
       aria-label="Zpět"
     />
-    <h1 class="mr-auto text-xl font-semibold text-highlighted">{{ title }}</h1>
+    <h1 class="truncate text-base font-semibold text-highlighted sm:text-lg">{{ title }}</h1>
+  </Teleport>
+  <Teleport v-if="$slots.actions" defer :to="`#${PAGE_ACTIONS_ID}`">
     <slot name="actions" />
-  </header>
+  </Teleport>
 </template>

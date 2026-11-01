@@ -1,8 +1,15 @@
 import { defineEntity } from '@eleansphere/entity-core';
+import type { ReorderRequest } from '../../ordering';
 import { CATEGORY_SLUG_MAX_LENGTH, categoryFields } from './fields';
 
 export const CATEGORIES_PATH = '/api/categories';
 export const CATEGORY_ORDER = 'sortOrder,name_cs';
+/**
+ * `PUT` with `{ ids }`, every category: the shop lists them in that order from then on. The `all`
+ * segment keeps it clear of the CRUD route `PUT /api/categories/:id`, which is mounted first and
+ * would take `/api/categories/order` for a category called `order`.
+ */
+export const CATEGORIES_ORDER_ROUTE = '/api/categories/all/order';
 
 /**
  * What the artist makes — ceramics, embroidery, … Products and gallery pictures point at one
@@ -21,6 +28,14 @@ export const categoryEntity = defineEntity({
     defaultLimit: 200,
     maxLimit: 200,
   },
+  extend: (Base) =>
+    class extends Base {
+      /** Puts every category in the order of `ids`. */
+      reorder(ids: string[]) {
+        const request: ReorderRequest = { ids };
+        return this.put<void>(CATEGORIES_ORDER_ROUTE, request);
+      }
+    },
 });
 
 export type Category = InstanceType<typeof categoryEntity.Dto>;

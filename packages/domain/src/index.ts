@@ -5,10 +5,12 @@ import { orderEntity } from './entities/order';
 import { productEntity } from './entities/product';
 
 export * from './constants';
+export * from './ordering';
 export * from './seller';
 export { adminUserEntity, type AdminUser } from './entities/admin-user';
 export { adminUserFields } from './entities/admin-user/fields';
 export {
+  CATEGORIES_ORDER_ROUTE,
   CATEGORIES_PATH,
   categoryEntity,
   CATEGORY_ORDER,
@@ -18,6 +20,7 @@ export {
 } from './entities/category';
 export { categoryFields } from './entities/category/fields';
 export {
+  PRODUCT_IMAGE_ORDER_ROUTE,
   productEntity,
   PRODUCTS_PATH,
   type Product,
@@ -28,6 +31,7 @@ export {
   galleryItemEntity,
   GALLERY_ORDER,
   GALLERY_PATH,
+  GALLERY_ROW_ORDER_ROUTE,
   type GalleryItem,
   type GalleryItemWithImages,
 } from './entities/gallery-item';
