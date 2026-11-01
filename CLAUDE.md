@@ -177,8 +177,8 @@ gallery does: a failed read keeps the last good page. The checkout reads the
 shipping and payment methods live and offers only the payment methods that fit the chosen shipping;
 the terms name no prices of either (the checkout shows them, the order states the ones agreed).
 Photos go through `mediaUrl()` (relative `/api/files/:id` without a bucket).
-Reviews belong to the shop, not the site's menu: the shop page shows the average and links
-`/shop/recenze`, which lists the published ones, and a product page shows the ones naming that
+Reviews belong to the shop, not the site's menu: the shop page ends, above the footer, with the
+average, the newest three and a link to `/shop/recenze`, which lists the published ones, and a product page shows the ones naming that
 piece (`lib/reviews.ts`: none while the API has no reviews route); `/shop/recenze/napsat?token=`
 (`noindex`, rendered per request) is the form behind the e-mail's link, calling the API from the
 visitor's browser so the rate limit counts each customer on their own; the language switch keeps
