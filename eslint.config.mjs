@@ -33,7 +33,11 @@ export default defineConfig(
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ['apps/api/**', 'tooling/**', '**/*.config.{ts,mts,mjs}'],
+    files: ['apps/admin/public/sw.js'],
+    languageOptions: { globals: globals.serviceworker },
+  },
+  {
+    files: ['apps/api/**', 'tooling/**', 'apps/*/scripts/**', '**/*.config.{ts,mts,mjs}'],
     languageOptions: { globals: globals.node },
   },
   {

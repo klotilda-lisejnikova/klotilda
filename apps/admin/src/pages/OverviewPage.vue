@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useQuery } from '@tanstack/vue-query';
 import type { PaginatedResponse } from '@eleansphere/entity-core';
 import type { ProductWithImages } from '@klotilda/domain';
+import InstallAppAlert from '@/components/InstallAppAlert.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RevenueChart from '@/components/RevenueChart.vue';
 import StatTile from '@/components/StatTile.vue';
@@ -145,6 +146,8 @@ const stats = computed(() => [
 
 <template>
   <PageHeader title="Přehled" />
+
+  <InstallAppAlert />
 
   <UAlert
     v-if="pendingReviews"

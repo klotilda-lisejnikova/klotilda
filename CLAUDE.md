@@ -226,6 +226,12 @@ overview count the pending ones, and a delivered order's detail shows its review
 recenzi" (`components/OrderReviewCard.vue`). Like the settings, it is only in the phone's slide-over.
 `vercel.json` sends a Content-Security-Policy that allows only the admin's own scripts (hence
 `public/color-scheme.js` instead of an inline script) and API calls only to `*.up.railway.app`.
+The admin installs as an app (PWA): `public/manifest.webmanifest`, the icons drawn by
+`scripts/generate-icons.mjs` from `icon.svg`, and a small hand-written service worker
+`public/sw.js` (pages from the network with the last page shell as the offline fallback, hashed
+`/assets/*` kept, the API never touched). `app/install-prompt.ts` registers it in builds and keeps
+Chrome's `beforeinstallprompt`; the overview offers installing (`InstallAppAlert`, on an iPhone the
+Share menu steps) and the account menu keeps offering it.
 
 ## Commands
 

@@ -8,6 +8,7 @@ import App from './App.vue';
 import { router } from './app/router';
 import { onSessionExpired } from './app/api';
 import { useSession } from './app/session';
+import { listenForInstallPrompt, registerServiceWorker } from './app/install-prompt';
 
 const MAX_QUERY_RETRIES = 2;
 const STALE_TIME_MS = 30_000;
@@ -27,5 +28,8 @@ onSessionExpired(() => {
   queryClient.clear();
   void router.push({ name: 'sign-in' });
 });
+
+listenForInstallPrompt();
+registerServiceWorker();
 
 createApp(App).use(ui).use(VueQueryPlugin, { queryClient }).use(router).mount('#app');
