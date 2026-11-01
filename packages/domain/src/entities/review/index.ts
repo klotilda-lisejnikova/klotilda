@@ -27,6 +27,11 @@ export const REVIEW_WRITE_PATH = '/recenze/napsat';
 export const REVIEW_LINK_LIFETIME_DAYS = 180;
 /** The longest token the API reads; a real one is far shorter. */
 export const REVIEW_TOKEN_MAX_LENGTH = 200;
+/**
+ * The 409 of `REVIEW_INVITATION_ROUTE` for an order that is no longer delivered, which the website
+ * tells apart from the 409 of an order already reviewed.
+ */
+export const REVIEW_NOT_DELIVERED_MESSAGE = 'Objednávku půjde ohodnotit, až bude doručená.';
 
 /** A piece of the reviewed order: the product it was, and its name when ordered. */
 export interface ReviewedItem {

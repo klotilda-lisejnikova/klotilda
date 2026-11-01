@@ -134,7 +134,7 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
   409 for an order not delivered or already reviewed), with the order row locked. A review starts
   `pending` and `ADMIN_EMAIL` gets `new-review`. The admin's CRUD (`signedInExceptCreating`) lists,
   PATCHes `status` (`published` / `hidden`), `hiddenReason` and `reply` — the customer's words are
-  `readOnly` — and deletes; an order with a review can't be deleted (409). The website reads only
+  `readOnly` — and deletes; an order with a review can't be deleted (409). The website shows only
   `GET /api/reviews/all/public` (published, newest first, `averageRating`, `?productId=`), which
   answers nothing that leads to the order or the customer. Plan:
   `features/2026-11-01-customer-reviews/`.
@@ -168,7 +168,8 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
 
 `apps/web/src/services/index.ts` wraps the domain clients: `listProducts`, `getProduct`,
 `listGallery`, `listShippingMethods`, `listPaymentMethods`, `getSeller`, `getLegalVersion`,
-`listLegalVersions`, `listSiteTexts`, `checkout`. Every page's messages are the translation
+`listLegalVersions`, `listSiteTexts`, `checkout`, `listPublicReviews`, `getReviewInvitation`,
+`submitReview`. Every page's messages are the translation
 files with the admin's `SiteText` rows laid over them (`src/i18n/request.ts`, the domain's
 `withSiteTexts`, which keeps the typed text literal for ICU), read through `unstable_cache`
 (`lib/site-texts.ts`, tag `site-texts`, hourly), so every page render depends on the API like the
@@ -176,6 +177,12 @@ gallery does: a failed read keeps the last good page. The checkout reads the
 shipping and payment methods live and offers only the payment methods that fit the chosen shipping;
 the terms name no prices of either (the checkout shows them, the order states the ones agreed).
 Photos go through `mediaUrl()` (relative `/api/files/:id` without a bucket).
+Reviews (gated with the shop): `/recenze` lists the published ones with the shop's average, the
+home page shows the newest three and a product page the ones naming that piece (`lib/reviews.ts`:
+none while the API has no reviews route); `/recenze/napsat?token=` (`noindex`, rendered per
+request) is the form behind the e-mail's link, calling the API from the visitor's browser so the
+rate limit counts each customer on their own; the language switch keeps its token, and the
+analytics leave it out (`components/ui/SiteAnalytics.tsx`).
 `NEXT_PUBLIC_SHOP_ENABLED` gates the shop (see `src/lib/features.ts`). The image
 optimizer takes only the API's host and `NEXT_PUBLIC_MEDIA_URL` (the bucket's public URL, the API's
 `R2_PUBLIC_BASE_URL`), which a Vercel production build requires. `next.config.ts` sets the

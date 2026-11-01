@@ -1,7 +1,7 @@
 # Customer reviews in the shop
 
 **Ticket:** none yet
-**Status:** active — approved 2026-11-01; steps 1 (API) and 2 (admin) in review
+**Status:** active — approved 2026-11-01; steps 1–3 built, in review
 
 The owner asked for a way for customers to leave a review in the e-shop:
 
@@ -9,8 +9,7 @@ The owner asked for a way for customers to leave a review in the e-shop:
 >
 > navrhni moznost zanechat recenzi v eshopu, jak to provedes
 
-Approved as designed on 2026-11-01. Steps 1 (the API) and 2 (the admin) are built; step 3 (the
-website) is to come.
+Approved as designed on 2026-11-01. All three steps (the API, the admin, the website) are built.
 
 ## What shapes it
 
@@ -84,17 +83,17 @@ sequenceDiagram
 
 A new entity `Review` (table `Reviews`), declared in `packages/domain/src/entities/review/`:
 
-| field          |                                                                               |
-| -------------- | ----------------------------------------------------------------------------- |
-| `orderId`      | references `Order`, `unique` (one review per order), `readOnly`               |
-| `rating`       | `INTEGER` 1–5, required, `readOnly`                                           |
-| `body`         | `TEXT`, required, 10–2000 characters, `readOnly`                              |
-| `authorName`   | `STRING` ≤ 60, required, `readOnly`                                           |
-| `locale`       | `cs` \| `en`, the language it was written in, `readOnly`                      |
-| `items`        | JSON `{ productId, name_cs, name_en }[]` copied from the order, `readOnly`    |
-| `status`       | `pending` \| `published` \| `hidden`, default `pending` — the admin writes it |
-| `hiddenReason` | `TEXT` ≤ 500, the admin's own note, never public                              |
-| `reply`        | `TEXT` ≤ 1000, the artist's public answer, optional                           |
+| field          |                                                                                  |
+| -------------- | -------------------------------------------------------------------------------- |
+| `orderId`      | references `Order`, `unique` (one review per order), `readOnly`                  |
+| `rating`       | `INTEGER` 1–5, required, `readOnly`                                              |
+| `body`         | `TEXT`, required, 10–2000 characters, `readOnly`                                 |
+| `authorName`   | `STRING` ≤ 60, required, `readOnly`                                              |
+| `locale`       | `cs` \| `en`, the language it was written in, `readOnly`                         |
+| `items`        | JSON `{ productId, name }[]` copied from the order (its Czech names), `readOnly` |
+| `status`       | `pending` \| `published` \| `hidden`, default `pending` — the admin writes it    |
+| `hiddenReason` | `TEXT` ≤ 500, the admin's own note, never public                                 |
+| `reply`        | `TEXT` ≤ 1000, the artist's public answer, optional                              |
 
 - **Access:** auto CRUD for the signed-in admin only — list, read, PATCH (`status`, `hiddenReason`,
   `reply`; everything else `readOnly`) and DELETE (a customer who asks for their review to be
@@ -129,8 +128,8 @@ are rate-limited per client address, so a call from the website's server would m
 share one limit.
 
 - **`/recenze`** (in the menu next to the shop, gated with the shop by `NEXT_PUBLIC_SHOP_ENABLED`):
-  the average and the count, the reviews newest first (stars, text, name, the pieces as links,
-  date, the artist's reply), and a short note on where they come from: "Recenze mohou napsat jen
+  the average and the count, the reviews newest first (stars, text, name, the pieces by name, not
+  linked, since a sold original's page goes; date, the artist's reply), and a short note on where they come from: "Recenze mohou napsat jen
   zákazníci, kteří u nás nakoupili, přes odkaz z e-mailu po doručení. Zveřejňujeme kladné i
   záporné." A review in the other language is shown as written, marked with its language.
 - **Home page:** a strip of the three newest published reviews with a link to `/recenze` (only

@@ -24,6 +24,7 @@ import {
   PUBLIC_REVIEWS_ROUTE,
   REVIEW_BODY_MIN_LENGTH,
   REVIEW_INVITATION_ROUTE,
+  REVIEW_NOT_DELIVERED_MESSAGE,
   REVIEW_REQUEST_ROUTE,
   REVIEW_TOKEN_MAX_LENGTH,
   reviewEntity,
@@ -65,7 +66,6 @@ const PUBLISHED = 'published';
 
 const LINK_INVALID = 'Odkaz na recenzi neplatí nebo už vypršel.';
 const ALREADY_REVIEWED = 'Tuhle objednávku už jste ohodnotili. Děkujeme!';
-const NOT_DELIVERED = 'Objednávku půjde ohodnotit, až bude doručená.';
 const ORDER_HAS_REVIEW = 'Objednávka má recenzi. Smažte nejdřív ji (v Recenzích).';
 const REQUEST_NOT_DELIVERED = 'O recenzi jde požádat jen u doručené objednávky.';
 const REQUEST_ALREADY_REVIEWED = 'Objednávka už recenzi má.';
@@ -115,7 +115,7 @@ async function resolveInvitedOrder(
     .findByPk(link.orderId, transaction && { lock: transaction.LOCK.UPDATE, transaction });
   if (!row) throw new HttpError(NOT_FOUND, LINK_INVALID);
   const order = row.toJSON() as Order;
-  if (order.orderStatus !== DELIVERED) throw new HttpError(CONFLICT, NOT_DELIVERED);
+  if (order.orderStatus !== DELIVERED) throw new HttpError(CONFLICT, REVIEW_NOT_DELIVERED_MESSAGE);
   return { order, expiresAt: link.expiresAt };
 }
 

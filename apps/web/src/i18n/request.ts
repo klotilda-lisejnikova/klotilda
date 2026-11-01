@@ -14,6 +14,8 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const files = (await import(`../../messages/${locale}.json`)).default;
   return {
     locale,
+    // Dates are the shop's, in Prague, wherever the page is rendered.
+    timeZone: "Europe/Prague",
     messages: withSiteTexts(files, await loadSiteTexts(), locale),
   };
 });
