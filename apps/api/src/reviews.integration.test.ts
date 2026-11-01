@@ -87,7 +87,9 @@ describe('Reviews', () => {
     await act(orderId, 'mark-delivered');
     const [email] = app.outbox.sent.slice(before);
     expect(email.to).toBe(CUSTOMER.customerEmail);
-    const link = /https:\/\/klotilda\.test\/shop\/recenze\/napsat\?token=([^"&\s]+)/.exec(email.html);
+    const link = /https:\/\/klotilda\.test\/shop\/recenze\/napsat\?token=([^"&\s]+)/.exec(
+      email.html
+    );
     expect(link).not.toBeNull();
 
     const answer = await invitation(decodeURIComponent(link![1]));
