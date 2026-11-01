@@ -1,6 +1,5 @@
 import { defineEntity } from '@eleansphere/entity-core';
 import { emailTemplateFields } from './fields';
-import { EMAIL_PLACEHOLDERS } from './keys';
 import type { EmailPlaceholder, EmailTemplateKey } from './keys';
 
 export * from './keys';
@@ -119,32 +118,3 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateKey, EmailTemplateDefinition> 
     body: 'Za zrušenou objednávku {{vs}} jsme vám vrátili {{castka}}.',
   },
 };
-
-const PLACEHOLDER = /\{\{\s*([^{}\s]*)\s*\}\}/g;
-
-/** `{{vs}}` and the like replaced by their values; one the e-mail doesn't know stays as it is. */
-export function fillPlaceholders(
-  text: string,
-  values: Partial<Record<EmailPlaceholder, string>>
-): string {
-  return text.replace(PLACEHOLDER, (written, name: string) =>
-    (EMAIL_PLACEHOLDERS as readonly string[]).includes(name)
-      ? (values[name as EmailPlaceholder] ?? written)
-      : written
-  );
-}
-
-/**
- * Whether `text` holds braces that aren't a whole placeholder (`{{vs}`, `{{cislo zasilky}}`): the
- * customer would see them as written.
- */
-export function hasBrokenPlaceholder(text: string): boolean {
-  return /\{\{|\}\}/.test(text.replace(PLACEHOLDER, ''));
-}
-
-/** The placeholders in `text` that the e-mail of `key` doesn't know, each once (`["cena"]`). */
-export function unknownPlaceholders(text: string, key: EmailTemplateKey): string[] {
-  const known: readonly string[] = EMAIL_TEMPLATES[key].placeholders;
-  const names = [...text.matchAll(PLACEHOLDER)].map((match) => match[1] ?? '');
-  return [...new Set(names.filter((name) => !known.includes(name)))];
-}

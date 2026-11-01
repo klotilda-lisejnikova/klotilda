@@ -141,7 +141,8 @@ security headers of every page.
 Legal pages — `/obchodni-podminky` (terms, complaints under `#reklamace`), `/ochrana-osobnich-udaju`,
 `/odstoupeni-od-smlouvy` (the model withdrawal form, printable) — same path in both languages,
 gated with the shop in `src/middleware.ts`; the footer links them and names the seller. The texts
-are drafts in `src/content/legal/*.ts` (a small Markdown subset, `components/legal/LegalDocument`),
+are drafts in `src/content/legal/*.ts` (a small Markdown subset parsed by the domain's
+`parseLegalText`, rendered by `components/legal/LegalDocument`),
 `{{…}}` filled from `packages/domain/src/seller.ts`: the seller's details (**placeholders** —
 `SELLER.placeholder` shows a draft notice), `TERMS_VERSION`, `LEGAL_PATHS`. The checkout requires
 the terms box (`termsAccepted: true`, else 400) and each order stores `termsVersion` +

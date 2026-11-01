@@ -66,7 +66,7 @@ const token = (name: string) => `{{${name}}}`;
 
 /** What is wrong with a field's placeholders: the customer would see them as written. */
 function placeholderError(text: string): string | undefined {
-  const unknown = unknownPlaceholders(text, props.templateKey);
+  const unknown = unknownPlaceholders(text, definition.value.placeholders);
   if (unknown.length) return `Neznámá značka ${unknown.map(token).join(', ')}`;
   if (hasBrokenPlaceholder(text)) return 'Značka se píše celá ve dvojitých závorkách, např. {{vs}}';
   return undefined;

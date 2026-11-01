@@ -1,8 +1,10 @@
 import {
   COMPLAINTS_ANCHOR,
+  fillPlaceholders,
   LEGAL_PATHS,
   SELLER,
   TERMS_EFFECTIVE_FROM,
+  unknownPlaceholders,
 } from "@klotilda/domain";
 
 /** What the legal texts may name as `{{key}}`: the seller, the dates and the pages' paths. */
@@ -22,12 +24,10 @@ const VALUES: Record<string, string> = {
 
 /** The text with every `{{key}}` filled in; an unknown key is a mistake in the text. */
 export function fillLegalText(text: string): string {
-  return text.replace(/\{\{(\w+)\}\}/g, (placeholder, key: string) => {
-    const value = VALUES[key];
-    if (value === undefined)
-      throw new Error(`Unknown ${placeholder} in a legal text`);
-    return value;
-  });
+  const [unknown] = unknownPlaceholders(text, Object.keys(VALUES));
+  if (unknown !== undefined)
+    throw new Error(`Unknown {{${unknown}}} in a legal text`);
+  return fillPlaceholders(text, VALUES);
 }
 
 export const SELLER_IS_PLACEHOLDER = SELLER.placeholder;

@@ -9,7 +9,9 @@ import { shippingMethodEntity } from './entities/shipping-method';
 
 export * from './codes';
 export * from './constants';
+export * from './legal-text';
 export * from './ordering';
+export * from './placeholders';
 export * from './seller';
 export { adminUserEntity, type AdminUser } from './entities/admin-user';
 export { adminUserFields } from './entities/admin-user/fields';
@@ -30,10 +32,7 @@ export {
   EMAIL_TEMPLATES,
   EMAIL_TEMPLATES_PATH,
   emailTemplateEntity,
-  fillPlaceholders,
-  hasBrokenPlaceholder,
   isEmailTemplateKey,
-  unknownPlaceholders,
   type EmailPlaceholder,
   type EmailPreview,
   type EmailPreviewRequest,
