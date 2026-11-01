@@ -1,6 +1,12 @@
 import { setRequestLocale } from "next-intl/server";
 import LegalPage, { legalTitle } from "@/components/legal/LegalPage";
 
+/**
+ * The version in force; publishing a new one rebuilds the page at once (`/api/revalidate`), the
+ * hourly regeneration only catches a missed call.
+ */
+export const revalidate = 3600;
+
 interface Props {
   params: Promise<{ locale: string }>;
 }

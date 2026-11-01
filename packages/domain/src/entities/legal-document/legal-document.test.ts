@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   fillLegalText,
   formatCzechDate,
+  isLegalVersion,
   legalTextProblems,
   nextLegalVersion,
   pragueDate,
@@ -29,9 +30,18 @@ describe('Legal document versions', () => {
 
   it('number a second version the same day, and never date one before an earlier', () => {
     expect(nextLegalVersion('2026-12-01', ['2026-11-02'])).toBe('2026-12-01');
-    expect(nextLegalVersion('2026-12-01', ['2026-12-01'])).toBe('2026-12-01.2');
-    expect(nextLegalVersion('2026-12-01', ['2026-12-01', '2026-12-01.2'])).toBe('2026-12-01.3');
-    expect(nextLegalVersion('2026-11-01', ['2026-11-02'])).toBe('2026-11-02.2');
+    expect(nextLegalVersion('2026-12-01', ['2026-12-01'])).toBe('2026-12-01-2');
+    expect(nextLegalVersion('2026-12-01', ['2026-12-01', '2026-12-01-2'])).toBe('2026-12-01-3');
+    expect(nextLegalVersion('2026-11-01', ['2026-11-02'])).toBe('2026-11-02-2');
+  });
+
+  it('name versions so a URL segment can carry them', () => {
+    for (const taken of [[], ['2026-12-01'], ['2026-12-01', '2026-12-01-2']]) {
+      expect(isLegalVersion(nextLegalVersion('2026-12-01', taken))).toBe(true);
+    }
+    for (const bad of ['2026-12-01.2', '2026-12-01-1', '2026-12-01-02', '../x', '2026-12-1']) {
+      expect(isLegalVersion(bad)).toBe(false);
+    }
   });
 
   it('fill the seller, the date and the paths', () => {
@@ -39,7 +49,7 @@ describe('Legal document versions', () => {
       fillLegalText(
         '{{sellerName}}, IČO {{sellerIco}}, od {{effectiveFrom}}, [x]({{termsPath}}) {{sellerPhone}}|',
         SELLER,
-        '2026-11-02.2'
+        '2026-11-02-2'
       )
     ).toBe('Klotilda, IČO 87654321, od 2. 11. 2026, [x](/obchodni-podminky) |');
     expect(formatCzechDate('2026-01-09')).toBe('9. 1. 2026');

@@ -9,9 +9,10 @@ function sameSecret(given: string, expected: string): boolean {
 }
 
 /**
- * `POST /api/revalidate` — the API calls it whenever the admin changes products, categories or
- * the gallery (and when an order moves the stock), so the cached pages are rebuilt on the next
- * visit instead of when their `revalidate` interval runs out. Guarded by `REVALIDATE_SECRET`.
+ * `POST /api/revalidate` — the API calls it whenever the admin changes products, categories, the
+ * gallery or the seller's details, publishes a legal text, and when an order moves the stock, so
+ * the cached pages are rebuilt on the next visit instead of when their `revalidate` interval runs
+ * out. Guarded by `REVALIDATE_SECRET`.
  */
 export async function POST(request: NextRequest) {
   const secret = process.env.REVALIDATE_SECRET;

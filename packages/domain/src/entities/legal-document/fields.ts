@@ -1,7 +1,7 @@
 import type { Fields } from '@eleansphere/entity-core';
 import { LEGAL_DOCUMENT_STATUSES, LEGAL_DOCUMENTS } from './keys';
 
-/** Long enough for `YYYY-MM-DD.N`, and the order's `termsVersion`. */
+/** Long enough for `YYYY-MM-DD-N`, and the order's `termsVersion`. */
 export const LEGAL_VERSION_MAX_LENGTH = 20;
 const BODY_MAX_LENGTH = 100_000;
 
@@ -12,7 +12,7 @@ const BODY_MAX_LENGTH = 100_000;
 export const legalDocumentVersionFields = {
   /** Which page (`LEGAL_DOCUMENTS`). */
   document: { type: 'ENUM', values: LEGAL_DOCUMENTS, required: true, readOnly: true },
-  /** The Prague date it was published (`2026-11-02`, a second one that day `2026-11-02.2`); none for the draft. */
+  /** The Prague date it was published (`2026-11-02`, a second one that day `2026-11-02-2`); none for the draft. */
   version: { type: 'STRING', maxLength: LEGAL_VERSION_MAX_LENGTH, readOnly: true },
   /** The text: the Markdown subset of `parseLegalText`, with `LEGAL_PLACEHOLDERS`. */
   body_cs: { type: 'TEXT', required: true, maxLength: BODY_MAX_LENGTH },

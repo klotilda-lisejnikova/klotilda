@@ -1,7 +1,7 @@
 # Legal texts and seller details in the admin
 
 **Ticket:** none yet
-**Status:** active — steps 1 and 2 (the API and admin half) on `dev`, step 3 in review
+**Status:** active — steps 1–3 on `dev`, step 4 in review
 
 The owner wants the shop's texts editable in the admin, the terms (obchodní podmínky) first ("dále
 co by mělo být konfigurovatelné jsou texty obchodní podmínky atd."). Today they are code:
@@ -38,10 +38,10 @@ placeholder filler, so the admin's preview and the web render the same text the 
 ### Seller details
 
 A single-row entity `Seller` (table `Sellers`): `name`, `ico`, `address`, `email`, `phone`,
-`registration`, `complete` (the draft notice on the legal pages shows until the admin marks the
-details complete). Read by anyone (the footer needs it), PATCHed by the signed-in admin, never
+`registration`, `complete` (kept in each published version's seller snapshot: a version published before the
+details were marked complete says on its page that it is a draft). Read by anyone (the footer needs it), PATCHed by the signed-in admin, never
 created or deleted (`signedInEditingOnly`, like `EmailTemplate`). Seeded by a migration with
-today's placeholders. `SELLER` / `SELLER_LINE` go; the web, the e-mails and the legal placeholders
+today's placeholders. `SELLER_LINE` goes (`SELLER` stays as the fallback while the row is missing); the web, the e-mails and the legal placeholders
 read the row (`sellerLine(seller)` in the domain). The seller PATCH joins `changesTheWebsite` in
 `web/revalidate-web.ts`. `vatPayer` is left out until something reads it.
 
@@ -55,15 +55,15 @@ The bank account stays in the environment (`BANK_ACCOUNT_*`); it is checkout con
 
 An entity `LegalDocumentVersion` (table `LegalDocumentVersions`):
 
-| field         |                                                                                                                                               |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `document`    | `terms` \| `privacy` \| `withdrawal` (`LEGAL_DOCUMENTS`)                                                                                      |
-| `version`     | `null` for the draft; on publishing the Prague date `YYYY-MM-DD`, `.2`, `.3` … for a second one that day (fits `termsVersion`, 20 characters) |
-| `body_cs`     | the text, the Markdown subset with `{{…}}`                                                                                                    |
-| `body_en`     | optional; the English page shows the Czech text with a note while it is empty                                                                 |
-| `status`      | `draft` \| `published`, `readOnly`                                                                                                            |
-| `publishedAt` | set on publishing, `readOnly`                                                                                                                 |
-| `seller`      | JSON snapshot of the seller's values at publishing, `readOnly`                                                                                |
+| field         |                                                                                                                                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `document`    | `terms` \| `privacy` \| `withdrawal` (`LEGAL_DOCUMENTS`)                                                                                                                                        |
+| `version`     | `null` for the draft; on publishing the Prague date `YYYY-MM-DD`, `-2`, `-3` … for a second one that day (no dot: the web's middleware skips dotted paths) (fits `termsVersion`, 20 characters) |
+| `body_cs`     | the text, the Markdown subset with `{{…}}`                                                                                                                                                      |
+| `body_en`     | optional; the English page shows the Czech text with a note while it is empty                                                                                                                   |
+| `status`      | `draft` \| `published`, `readOnly`                                                                                                                                                              |
+| `publishedAt` | set on publishing, `readOnly`                                                                                                                                                                   |
+| `seller`      | JSON snapshot of the seller's values at publishing, `readOnly`                                                                                                                                  |
 
 **Publishing takes effect at once** (no scheduled versions): a one-off sale is governed by the
 terms in force when the order is placed, so a future date buys nothing but edge cases. The current
@@ -86,7 +86,7 @@ Rules, all in the API (`src/legal/`):
   `Europe/Prague`) names the version; never `CURRENT_DATE` or the server's zone. Tested at 23:30
   UTC and across the DST change. A version never sorts before an earlier one (the first versions
   are dated 2026-11-02 ahead of their publishing): a draft published before that day gets
-  `2026-11-02.2`, so the newest version is always the current one.
+  `2026-11-02-2`, so the newest version is always the current one.
 - **Public reads:** `GET /api/legal-documents/:document/current` and
   `…/versions/:version` (published only, with the seller snapshot); the draft only signed in.
 
@@ -99,7 +99,7 @@ Rules, all in the API (`src/legal/`):
   (pure, blocks out); the web renders the blocks in React, the admin's preview in Vue.
 - **Web:** the legal pages fetch the current version (ISR, revalidated on publish and hourly); each
   version also has its own page, `/obchodni-podminky/2026-11-02`, cached for good, with the
-  earlier versions listed under the current one. `content/legal/*.ts` and `lib/legal.ts` go.
+  earlier versions listed under the current one. `content/legal/*.ts` go; `lib/legal.ts` loads the versions.
 - **Checkout:** the summary step reads the current terms version live and links **that exact
   version's page**, so what the customer opens is what they agree to; the checkout sends
   `termsVersion`. A version published meanwhile gets a 412 (`TERMS_CHANGED`; the web already reads
@@ -123,10 +123,11 @@ souhlasí s touto verzí; zveřejněnou verzi už nejde změnit").
 
 1. One placeholder engine and the Markdown parser in the domain (no behaviour change). _(done)_
 2. Seller details: entity, migration, the e-mails' footer and the admin page "Prodávající"
-   _(done)_; then, in its own PR once the API has deployed, the web reads it.
+   _(done)_; the web reads it with step 4.
 3. Legal versions in the API: entity, migration with today's texts, routes, publish rules, the
-   checkout's version check. _(in review)_
-4. The web reads them: legal pages, version pages, checkout link and 412 handling, e-mail link.
+   checkout's version check. _(done)_
+4. The web reads them and the seller: legal pages, version pages, the footer, checkout link and
+   412 handling, e-mail link; the admin's "údaje jsou úplné" switch. _(in review)_
 5. Admin "Právní texty": versions, draft editor with preview, publish.
 6. The website's own texts (home page, "o mně", contact) in the admin; planned once 1–5 are on
    `dev`.
@@ -137,7 +138,7 @@ reads it.
 ## Follow-ups
 
 - The first versions are dated 2026-11-02, a day ahead of their publishing; a version published
-  on 2026-11-01 is `2026-11-02.2`, and an order placed that day reads "platných od 2. 11. 2026".
+  on 2026-11-01 is `2026-11-02-2`, and an order placed that day reads "platných od 2. 11. 2026".
   Only the test site takes orders before then. If a version's real start ever matters to a
   reader, show `publishedAt` too.
 - One draft per document and unique versions are kept by the advisory lock in `src/legal/`, not

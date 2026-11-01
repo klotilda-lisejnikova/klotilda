@@ -4,11 +4,16 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { ApiError } from "@eleansphere/entity-core";
 import { Link } from "@/i18n/navigation";
-import { paymentFitsShipping, resolvePickupNetwork } from "@klotilda/domain";
+import {
+  paymentFitsShipping,
+  resolvePickupNetwork,
+  TERMS_CHANGED,
+} from "@klotilda/domain";
 import type { CheckoutRequest } from "@klotilda/domain";
 import {
   checkout,
   CheckoutResponse,
+  listLegalVersions,
   listPaymentMethods,
   listShippingMethods,
   PaymentMethod,
@@ -41,6 +46,35 @@ const PICKUP_POINT_FIELD: keyof CheckoutRequest = "pickupPointId";
 const SUMMARY_STEP = 3;
 const SHIPPING_STEP = 1;
 const PAYMENT_STEP = 2;
+
+/** The terms version in force, which the summary links and the order agrees to. */
+async function currentTermsVersion(): Promise<string> {
+  const [current] = await listLegalVersions("terms");
+  if (!current) throw new Error("No terms are published");
+  return current.version;
+}
+
+/** The terms version: `null` while it loads, `"error"` if it can't be read (no order then). */
+type TermsVersion = string | null | "error";
+
+/** Reads the terms version in force once; `reload` reads it again (new terms were published). */
+function useTermsVersion() {
+  const [version, setVersion] = useState<TermsVersion>(null);
+  const reload = async () => {
+    setVersion(null);
+    setVersion(await currentTermsVersion().catch(() => "error" as const));
+  };
+  useEffect(() => {
+    let current = true;
+    currentTermsVersion()
+      .then((loaded) => current && setVersion(loaded))
+      .catch(() => current && setVersion("error"));
+    return () => {
+      current = false;
+    };
+  }, []);
+  return [version, reload] as const;
+}
 
 /** A list the step reads: `null` while it loads, `"error"` if that failed. */
 type Loaded<T> = T[] | null | "error";
@@ -88,6 +122,10 @@ export default function CheckoutPage() {
     useLoaded<ShippingMethod>(listShippingMethods);
   const [paymentMethods, setPaymentMethods] =
     useLoaded<PaymentMethod>(listPaymentMethods);
+
+  // Read live too: the summary links exactly the version the customer agrees to, and the order
+  // goes only with it.
+  const [termsVersion, reloadTerms] = useTermsVersion();
 
   /** Set when the chosen method went away meanwhile: its step says so and asks for another. */
   const [shippingGone, setShippingGone] = useState(false);
@@ -151,8 +189,21 @@ export default function CheckoutPage() {
     setError("cartChanged");
   };
 
+  /** New terms were published meanwhile: link them, and the customer agrees to them anew. */
+  const termsChanged = async () => {
+    update({ termsAccepted: false });
+    await reloadTerms();
+    setError("termsChanged");
+  };
+
   const handleSubmit = async () => {
-    if (items.some(isBlocked) || !data.termsAccepted) return;
+    if (
+      items.some(isBlocked) ||
+      !data.termsAccepted ||
+      termsVersion === null ||
+      termsVersion === "error"
+    )
+      return;
     setLoading(true);
     setError(null);
     try {
@@ -175,18 +226,23 @@ export default function CheckoutPage() {
         })),
         notes: data.notes || undefined,
         termsAccepted: true,
+        termsVersion,
       });
       clearCart();
       setResult(placed);
     } catch (err) {
-      if (err instanceof ApiError && refusesPickupPoint(err)) {
+      if (err instanceof ApiError && err.status === TERMS_CHANGED) {
+        await termsChanged();
+      } else if (err instanceof ApiError && refusesPickupPoint(err)) {
         update({ pickupPoint: null });
         setPointRefused(true);
         setStep(SHIPPING_STEP);
       } else if (
         err instanceof ApiError &&
-        err.status === SERVICE_UNAVAILABLE
+        err.status === SERVICE_UNAVAILABLE &&
+        data.pickupPoint
       ) {
+        // Asked before anything else, Zásilkovna is what a 503 means for an order with a point.
         setError("pickupUnavailable");
       } else if (
         err instanceof ApiError &&
@@ -300,6 +356,7 @@ export default function CheckoutPage() {
           onBack={() => setStep(PAYMENT_STEP)}
           loading={loading}
           error={error}
+          termsVersion={termsVersion}
         />
       )}
     </section>

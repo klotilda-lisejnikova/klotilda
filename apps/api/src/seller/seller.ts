@@ -13,6 +13,7 @@ const DEFAULT_SELLER: LegalSellerSnapshot = {
   email: SELLER.email,
   phone: SELLER.phone,
   registration: SELLER.registration,
+  complete: false,
 };
 
 /** A text column, empty as none. */
@@ -41,6 +42,7 @@ export async function resolveSeller(
     email: String(row.get('email')),
     phone: optionalText(row.get('phone')),
     registration: optionalText(row.get('registration')),
+    complete: row.get('complete') === true,
   };
 }
 
