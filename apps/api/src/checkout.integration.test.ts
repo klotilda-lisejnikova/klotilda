@@ -348,7 +348,9 @@ describe('Order actions', () => {
 
     const delivered = await act(orderId, 'mark-delivered');
     expect(delivered.body.orderStatus).toBe('delivered');
-    expect(emailsTo(CUSTOMER.customerEmail, before)).toHaveLength(2);
+    const deliveredEmail = emailsTo(CUSTOMER.customerEmail, before)[2];
+    expect(deliveredEmail.subject).toMatch(/jak jste spokojeni/);
+    expect(deliveredEmail.html).toContain('https://klotilda.test/recenze/napsat?token=');
 
     const history = JSON.parse((await readOrder(orderId)).history);
     expect(
@@ -357,7 +359,7 @@ describe('Order actions', () => {
       ['placed', 'sent'],
       ['mark-paid', 'sent'],
       ['ship', 'sent'],
-      ['mark-delivered', undefined],
+      ['mark-delivered', 'sent'],
     ]);
     expect(history[1].message).toBe('Balím ještě dnes.');
   });

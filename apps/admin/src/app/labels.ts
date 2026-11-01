@@ -79,7 +79,8 @@ export const ORDER_ACTION_HINTS: Record<OrderAction, string> = {
   ship: 'Zákazník dostane e-mail, že je zásilka na cestě, s číslem zásilky a odkazem na sledování.',
   'ready-for-pickup':
     'Zákazník dostane e-mail, že si objednávku může vyzvednout. Napište mu, kde a kdy — jinak ho e-mail požádá, ať se ozve.',
-  'mark-delivered': 'Objednávka se uzavře. Zákazníkovi nic nepřijde.',
+  'mark-delivered':
+    'Objednávka se uzavře a zákazník dostane poděkování s odkazem, kde může napsat recenzi.',
   cancel: 'Zákazník dostane e-mail o zrušení; zaplacenou objednávku mu slíbí vrátit peníze.',
   'mark-refunded': 'Zákazník dostane e-mail, že jste mu peníze poslali zpět.',
 };
@@ -89,6 +90,7 @@ export const NOTIFYING_ACTIONS: readonly OrderAction[] = [
   'mark-paid',
   'ship',
   'ready-for-pickup',
+  'mark-delivered',
   'cancel',
   'mark-refunded',
 ];
@@ -101,6 +103,7 @@ export const ORDER_EVENT_LABELS: Record<OrderEvent['type'], string> = {
   'mark-delivered': 'Předáno zákazníkovi',
   cancel: 'Zrušeno',
   'mark-refunded': 'Peníze vráceny',
+  'review-request': 'Znovu poslán odkaz na recenzi',
 };
 
 export const EMAIL_OUTCOME_LABELS: Record<NonNullable<OrderEvent['email']>, string> = {
@@ -137,7 +140,15 @@ export const EMAIL_TEMPLATE_LABELS: Record<EmailTemplateKey, { name: string; whe
     name: 'Objednávka zrušena',
     when: 'Zákazníkovi po zrušení objednávky, s tím, jak dostane peníze zpět.',
   },
+  'mark-delivered': {
+    name: 'Předáno, prosba o recenzi',
+    when: 'Zákazníkovi po kliknutí na „Předáno zákazníkovi“, s odkazem, kde napíše recenzi.',
+  },
   'mark-refunded': { name: 'Peníze vráceny', when: 'Zákazníkovi po kliknutí na „Peníze vráceny“.' },
+  'new-review': {
+    name: 'Nová recenze (pro vás)',
+    when: 'Vám, když zákazník napíše recenzi: hvězdičky a text, ke schválení.',
+  },
 };
 
 /** What each placeholder is replaced with, shown beside the text. */

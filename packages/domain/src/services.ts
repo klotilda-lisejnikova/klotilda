@@ -7,6 +7,7 @@ import { galleryItemEntity } from './entities/gallery-item';
 import { orderEntity } from './entities/order';
 import { paymentMethodEntity } from './entities/payment-method';
 import { productEntity } from './entities/product';
+import { reviewEntity } from './entities/review';
 import { sellerEntity } from './entities/seller';
 import { shippingMethodEntity } from './entities/shipping-method';
 
@@ -29,6 +30,7 @@ export function createServices(baseUrl: string, tokenSource: AccessTokenSource) 
       paymentMethods: paymentMethodEntity,
       emailTemplates: emailTemplateEntity,
       seller: sellerEntity,
+      reviews: reviewEntity,
     },
     baseUrl,
     tokenSource

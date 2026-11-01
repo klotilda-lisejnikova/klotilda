@@ -1,7 +1,7 @@
 # Customer reviews in the shop
 
 **Ticket:** none yet
-**Status:** design — architecture review applied (2026-11-01), awaiting the owner's approval
+**Status:** active — approved 2026-11-01; step 1 (API) in review
 
 The owner asked for a way for customers to leave a review in the e-shop ("navrhni možnost zanechat
 recenzi v eshopu, jak to provedeš"). This is the design; nothing is implemented yet.
@@ -33,10 +33,10 @@ sequenceDiagram
   participant W as Web
   A->>API: mark-delivered (or "Požádat o recenzi" on the order)
   API->>C: e-mail "Jak jste spokojena?" with a personal link
-  C->>W: /recenze/napsat?t=…
-  W->>API: GET /api/reviews/invitation?t=… (order's first name, items)
+  C->>W: /recenze/napsat?token=…
+  W->>API: GET /api/reviews/all/invitation?token=… (suggested name, items)
   C->>W: stars, text, name shown
-  W->>API: POST /api/reviews {token, rating, body, authorName}
+  W->>API: POST /api/reviews/all/invitation {token, rating, body, authorName, locale, consent}
   API->>A: e-mail "Nová recenze"
   A->>API: publish / hide, optional reply
   W->>API: GET /api/reviews/all/public (published only)
@@ -55,14 +55,14 @@ sequenceDiagram
    history. No scheduler: the API has none, and the artist marking an order delivered is the moment
    it is known to have arrived.
 2. **The link** carries a token: the order's id and an expiry (**180 days** from the e-mail), signed
-   with HMAC-SHA256 under a new secret `REVIEW_TOKEN_SECRET` (production refuses to start without
-   it, like `JWT_SECRET`; set it on both Railway environments before the API step deploys). Nothing
-   is stored for it, and it doesn't depend on the order's `history`, which older orders and
+   with HMAC-SHA256 under a key derived from `JWT_SECRET` (an HMAC of a fixed label), so no new
+   variable has to be set before the API deploys and no session token is ever a valid link;
+   changing `JWT_SECRET` ends the links already sent. Nothing is stored for it, and it doesn't depend on the order's `history`, which older orders and
    statuses set by a plain PATCH don't have. The API accepts it only while it hasn't expired, the
    order is `delivered` and it has no review yet. One order, one review.
 3. **Writing.** `/recenze/napsat` (both languages, `noindex`) shows the pieces bought, 1–5 stars,
    the text and the name to show, prefilled as first name + initial ("Jana N."). A checkbox agrees
-   to publishing the review with that name. `POST /api/reviews` is public and rate-limited like the
+   to publishing the review with that name. `POST /api/reviews/all/invitation` is public and rate-limited like the
    checkout.
 4. **Moderation (pre-moderation).** A new review is `pending` and invisible until the artist
    publishes it; the shop gets few reviews and one unpleasant surprise on the home page costs more
@@ -89,23 +89,24 @@ A new entity `Review` (table `Reviews`), declared in `packages/domain/src/entiti
 | `status`       | `pending` \| `published` \| `hidden`, default `pending` — the admin writes it |
 | `hiddenReason` | `TEXT` ≤ 500, the admin's own note, never public                              |
 | `reply`        | `TEXT` ≤ 1000, the artist's public answer, optional                           |
-| `publishedAt`  | `DATE`, set by the API the first time the review is published, `readOnly`     |
 
 - **Access:** auto CRUD for the signed-in admin only — list, read, PATCH (`status`, `hiddenReason`,
   `reply`; everything else `readOnly`) and DELETE (a customer who asks for their review to be
-  removed). A review is created **only** by `POST /api/reviews` (`src/reviews/`), like an order only
+  removed). A review is created **only** by `POST /api/reviews/all/invitation` (`src/reviews/`), like an order only
   by the checkout; `signedInExceptCreating` already says exactly that. The foreign key
   (`ON DELETE NO ACTION`) keeps an order with a review from being deleted, but nothing maps that
   Postgres error to an answer today (it would be a 500), so a `beforeDelete` hook on `Order` answers
   409 "Objednávka má recenzi, smažte nejdřív ji" (tested).
 - **Public reads** go through the plugin, not auto CRUD, so no field the public shouldn't see can
   leak: `GET /api/reviews/all/public` (under `/all/` like the other collection routes, so it can't
-  meet auto CRUD's `GET /api/reviews/:id`; published, newest first, paged in the same envelope as
-  auto CRUD lists, plus `averageRating` and `count`) answers `{ id, rating, body, authorName, items (names only), reply, publishedAt }`.
-  `?productId=` narrows it to reviews naming that piece.
-- **Migration** `2026-11-xx-reviews`: the table, its indexes (`status, publishedAt`; `orderId`
-  unique), and the two new `EmailTemplate` rows. Covered by `migrations.integration.test.ts` as
-  usual.
+  meet auto CRUD's `GET /api/reviews/:id`; published, newest first) answers a page shaped like the
+  CRUD lists (`data`, `total`, `page`, `limit`) plus `averageRating` over every published review.
+  A review there is `{ id, rating, body, authorName, locale, items, reply, createdAt }`, `items`
+  being product ids and names. `?productId=` narrows it to reviews naming that piece. A small
+  shop's reviews are read whole for it.
+- **Migration** `2026-11-01-reviews`: the table (`orderId` unique, the foreign key to `Orders`)
+  and the two new `EmailTemplate` rows. No further index: the model declares none, and the
+  migration test compares the migrated schema with a synced one, indexes included.
 - **E-mails:** `EMAIL_TEMPLATE_KEYS` gains `mark-delivered` (customer; placeholders `jmeno`, `vs`,
   plus the link, which stays generated like the tracking button) and `new-review` (artist). Both
   editable and switchable in "E-maily" like the others; the preview
@@ -113,7 +114,7 @@ A new entity `Review` (table `Reviews`), declared in `packages/domain/src/entiti
   and the review link needs a sample.
 - **Revalidation:** only the admin's PATCH and DELETE of `/api/reviews/:id` join
   `changesTheWebsite` (`web/revalidate-web.ts`), so the shop shows a decision at once; a customer's
-  `POST /api/reviews` (pending, invisible) rebuilds nothing.
+  `POST /api/reviews/all/invitation` (pending, invisible) rebuilds nothing.
 
 ## Website
 
@@ -161,7 +162,7 @@ Each a PR into `dev`, verified on the test sites. They start after the legal-tex
 the e-mail templates and the placeholder engine are merged, so the two pieces of work don't edit the
 same files at once.
 
-1. **API:** `Review` entity, migration, `POST /api/reviews` with the token, the public route, the
+1. **API:** `Review` entity, migration, `POST /api/reviews/all/invitation` with the token, the public route, the
    two e-mails (`mark-delivered`, `new-review`), the `review-request` route, the `Order` delete
    hook, revalidation.
    Tests: token forged / for another order / expired / order not delivered / second review, an

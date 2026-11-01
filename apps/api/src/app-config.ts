@@ -18,6 +18,7 @@ import {
   orderEntity,
   paymentMethodEntity,
   productEntity,
+  reviewEntity,
   sellerEntity,
   shippingMethodEntity,
 } from '@klotilda/domain';
@@ -34,6 +35,11 @@ import { securityHeaders } from './http/security-headers';
 import { createModelRegistry } from './models-registry';
 import { migrations } from './migrations';
 import { createOrderActionsPlugin } from './orders/order-actions-plugin';
+import {
+  createReviewsPlugin,
+  refuseDeletingReviewedOrder,
+  REVIEW_RATE_LIMIT,
+} from './reviews/reviews-plugin';
 import { createWebRevalidator } from './web/revalidate-web';
 
 const ACCESS_TOKEN_LIFETIME = '15m';
@@ -56,7 +62,10 @@ const activeUnlessSignedIn: AccessDecider = (req) => (req.user ? true : { active
 const signedInEditingOnly: AccessDecider = (req) =>
   req.user !== undefined && req.method !== CREATE_METHOD && req.method !== DELETE_METHOD;
 
-/** Orders are placed only through `POST /api/checkout`; the admin updates and deletes them. */
+/**
+ * Orders are placed only through `POST /api/checkout`, reviews only through the link from the
+ * e-mail (`REVIEW_INVITATION_ROUTE`); the admin updates and deletes them.
+ */
 const signedInExceptCreating: AccessDecider = (req) =>
   req.user !== undefined && req.method !== CREATE_METHOD;
 
@@ -120,6 +129,10 @@ export function buildAppConfig(
       },
       [orderEntity.config.name]: {
         access: { write: signedInExceptCreating },
+        beforeDelete: refuseDeletingReviewedOrder(models),
+      },
+      [reviewEntity.config.name]: {
+        access: { write: signedInExceptCreating },
       },
       [emailTemplateEntity.config.name]: {
         access: { write: signedInEditingOnly },
@@ -143,6 +156,13 @@ export function buildAppConfig(
         siteUrl: environment.siteUrl,
       }),
       createReorderPlugin({ registry: models, jwtSecret: environment.jwtSecret }),
+      createReviewsPlugin({
+        registry: models,
+        jwtSecret: environment.jwtSecret,
+        siteUrl: environment.siteUrl,
+        adminEmail: environment.adminEmail,
+        rateLimit: rateLimitsOff ? 'off' : (overrides.rateLimit ?? REVIEW_RATE_LIMIT),
+      }),
       createEmailPreviewPlugin({
         registry: models,
         jwtSecret: environment.jwtSecret,

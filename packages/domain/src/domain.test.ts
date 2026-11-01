@@ -11,6 +11,9 @@ import {
   parseOrderHistory,
   parseOrderItems,
   paymentFitsShipping,
+  reviewFields,
+  reviewSubmissionFields,
+  suggestedAuthorName,
   toCode,
   toSlug,
   trackingUrlFor,
@@ -169,7 +172,34 @@ describe('E-mail templates', () => {
 
   it('know their keys, and nothing else', () => {
     expect(isEmailTemplateKey('ship')).toBe(true);
-    expect(isEmailTemplateKey('mark-delivered')).toBe(false);
+    expect(isEmailTemplateKey('mark-delivered')).toBe(true);
+    expect(isEmailTemplateKey('cancel-order')).toBe(false);
     expect(isEmailTemplateKey('constructor')).toBe(false);
+  });
+});
+
+describe('Reviews', () => {
+  it("keep the customer's words: the admin only publishes, hides and answers", () => {
+    const writable = Object.entries(reviewFields)
+      .filter(([, field]) => !('readOnly' in field && field.readOnly))
+      .map(([name]) => name);
+    expect(writable.sort()).toEqual(['hiddenReason', 'reply', 'status']);
+  });
+
+  it('take one to five stars, a text and a name', () => {
+    const issues = validateFields(
+      reviewSubmissionFields,
+      { rating: 6, authorName: 'x'.repeat(61), locale: 'de' },
+      { mode: 'create' }
+    );
+    expect(issues.map(({ path, code }) => `${path}:${code}`).sort()).toEqual(
+      ['authorName:maxLength', 'body:required', 'locale:enum', 'rating:max'].sort()
+    );
+  });
+
+  it('suggest the first name and the initial of the surname', () => {
+    expect(suggestedAuthorName(' Jana ', 'nováková')).toBe('Jana N.');
+    expect(suggestedAuthorName('Jana', ' ')).toBe('Jana');
+    expect(suggestedAuthorName('Jana', 'Šimková')).toBe('Jana Š.');
   });
 });

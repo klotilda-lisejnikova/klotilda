@@ -30,11 +30,12 @@ import type {
 import type { EmailContent } from '../emails/email-layout';
 import { resolveEmailText } from '../emails/email-templates';
 import { orderActionEmail } from '../emails/order-emails';
-import type { PlacedOrder } from '../emails/order-emails';
+import type { ActionDetails, PlacedOrder } from '../emails/order-emails';
 import { sendEmail } from '../emails/send-email';
 import { resolveSellerLine } from '../seller/seller';
 import { asyncHandler } from '../http/async-handler';
 import type { ModelRegistry } from '../models-registry';
+import { reviewInvitationDetails } from '../reviews/review-invitation';
 
 const NOT_FOUND = 404;
 const CONFLICT = 409;
@@ -86,9 +87,12 @@ async function findTrackingUrl(
   return trackingUrlFor(method?.get('trackingUrl') as string | null, trackingNumber) ?? null;
 }
 
-/** The customer's e-mail about the action, worded as the admin set it; none for some actions. */
+/**
+ * The customer's e-mail about the action, worded as the admin set it. A delivered order's e-mail
+ * invites the customer to review it.
+ */
 async function findActionEmail(
-  registry: ModelRegistry,
+  { registry, jwtSecret, siteUrl }: OrderActionsPluginOptions,
   action: OrderAction,
   saved: Order,
   event: OrderEvent
@@ -96,12 +100,13 @@ async function findActionEmail(
   if (!isEmailTemplateKey(action)) return undefined;
   const placed: PlacedOrder = { ...saved, items: parseOrderItems(saved) };
   const { enabled, text } = await resolveEmailText(registry, action);
-  const content = orderActionEmail(
-    action,
-    placed,
-    { ...event, trackingUrl: saved.trackingUrl ?? undefined },
-    text
-  );
+  const details: ActionDetails = {
+    ...event,
+    trackingUrl: saved.trackingUrl ?? undefined,
+    ...(action === 'mark-delivered' &&
+      (await reviewInvitationDetails(registry, { jwtSecret, siteUrl }, saved.id))),
+  };
+  const content = orderActionEmail(action, placed, details, text);
   return { enabled, to: saved.customerEmail, content };
 }
 
@@ -111,11 +116,8 @@ async function findActionEmail(
  * written to the order's history and the customer is e-mailed (`notify: false` to skip it).
  * Refused with 409 when the order isn't in a state the action fits. Answers the updated order.
  */
-export function createOrderActionsPlugin({
-  registry,
-  jwtSecret,
-  siteUrl,
-}: OrderActionsPluginOptions): ProjectPlugin {
+export function createOrderActionsPlugin(options: OrderActionsPluginOptions): ProjectPlugin {
+  const { registry, jwtSecret, siteUrl } = options;
   return {
     registerRoutes(app, sequelize, _models, emailService) {
       app.post(
@@ -169,7 +171,7 @@ export function createOrderActionsPlugin({
           });
 
           // The e-mail goes after the change is saved; how it went is noted on the same line.
-          const email = await findActionEmail(registry, action, order.toJSON() as Order, event);
+          const email = await findActionEmail(options, action, order.toJSON() as Order, event);
           if (email) {
             const sends = request.notify !== false && email.enabled;
             const footer = sends && { siteUrl, sellerLine: await resolveSellerLine(registry) };

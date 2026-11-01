@@ -2,6 +2,7 @@ import {
   COMPLAINTS_ANCHOR,
   fillPlaceholders,
   LEGAL_PATHS,
+  MAX_RATING,
   TERMS_EFFECTIVE_FROM,
 } from '@klotilda/domain';
 import type {
@@ -43,6 +44,10 @@ export interface ActionDetails {
   trackingNumber?: string;
   /** The parcel's link, from the shipping method. */
   trackingUrl?: string;
+  /** Where the customer writes a review of the delivered order; none once it has one. */
+  reviewUrl?: string;
+  /** When that link ends. */
+  reviewUrlExpiresAt?: Date;
 }
 
 const isPickup = (order: PlacedOrder) => order.shippingKind === 'pickup';
@@ -225,8 +230,31 @@ function refundText(order: PlacedOrder): string | undefined {
 /** The parts of an action's e-mail made from the order, after the admin's text. */
 type ActionBlocks = (order: PlacedOrder, details: ActionDetails) => EmailBlock[];
 
-/** The order actions that e-mail the customer, one template each; `mark-delivered` has none. */
-export type ActionEmailKey = Exclude<EmailTemplateKey, 'order-received' | 'new-order'>;
+/** The order actions that e-mail the customer, one template each. */
+export type ActionEmailKey = Exclude<
+  EmailTemplateKey,
+  'order-received' | 'new-order' | 'new-review'
+>;
+
+const formatDate = (date: Date) =>
+  date.toLocaleDateString('cs-CZ', {
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+    timeZone: 'Europe/Prague',
+  });
+
+/** The button to write a review, and until when it works. */
+function reviewBlocks({ reviewUrl, reviewUrlExpiresAt }: ActionDetails): EmailBlock[] {
+  if (!reviewUrl) return [];
+  return [
+    { kind: 'button', label: 'Napsat recenzi', href: reviewUrl },
+    ...paragraphs(
+      reviewUrlExpiresAt &&
+        `Odkaz je jen pro vás a platí do ${formatDate(reviewUrlExpiresAt)}. Recenzi zveřejníme se jménem, které si zvolíte.`
+    ),
+  ];
+}
 
 const ACTION_BLOCKS: Record<ActionEmailKey, ActionBlocks> = {
   'mark-paid': (order, { message }) => [
@@ -261,6 +289,8 @@ const ACTION_BLOCKS: Record<ActionEmailKey, ActionBlocks> = {
       : []),
   ],
 
+  'mark-delivered': (_order, details) => [...noteBlocks(details.message), ...reviewBlocks(details)],
+
   cancel: (order, { message }) => [...noteBlocks(message), ...paragraphs(refundText(order))],
 
   'mark-refunded': (order, { message }) => [
@@ -282,4 +312,39 @@ export function orderActionEmail(
 ): EmailContent {
   const { subject, title, intro } = fillText(text, order, details);
   return { subject, title, blocks: [...intro, ...ACTION_BLOCKS[action](order, details)] };
+}
+
+/** What the artist's e-mail about a new review shows of it. */
+export interface WrittenReview {
+  rating: number;
+  body: string;
+  authorName: string;
+}
+
+const stars = (rating: number) => `${'★'.repeat(rating)}${'☆'.repeat(MAX_RATING - rating)}`;
+
+/** To the artist: a customer wrote a review, which waits for her to publish or hide it. */
+export function newReviewEmail(
+  order: PlacedOrder,
+  review: WrittenReview,
+  text: EmailText
+): EmailContent {
+  const { subject, title, intro } = fillText(text, order);
+  return {
+    subject,
+    title,
+    blocks: [
+      ...intro,
+      {
+        kind: 'facts',
+        rows: [
+          ['Hodnocení', `${stars(review.rating)} (${review.rating} z ${MAX_RATING})`],
+          ['Podpis', review.authorName],
+          ['Zákazník', `${order.customerFirstName} ${order.customerLastName}`],
+          ['Variabilní symbol', order.variableSymbol],
+        ],
+      },
+      { kind: 'note', text: review.body },
+    ],
+  };
 }

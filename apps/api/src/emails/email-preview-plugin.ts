@@ -4,6 +4,8 @@ import {
   EMAIL_TEMPLATE_KEYS,
   EMAIL_TEMPLATE_PREVIEW_ROUTE,
   emailTemplateFields,
+  REVIEW_LINK_LIFETIME_DAYS,
+  REVIEW_WRITE_PATH,
 } from '@klotilda/domain';
 import type { EmailPreview, EmailPreviewRequest, EmailTemplateKey } from '@klotilda/domain';
 import type { BankAccount } from '../env';
@@ -12,7 +14,12 @@ import type { ModelRegistry } from '../models-registry';
 import { resolveSellerLine } from '../seller/seller';
 import { renderEmail } from './email-layout';
 import type { EmailContent } from './email-layout';
-import { newOrderEmail, orderActionEmail, orderReceivedEmail } from './order-emails';
+import {
+  newOrderEmail,
+  newReviewEmail,
+  orderActionEmail,
+  orderReceivedEmail,
+} from './order-emails';
 import type { ActionDetails, PlacedOrder } from './order-emails';
 
 export interface EmailPreviewPluginOptions {
@@ -46,9 +53,22 @@ function sampleOrder(key: EmailTemplateKey): PlacedOrder {
   };
 }
 
-const SAMPLE_DETAILS: ActionDetails = {
-  trackingNumber: 'Z 1234567890',
-  trackingUrl: 'https://tracking.packeta.com/cs/?id=Z%201234567890',
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** What an action adds to the sample order; the review link leads nowhere real. */
+function sampleDetails(siteUrl: string): ActionDetails {
+  return {
+    trackingNumber: 'Z 1234567890',
+    trackingUrl: 'https://tracking.packeta.com/cs/?id=Z%201234567890',
+    reviewUrl: `${siteUrl.replace(/\/$/, '')}${REVIEW_WRITE_PATH}?token=ukazka`,
+    reviewUrlExpiresAt: new Date(Date.now() + REVIEW_LINK_LIFETIME_DAYS * DAY_MS),
+  };
+}
+
+const SAMPLE_REVIEW = {
+  rating: 5,
+  authorName: 'Jana N.',
+  body: 'Váza je ještě krásnější než na fotce a přišla skvěle zabalená. Děkuji!',
 };
 
 /** The body checked: a known key and the three texts by the template's own field rules. */
@@ -75,12 +95,14 @@ function readPreviewRequest(body: unknown): EmailPreviewRequest {
 
 function previewContent(
   { key, ...text }: EmailPreviewRequest,
-  bankAccount: BankAccount
+  bankAccount: BankAccount,
+  siteUrl: string
 ): EmailContent {
   const order = sampleOrder(key);
   if (key === 'order-received') return orderReceivedEmail(order, bankAccount.display, text);
   if (key === 'new-order') return newOrderEmail(order, text);
-  return orderActionEmail(key, order, SAMPLE_DETAILS, text);
+  if (key === 'new-review') return newReviewEmail(order, SAMPLE_REVIEW, text);
+  return orderActionEmail(key, order, sampleDetails(siteUrl), text);
 }
 
 /**
@@ -99,7 +121,7 @@ export function createEmailPreviewPlugin({
         EMAIL_TEMPLATE_PREVIEW_ROUTE,
         createVerifyToken(jwtSecret),
         asyncHandler(async (req, res) => {
-          const content = previewContent(readPreviewRequest(req.body), bankAccount);
+          const content = previewContent(readPreviewRequest(req.body), bankAccount, siteUrl);
           const sellerLine = await resolveSellerLine(registry);
           const answer: EmailPreview = renderEmail(content, { siteUrl, sellerLine });
           res.json(answer);

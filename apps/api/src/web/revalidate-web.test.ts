@@ -65,4 +65,16 @@ describe('Website revalidation', () => {
     send('PATCH', '/api/seller/sel1');
     await vi.waitFor(() => expect(calls).toHaveLength(1), { timeout: 3000 });
   });
+
+  it('tells the website when the admin decides on a review, not when one is written', async () => {
+    await quiet();
+    calls.length = 0;
+    send('POST', '/api/reviews/all/invitation', 201);
+    send('POST', '/api/orders/ord1/review-request');
+    await quiet();
+    expect(calls).toEqual([]);
+
+    send('PATCH', '/api/reviews/rev1');
+    await vi.waitFor(() => expect(calls).toHaveLength(1), { timeout: 3000 });
+  });
 });

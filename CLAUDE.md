@@ -40,8 +40,8 @@ access, the DTO types, the typed clients and the admin's form schema (`formSchem
 model means changing `fields.ts` — plus a migration (below).
 
 Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `ShippingMethod`,
-`PaymentMethod`, `EmailTemplate`, `Seller`) are the production table names (`Products`, …) —
-never rename them.
+`PaymentMethod`, `EmailTemplate`, `Seller`, `Review`) are the production table names
+(`Products`, …) — never rename them.
 
 ## Backend
 
@@ -88,8 +88,9 @@ never rename them.
   cancel (puts the pieces back in stock unless `restock: false`), mark-refunded. Each is written to
   the order's `history` (JSON) and e-mails the customer unless `notify: false` or the e-mail is
   turned off (`skipped` in the history); PATCHing the statuses stays for corrections and does
-  neither. E-mails are blocks rendered as HTML in the site's colours and as plain text
-  (`src/emails/email-layout.ts`); `SITE_URL` is linked in them.
+  neither. `mark-delivered`'s e-mail invites the customer to review the order (below). E-mails are
+  blocks rendered as HTML in the site's colours and as plain text (`src/emails/email-layout.ts`);
+  `SITE_URL` is linked in them.
 - E-mail texts (`EmailTemplate`, `/api/email-templates`, signed-in admin only): one row per
   automatic e-mail (`EMAIL_TEMPLATE_KEYS`: the order confirmation, the artist's new order and one
   per action that e-mails), seeded by the `2026-11-01-email-templates` migration; the API only reads
@@ -105,6 +106,19 @@ never rename them.
   with placeholders by the `2026-11-01-seller` migration. The e-mails' footer names it
   (`resolveSellerLine`, the domain's `SELLER` when the row is missing); the website still shows
   the domain's `SELLER` until it reads the row.
+- Reviews (`Review`, `src/reviews/`): one per order, written only through a link the
+  `mark-delivered` e-mail carries (or `POST /api/orders/:id/review-request`, the admin sending it
+  again): `/recenze/napsat?token=`, the order id and an expiry (`REVIEW_LINK_LIFETIME_DAYS`)
+  signed with a key derived from `JWT_SECRET` (`review-link.ts`), nothing stored. Public and
+  rate-limited: `GET /api/reviews/all/invitation?token=` (the order's pieces, a suggested name)
+  and `POST` there (stars, text, name, `locale`, `consent: true`; 404 for a forged or expired link,
+  409 for an order not delivered or already reviewed), with the order row locked. A review starts
+  `pending` and `ADMIN_EMAIL` gets `new-review`. The admin's CRUD (`signedInExceptCreating`) lists,
+  PATCHes `status` (`published` / `hidden`), `hiddenReason` and `reply` — the customer's words are
+  `readOnly` — and deletes; an order with a review can't be deleted (409). The website reads only
+  `GET /api/reviews/all/public` (published, newest first, `averageRating`, `?productId=`), which
+  answers nothing that leads to the order or the customer. Plan:
+  `features/2026-11-01-customer-reviews/`.
 - Files: any signed-in admin uploads (only product / gallery images) and deletes any photo; photos
   are public.
 - Ordering (`src/catalogue/reorder-plugin.ts`, signed-in admin): `PUT /api/products/:id/images/order`
@@ -210,6 +224,7 @@ Branches: `main` = production, `dev` = test.
   (the placeholder in `tooling/user.npmrc`; never name the token in a `RUN` line). Migrations run
   on start. In Railway a live source change applies to every environment — stage it per
   environment.
+
 - Web: Vercel project `klotilda-frontend`, root `apps/web` — `klotilda.cz` / `www.klotilda.cz`
   from `main`, `test.klotilda.cz` from `dev`. Preview variables scoped to the `dev` branch point
   it at the test API and turn the shop on (`NEXT_PUBLIC_SHOP_ENABLED=true`); production keeps
