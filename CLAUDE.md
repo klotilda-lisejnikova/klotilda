@@ -40,7 +40,8 @@ access, the DTO types, the typed clients and the admin's form schema (`formSchem
 model means changing `fields.ts` — plus a migration (below).
 
 Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `ShippingMethod`,
-`PaymentMethod`) are the production table names (`Products`, …) — never rename them.
+`PaymentMethod`, `EmailTemplate`) are the production table names (`Products`, …) — never rename
+them.
 
 ## Backend
 
@@ -61,7 +62,8 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
   method that fits it (400 otherwise), and takes the stock down inside one transaction with the
   product, shipping and payment method rows locked (`FOR UPDATE`), so the last piece sells once.
   It answers a random variable symbol and, for a bank transfer, the bank account and a QR Platba
-  code, and e-mails the customer and `ADMIN_EMAIL` (a failed e-mail is only logged).
+  code, and e-mails the customer and, unless its e-mail is turned off, `ADMIN_EMAIL` (a failed
+  e-mail is only logged).
 - Shipping methods (`ShippingMethod`, `/api/shipping-methods`): auto CRUD, rows the admin manages
   (code, names, description, price, `kind` `delivery` | `pickup`, an optional `trackingUrl` with
   `{number}`, `active`, `sortOrder`); visitors read only the active ones. The code is stored
@@ -84,9 +86,20 @@ Model names (`Product`, `Category`, `GalleryItem`, `Order`, `AdminUser`, `Shippi
   steps and when each is allowed are in the domain (`availableActions`, `applyAction` in
   `entities/order/workflow.ts`): mark-paid, ship (parcel number), ready-for-pickup, mark-delivered,
   cancel (puts the pieces back in stock unless `restock: false`), mark-refunded. Each is written to
-  the order's `history` (JSON) and e-mails the customer unless `notify: false`; PATCHing the
-  statuses stays for corrections and does neither. E-mails are blocks rendered as HTML in the
-  site's colours and as plain text (`src/emails/email-layout.ts`); `SITE_URL` is linked in them.
+  the order's `history` (JSON) and e-mails the customer unless `notify: false` or the e-mail is
+  turned off (`skipped` in the history); PATCHing the statuses stays for corrections and does
+  neither. E-mails are blocks rendered as HTML in the site's colours and as plain text
+  (`src/emails/email-layout.ts`); `SITE_URL` is linked in them.
+- E-mail texts (`EmailTemplate`, `/api/email-templates`, signed-in admin only): one row per
+  automatic e-mail (`EMAIL_TEMPLATE_KEYS`: the order confirmation, the artist's new order and one
+  per action that e-mails), seeded by the `2026-11-01-email-templates` migration; the API only reads
+  and PATCHes them (`signedInEditingOnly`), never creates or deletes one. A row words the `subject`,
+  `heading` and `body` (blank line = paragraph) with `{{…}}` placeholders (`EMAIL_TEMPLATES[key]`
+  lists the ones each knows; an unknown one stays as written) and `enabled`; the order
+  confirmation (`required`) is sent even when disabled. Everything made from the order (items,
+  payment details, tracking, address, legal links) stays generated around that text
+  (`src/emails/order-emails.ts`). A missing row falls back to the domain's default.
+  `POST /api/email-templates/all/preview` renders a text for a sample order.
 - Files: any signed-in admin uploads (only product / gallery images) and deletes any photo; photos
   are public.
 - Ordering (`src/catalogue/reorder-plugin.ts`, signed-in admin): `PUT /api/products/:id/images/order`
@@ -146,8 +159,9 @@ products list is a table or cards (remembered per browser) with an "in the shop"
 product. The overview counts through the API and charts the paid revenue of the last 12 months by
 the month of the order (`app/revenue.ts`). Every `UFormField` keeps a line free for its message
 (`vite.config.ts`), so a message that appears or goes never moves a button from under the pointer.
-The sidebar's "Nastavení" group holds the shop's settings (Doprava, Platby: the shipping and payment
-methods); it is not on the phone's bottom bar, only in the slide-over.
+The sidebar's "Nastavení" group holds the shop's settings (Doprava, Platby, E-maily: the shipping
+and payment methods and the e-mail texts, the last with a live preview in a sandboxed `iframe`); it
+is not on the phone's bottom bar, only in the slide-over.
 `vercel.json` sends a Content-Security-Policy that allows only the admin's own scripts (hence
 `public/color-scheme.js` instead of an inline script) and API calls only to `*.up.railway.app`.
 

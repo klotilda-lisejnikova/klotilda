@@ -1,5 +1,6 @@
 import { adminUserEntity } from './entities/admin-user';
 import { categoryEntity } from './entities/category';
+import { emailTemplateEntity } from './entities/email-template';
 import { galleryItemEntity } from './entities/gallery-item';
 import { orderEntity } from './entities/order';
 import { paymentMethodEntity } from './entities/payment-method';
@@ -22,6 +23,26 @@ export {
   type CategorySummary,
 } from './entities/category';
 export { categoryFields } from './entities/category/fields';
+export {
+  EMAIL_PLACEHOLDERS,
+  EMAIL_TEMPLATE_KEYS,
+  EMAIL_TEMPLATE_PREVIEW_ROUTE,
+  EMAIL_TEMPLATES,
+  EMAIL_TEMPLATES_PATH,
+  emailTemplateEntity,
+  fillPlaceholders,
+  hasBrokenPlaceholder,
+  isEmailTemplateKey,
+  unknownPlaceholders,
+  type EmailPlaceholder,
+  type EmailPreview,
+  type EmailPreviewRequest,
+  type EmailTemplate,
+  type EmailTemplateDefinition,
+  type EmailTemplateKey,
+  type EmailText,
+} from './entities/email-template';
+export { emailTemplateFields } from './entities/email-template/fields';
 export {
   PRODUCT_IMAGE_ORDER_ROUTE,
   productEntity,
@@ -93,6 +114,7 @@ export const allEntities = {
   order: orderEntity,
   shippingMethod: shippingMethodEntity,
   paymentMethod: paymentMethodEntity,
+  emailTemplate: emailTemplateEntity,
 };
 
 /** Accounts are made by the seed script and signed in to through `/api/auth` only. */

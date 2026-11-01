@@ -162,6 +162,8 @@ describe('Migrations', () => {
         ['prevod', 0, 'bank_transfer'],
         ['hotove', 0, 'cash'],
       ]);
+      // The e-mails' wording became rows, one per e-mail.
+      expect(await core.models.EmailTemplate.count()).toBe(7);
     } finally {
       await core.close();
     }

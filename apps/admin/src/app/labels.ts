@@ -1,4 +1,6 @@
 import type {
+  EmailPlaceholder,
+  EmailTemplateKey,
   OrderAction,
   OrderEvent,
   OrderStatus,
@@ -111,3 +113,40 @@ export const EMAIL_OUTCOME_LABELS: Record<NonNullable<OrderEvent['email']>, stri
 export function toSelectItems<T extends string>(labels: Record<T, string>) {
   return (Object.entries(labels) as [T, string][]).map(([value, label]) => ({ value, label }));
 }
+
+/** What each automatic e-mail is, as the "E-maily" page names it. */
+export const EMAIL_TEMPLATE_LABELS: Record<EmailTemplateKey, { name: string; when: string }> = {
+  'order-received': {
+    name: 'Potvrzení objednávky',
+    when: 'Zákazníkovi hned po odeslání objednávky, s položkami a údaji k platbě.',
+  },
+  'new-order': {
+    name: 'Nová objednávka (pro vás)',
+    when: 'Vám, když přijde objednávka: zákazník, položky a co dál.',
+  },
+  'mark-paid': { name: 'Platba dorazila', when: 'Zákazníkovi po kliknutí na „Platba dorazila“.' },
+  ship: {
+    name: 'Zásilka odeslána',
+    when: 'Zákazníkovi po kliknutí na „Odeslat“, s číslem a odkazem na sledování zásilky.',
+  },
+  'ready-for-pickup': {
+    name: 'Připraveno k vyzvednutí',
+    when: 'Zákazníkovi po kliknutí na „Připraveno k vyzvednutí“.',
+  },
+  cancel: {
+    name: 'Objednávka zrušena',
+    when: 'Zákazníkovi po zrušení objednávky, s tím, jak dostane peníze zpět.',
+  },
+  'mark-refunded': { name: 'Peníze vráceny', when: 'Zákazníkovi po kliknutí na „Peníze vráceny“.' },
+};
+
+/** What each placeholder is replaced with, shown beside the text. */
+export const EMAIL_PLACEHOLDER_LABELS: Record<EmailPlaceholder, string> = {
+  vs: 'variabilní symbol (číslo objednávky)',
+  jmeno: 'křestní jméno zákazníka',
+  prijmeni: 'příjmení zákazníka',
+  castka: 'celková částka, např. 1 299 Kč',
+  doprava: 'název dopravy',
+  platba: 'název způsobu platby',
+  cislo_zasilky: 'číslo zásilky',
+};

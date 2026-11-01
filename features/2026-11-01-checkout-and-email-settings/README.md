@@ -1,7 +1,7 @@
 # Payment, shipping and e-mail settings in the admin
 
 **Ticket:** none yet
-**Status:** active — step 1 (shipping methods) shipped to `dev`, step 2 (payment methods) in review
+**Status:** active — steps 1 and 2 (shipping, payment methods) on `dev`, step 3 (e-mails) in review
 
 The owner wants the admin to define (1) which payment methods and which shipping options the shop
 offers, and (2) the e-mails the API sends automatically. Today all three are code: `SHIPPING_PRICES`
@@ -57,20 +57,26 @@ blank line = new paragraph) with placeholders (`{{vs}}`, `{{jmeno}}`, `{{castka}
 `{{cislo_zasilky}}`, …; each e-mail lists which it knows). The structured parts stay generated —
 the item table, payment details, tracking button, address, legal links — so the admin can't break
 them. Seeded from today's texts; "Obnovit výchozí text" restores the default; a live preview in the
-admin renders the same HTML as the API (decision 2 is how much is editable).
+admin renders the same HTML as the API. Sentences that depend on the payment kind (how to pay, how
+money comes back) stay generated too, so one text fits every order. The order confirmation can't
+be turned off. The admin refuses to save a placeholder the e-mail doesn't know or one written
+incompletely; the API leaves one as written. One wording change: the confirmation's subject was
+"čeká na platbu" for a transfer and "přijata" for cash; the one editable subject says "přijata"
+for both (the payment details follow in the e-mail).
 
 ## Admin
 
-A new sidebar group "Nastavení" with three pages: Doprava, Platby, E-maily — lists like the
-categories page (drag or arrows to reorder), a dialog form with `formSchema` validation, the
-"V nabídce" switch inline. The group is not on the phone's bottom bar (five slots), only in the
+A new sidebar group "Nastavení" with three pages. Doprava and Platby are lists like the categories
+page (drag or arrows to reorder), a dialog form with `formSchema` validation, the "V nabídce"
+switch inline. E-maily is a fixed list (no adding, deleting or reordering) with a "Posílat" switch,
+each e-mail edited on its own page beside the live preview. The group is not on the phone's bottom bar (five slots), only in the
 slide-over menu.
 
 ## Steps
 
 1. Shipping methods: entity, migration, checkout, workflow by kind, admin page, web step 2. _(on `dev`)_
-2. Payment methods: entity, migration, checkout + QR only for bank transfer, workflow, admin, web step 3. _(in review)_
-3. E-mail templates: entity, migration with the defaults, renderer with placeholders, admin with preview.
+2. Payment methods: entity, migration, checkout + QR only for bank transfer, workflow, admin, web step 3. _(on `dev`)_
+3. E-mail templates: entity, migration with the defaults, renderer with placeholders, admin with preview. _(in review)_
 
 Each step is its own PR into `dev`, verified on the test sites.
 
@@ -88,8 +94,5 @@ Each step is its own PR into `dev`, verified on the test sites.
 ## Decided
 
 - 2026-11-01: payment by bank transfer and cash at pickup; no cash on delivery for now.
-
-## Open questions for the owner
-
-1. E-mails: edit subject, heading and text (recommended), or also switch individual parts (item
-   table, legal links) on and off?
+- 2026-11-01: e-mails: the admin edits the subject, heading and text of each; the parts made from
+  the order are not switchable.

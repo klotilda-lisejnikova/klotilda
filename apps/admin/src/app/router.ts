@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { isEmailTemplateKey } from '@klotilda/domain';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useSession } from './session';
 
@@ -61,6 +62,20 @@ export const router = createRouter({
           path: 'payments',
           name: 'payment-methods',
           component: () => import('@/pages/PaymentMethodsPage.vue'),
+        },
+        {
+          path: 'emails',
+          name: 'email-templates',
+          component: () => import('@/pages/EmailTemplatesPage.vue'),
+        },
+        {
+          path: 'emails/:templateKey',
+          name: 'email-template',
+          component: () => import('@/pages/EmailTemplatePage.vue'),
+          props: true,
+          // Only the fixed e-mails have a page; any other key goes back to the list.
+          beforeEnter: (to) =>
+            isEmailTemplateKey(String(to.params.templateKey)) || { name: 'email-templates' },
         },
         {
           path: 'gallery',

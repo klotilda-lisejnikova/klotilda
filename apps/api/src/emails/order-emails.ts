@@ -1,6 +1,13 @@
-import { COMPLAINTS_ANCHOR, LEGAL_PATHS, TERMS_EFFECTIVE_FROM } from '@klotilda/domain';
+import {
+  COMPLAINTS_ANCHOR,
+  fillPlaceholders,
+  LEGAL_PATHS,
+  TERMS_EFFECTIVE_FROM,
+} from '@klotilda/domain';
 import type {
-  OrderAction,
+  EmailPlaceholder,
+  EmailTemplateKey,
+  EmailText,
   OrderItem,
   PaymentKind,
   PaymentStatus,
@@ -60,23 +67,59 @@ const paragraphs = (text: string | undefined): EmailBlock[] =>
 const noteBlocks = (message: string | undefined): EmailBlock[] =>
   message?.trim() ? [{ kind: 'note', text: message.trim() }] : [];
 
+/** What the placeholders of the admin's text stand for in this order. */
+function placeholderValues(
+  order: PlacedOrder,
+  details: ActionDetails
+): Record<EmailPlaceholder, string> {
+  return {
+    vs: order.variableSymbol,
+    jmeno: order.customerFirstName,
+    prijmeni: order.customerLastName,
+    castka: formatCzk(order.totalAmount),
+    doprava: order.shippingName,
+    platba: order.paymentName,
+    cislo_zasilky: details.trackingNumber ?? '',
+  };
+}
+
+/** The admin's wording, filled in: its subject and heading, and its text as paragraphs. */
+interface FilledText {
+  subject: string;
+  title: string;
+  /** The text's paragraphs, split at blank lines. */
+  intro: EmailBlock[];
+}
+
+function fillText(text: EmailText, order: PlacedOrder, details: ActionDetails = {}): FilledText {
+  const values = placeholderValues(order, details);
+  const fill = (written: string) => fillPlaceholders(written, values).trim();
+  return {
+    // One line: a customer's name with a line break in it must not split the header.
+    subject: fill(text.subject).replace(/\s+/g, ' '),
+    title: fill(text.heading),
+    intro: fill(text.body)
+      .split(/\r?\n\s*\r?\n/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean)
+      .map((paragraph) => ({ kind: 'paragraph', text: paragraph })),
+  };
+}
+
 /** How the customer pays a just placed order: the transfer's details, or cash at the pickup. */
 function paymentBlocks(order: PlacedOrder, bankAccount: string): EmailBlock[] {
   if (isCash(order)) {
     return [
       {
         kind: 'paragraph',
-        text: `Dobrý den, objednávku ${order.variableSymbol} jsme přijali a pustíme se do přípravy. Zaplatíte ji hotově při převzetí.`,
+        text: 'Pustíme se do přípravy. Zaplatíte ji hotově při převzetí.',
       },
       itemsBlock(order),
       { kind: 'facts', rows: [['Zaplatíte při převzetí', formatCzk(order.totalAmount)]] },
     ];
   }
   return [
-    {
-      kind: 'paragraph',
-      text: `Dobrý den, objednávku ${order.variableSymbol} jsme přijali. Jakmile na účet dorazí platba, pustíme se do přípravy.`,
-    },
+    { kind: 'paragraph', text: 'Jakmile na účet dorazí platba, pustíme se do přípravy.' },
     itemsBlock(order),
     {
       kind: 'facts',
@@ -91,17 +134,21 @@ function paymentBlocks(order: PlacedOrder, bankAccount: string): EmailBlock[] {
 }
 
 /**
- * To the customer, as soon as the order is placed: what they ordered and how to pay. For a
- * transfer the QR code is on the shop's confirmation page; the e-mail carries account, symbol and
- * amount as text.
+ * To the customer, as soon as the order is placed: the admin's text, then what they ordered and
+ * how to pay. For a transfer the QR code is on the shop's confirmation page; the e-mail carries
+ * account, symbol and amount as text. The terms and the right of withdrawal close it.
  */
-export function orderReceivedEmail(order: PlacedOrder, bankAccount: string): EmailContent {
+export function orderReceivedEmail(
+  order: PlacedOrder,
+  bankAccount: string,
+  text: EmailText
+): EmailContent {
+  const { subject, title, intro } = fillText(text, order);
   return {
-    subject: isCash(order)
-      ? `Objednávka ${order.variableSymbol} — přijata`
-      : `Objednávka ${order.variableSymbol} — čeká na platbu`,
-    title: 'Děkujeme za objednávku',
+    subject,
+    title,
     blocks: [
+      ...intro,
       ...paymentBlocks(order, bankAccount),
       isPickup(order)
         ? {
@@ -126,11 +173,13 @@ export function orderReceivedEmail(order: PlacedOrder, bankAccount: string): Ema
 }
 
 /** To the artist: a new order, and the symbol to look for on the bank account (or cash to take). */
-export function newOrderEmail(order: PlacedOrder): EmailContent {
+export function newOrderEmail(order: PlacedOrder, text: EmailText): EmailContent {
+  const { subject, title, intro } = fillText(text, order);
   return {
-    subject: `Nová objednávka ${order.variableSymbol} — ${formatCzk(order.totalAmount)}`,
-    title: 'Nová objednávka',
+    subject,
+    title,
     blocks: [
+      ...intro,
       {
         kind: 'facts',
         rows: [
@@ -152,13 +201,12 @@ export function newOrderEmail(order: PlacedOrder): EmailContent {
   };
 }
 
-/** What a payment means for the order now: a cash payment is taken as it is picked up. */
-function paidText(order: PlacedOrder): string {
-  const thanks = `Děkujeme, platbu za objednávku ${order.variableSymbol} jsme přijali.`;
-  if (isCash(order)) return thanks;
+/** What comes after a payment: a cash payment is taken as the order is picked up. */
+function afterPaymentText(order: PlacedOrder): string | undefined {
+  if (isCash(order)) return undefined;
   return isPickup(order)
-    ? `${thanks} Až bude připravená k vyzvednutí, dáme vám vědět.`
-    : `${thanks} Teď ji balíme a ozveme se, až bude na cestě.`;
+    ? 'Až bude připravená k vyzvednutí, dáme vám vědět.'
+    : 'Teď ji balíme a ozveme se, až bude na cestě.';
 }
 
 /** How a cancelled order's money comes back: by transfer, or as agreed for cash. */
@@ -174,90 +222,64 @@ function refundText(order: PlacedOrder): string | undefined {
     : 'Pokud jste ji mezitím zaplatili, peníze vám vrátíme na účet, ze kterého platba přišla.';
 }
 
-type ActionEmail = (order: PlacedOrder, details: ActionDetails) => EmailContent;
+/** The parts of an action's e-mail made from the order, after the admin's text. */
+type ActionBlocks = (order: PlacedOrder, details: ActionDetails) => EmailBlock[];
 
-/** The customer's e-mail for each action that has one; `mark-delivered` has none. */
-export const ORDER_ACTION_EMAILS: Partial<Record<OrderAction, ActionEmail>> = {
-  'mark-paid': (order, { message }) => ({
-    subject: `Objednávka ${order.variableSymbol} — platba dorazila`,
-    title: 'Platba dorazila',
-    blocks: [
-      {
-        kind: 'paragraph',
-        text: paidText(order),
-      },
-      ...noteBlocks(message),
-      itemsBlock(order),
-    ],
-  }),
+/** The order actions that e-mail the customer, one template each; `mark-delivered` has none. */
+export type ActionEmailKey = Exclude<EmailTemplateKey, 'order-received' | 'new-order'>;
 
-  ship: (order, { message, trackingNumber, trackingUrl }) => ({
-    subject: `Objednávka ${order.variableSymbol} je na cestě`,
-    title: 'Zásilka je na cestě',
-    blocks: [
-      {
-        kind: 'paragraph',
-        text: `Objednávku ${order.variableSymbol} jsme odeslali (${order.shippingName}).`,
-      },
-      ...(trackingNumber
-        ? [{ kind: 'facts', rows: [['Číslo zásilky', trackingNumber]] } satisfies EmailBlock]
-        : []),
-      ...(trackingUrl
-        ? [{ kind: 'button', label: 'Sledovat zásilku', href: trackingUrl } satisfies EmailBlock]
-        : []),
-      ...noteBlocks(message),
-      { kind: 'facts', rows: [['Doručení na adresu', address(order)]] },
-    ],
-  }),
+const ACTION_BLOCKS: Record<ActionEmailKey, ActionBlocks> = {
+  'mark-paid': (order, { message }) => [
+    ...paragraphs(afterPaymentText(order)),
+    ...noteBlocks(message),
+    itemsBlock(order),
+  ],
 
-  'ready-for-pickup': (order, { message }) => ({
-    subject: `Objednávka ${order.variableSymbol} je připravená k vyzvednutí`,
-    title: 'Připraveno k vyzvednutí',
-    blocks: [
-      {
-        kind: 'paragraph',
-        text: `Objednávka ${order.variableSymbol} na vás čeká.`,
-      },
-      ...(message?.trim()
-        ? noteBlocks(message)
-        : [
-            {
-              kind: 'paragraph',
-              text: 'Odpovězte prosím na tento e-mail a domluvíme se, kde a kdy si ji vyzvednete.',
-            } satisfies EmailBlock,
-          ]),
-      ...(isCash(order) && order.paymentStatus !== 'paid'
-        ? [
-            {
-              kind: 'facts',
-              rows: [['Zaplatíte hotově při převzetí', formatCzk(order.totalAmount)]],
-            } satisfies EmailBlock,
-          ]
-        : []),
-    ],
-  }),
+  ship: (order, { message, trackingNumber, trackingUrl }) => [
+    ...(trackingNumber
+      ? [{ kind: 'facts', rows: [['Číslo zásilky', trackingNumber]] } satisfies EmailBlock]
+      : []),
+    ...(trackingUrl
+      ? [{ kind: 'button', label: 'Sledovat zásilku', href: trackingUrl } satisfies EmailBlock]
+      : []),
+    ...noteBlocks(message),
+    { kind: 'facts', rows: [['Doručení na adresu', address(order)]] },
+  ],
 
-  cancel: (order, { message }) => ({
-    subject: `Objednávka ${order.variableSymbol} byla zrušena`,
-    title: 'Objednávka zrušena',
-    blocks: [
-      { kind: 'paragraph', text: `Objednávku ${order.variableSymbol} jsme zrušili.` },
-      ...noteBlocks(message),
-      ...paragraphs(refundText(order)),
-    ],
-  }),
+  // The admin's message says where and when; without one the customer is asked to arrange it.
+  'ready-for-pickup': (order, { message }) => [
+    ...(message?.trim()
+      ? noteBlocks(message)
+      : paragraphs('Odpovězte prosím na tento e-mail a domluvíme se, kde a kdy si ji vyzvednete.')),
+    ...(isCash(order) && order.paymentStatus !== 'paid'
+      ? [
+          {
+            kind: 'facts',
+            rows: [['Zaplatíte hotově při převzetí', formatCzk(order.totalAmount)]],
+          } satisfies EmailBlock,
+        ]
+      : []),
+  ],
 
-  'mark-refunded': (order, { message }) => ({
-    subject: `Objednávka ${order.variableSymbol} — peníze jsou na cestě zpět`,
-    title: 'Vrátili jsme vám peníze',
-    blocks: [
-      {
-        kind: 'paragraph',
-        text: isCash(order)
-          ? `Za zrušenou objednávku ${order.variableSymbol} jsme vám vrátili ${formatCzk(order.totalAmount)}.`
-          : `Za zrušenou objednávku ${order.variableSymbol} jsme vám poslali ${formatCzk(order.totalAmount)} zpět na účet. Na účtu je uvidíte obvykle do dvou pracovních dnů.`,
-      },
-      ...noteBlocks(message),
-    ],
-  }),
+  cancel: (order, { message }) => [...noteBlocks(message), ...paragraphs(refundText(order))],
+
+  'mark-refunded': (order, { message }) => [
+    ...paragraphs(
+      isCash(order)
+        ? undefined
+        : 'Peníze jsme poslali na účet, ze kterého platba přišla; obvykle je tam uvidíte do dvou pracovních dnů.'
+    ),
+    ...noteBlocks(message),
+  ],
 };
+
+/** The customer's e-mail about an action: the admin's text, then the parts made from the order. */
+export function orderActionEmail(
+  action: ActionEmailKey,
+  order: PlacedOrder,
+  details: ActionDetails,
+  text: EmailText
+): EmailContent {
+  const { subject, title, intro } = fillText(text, order, details);
+  return { subject, title, blocks: [...intro, ...ACTION_BLOCKS[action](order, details)] };
+}

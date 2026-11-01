@@ -2,6 +2,7 @@ import { AuthService, createServiceContainer } from '@eleansphere/entity-core';
 import type { AccessTokenSource } from '@eleansphere/entity-core';
 import type { AdminUser } from './entities/admin-user';
 import { categoryEntity } from './entities/category';
+import { emailTemplateEntity } from './entities/email-template';
 import { galleryItemEntity } from './entities/gallery-item';
 import { orderEntity } from './entities/order';
 import { paymentMethodEntity } from './entities/payment-method';
@@ -25,6 +26,7 @@ export function createServices(baseUrl: string, tokenSource: AccessTokenSource) 
       orders: orderEntity,
       shippingMethods: shippingMethodEntity,
       paymentMethods: paymentMethodEntity,
+      emailTemplates: emailTemplateEntity,
     },
     baseUrl,
     tokenSource
